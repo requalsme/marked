@@ -1,0 +1,47 @@
+{
+  "id": "cabinet_indexer.hit_react",
+  "asset_id": "cabinet_indexer",
+  "asset_type": "enemy",
+  "animation": "hit_react",
+  "usage": "Enemy-specific damage recoil.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 5,
+  "collision_bounds": [
+    65,
+    96,
+    126,
+    134
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_00.png",
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_01.png",
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_02.png",
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_03.png",
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_04.png",
+    "enemies/cabinet_indexer/hit_react/cabinet_indexer_hit_react_05.png"
+  ],
+  "sheet": "enemies/cabinet_indexer/cabinet_indexer_hit_react_sheet.png",
+  "gif": "enemies/cabinet_indexer/cabinet_indexer_hit_react.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

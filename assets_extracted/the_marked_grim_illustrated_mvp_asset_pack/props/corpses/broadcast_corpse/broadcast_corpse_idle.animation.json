@@ -1,0 +1,47 @@
+{
+  "id": "broadcast_corpse.idle",
+  "asset_id": "broadcast_corpse",
+  "asset_type": "corpse",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    44,
+    132,
+    168,
+    86
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_00.png",
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_01.png",
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_02.png",
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_03.png",
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_04.png",
+    "props/corpses/broadcast_corpse/idle/broadcast_corpse_idle_05.png"
+  ],
+  "sheet": "props/corpses/broadcast_corpse/broadcast_corpse_idle_sheet.png",
+  "gif": "props/corpses/broadcast_corpse/broadcast_corpse_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

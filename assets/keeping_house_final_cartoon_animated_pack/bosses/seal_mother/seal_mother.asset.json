@@ -1,0 +1,10 @@
+{
+  "id": "seal_mother",
+  "type": "bosses",
+  "style": "smooth_cartoon_2d_thick_lines",
+  "animations": [
+    "seal_mother.idle",
+    "seal_mother.summon",
+    "seal_mother.death"
+  ]
+}

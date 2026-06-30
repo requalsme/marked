@@ -1,0 +1,21 @@
+{
+  "id": "signal_broadcast",
+  "display_name": "Signal Broadcast",
+  "asset_type": "system_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "signal_broadcast.idle_glow"
+  ],
+  "ui_role": "Signal log and decoder"
+}

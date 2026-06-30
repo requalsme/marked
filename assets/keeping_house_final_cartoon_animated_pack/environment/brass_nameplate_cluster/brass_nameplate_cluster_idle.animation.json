@@ -1,0 +1,27 @@
+{
+  "id": "brass_nameplate_cluster.idle",
+  "asset_id": "brass_nameplate_cluster",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_00.png",
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_01.png",
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_02.png",
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_03.png",
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_04.png",
+    "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_05.png"
+  ],
+  "sheet": "environment/brass_nameplate_cluster/brass_nameplate_cluster_idle_sheet.png",
+  "gif": "environment/brass_nameplate_cluster/brass_nameplate_cluster_idle.gif"
+}

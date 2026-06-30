@@ -1,0 +1,27 @@
+{
+  "id": "cracked_archive_floor.idle",
+  "asset_id": "cracked_archive_floor",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_00.png",
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_01.png",
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_02.png",
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_03.png",
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_04.png",
+    "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_05.png"
+  ],
+  "sheet": "environment/cracked_archive_floor/cracked_archive_floor_idle_sheet.png",
+  "gif": "environment/cracked_archive_floor/cracked_archive_floor_idle.gif"
+}

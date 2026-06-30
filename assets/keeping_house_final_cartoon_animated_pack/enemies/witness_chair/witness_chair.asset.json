@@ -1,0 +1,11 @@
+{
+  "id": "witness_chair",
+  "type": "enemies",
+  "style": "smooth_cartoon_2d_thick_lines",
+  "animations": [
+    "witness_chair.idle",
+    "witness_chair.walk",
+    "witness_chair.attack",
+    "witness_chair.death"
+  ]
+}

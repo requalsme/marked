@@ -1,0 +1,22 @@
+{
+  "id": "broadcast_corpse",
+  "display_name": "Broadcast Corpse",
+  "asset_type": "corpse",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    44,
+    132,
+    168,
+    86
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 4,
+  "animations": [
+    "broadcast_corpse.idle",
+    "broadcast_corpse.activate"
+  ],
+  "game_role": "in-world object"
+}

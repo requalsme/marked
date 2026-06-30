@@ -1,0 +1,47 @@
+{
+  "id": "ritual_chain.idle_glow",
+  "asset_id": "ritual_chain",
+  "asset_type": "gear_icon",
+  "animation": "idle_glow",
+  "usage": "Gear icon: Ritual Chain",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "interaction_bounds": [
+    86,
+    56,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_00.png",
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_01.png",
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_02.png",
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_03.png",
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_04.png",
+    "gear/ritual_chain/idle_glow/ritual_chain_idle_glow_05.png"
+  ],
+  "sheet": "gear/ritual_chain/ritual_chain_idle_glow_sheet.png",
+  "gif": "gear/ritual_chain/ritual_chain_idle_glow.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

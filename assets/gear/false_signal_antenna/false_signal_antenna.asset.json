@@ -1,0 +1,21 @@
+{
+  "id": "false_signal_antenna",
+  "display_name": "False Signal Antenna",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "false_signal_antenna.idle_glow"
+  ],
+  "ui_role": "Gear icon: False Signal Antenna"
+}

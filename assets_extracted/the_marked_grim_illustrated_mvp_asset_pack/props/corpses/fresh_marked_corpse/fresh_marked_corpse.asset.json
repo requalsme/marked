@@ -1,0 +1,22 @@
+{
+  "id": "fresh_marked_corpse",
+  "display_name": "Fresh Marked Corpse",
+  "asset_type": "corpse",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    46,
+    154,
+    166,
+    62
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 2,
+  "animations": [
+    "fresh_marked_corpse.idle",
+    "fresh_marked_corpse.activate"
+  ],
+  "game_role": "in-world object"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "corpse_lantern_shrine.idle",
+  "asset_id": "corpse_lantern_shrine",
+  "asset_type": "ritual_prop",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 10,
+  "collision_bounds": [
+    58,
+    80,
+    134,
+    148
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_00.png",
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_01.png",
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_02.png",
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_03.png",
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_04.png",
+    "props/rituals/corpse_lantern_shrine/idle/corpse_lantern_shrine_idle_05.png"
+  ],
+  "sheet": "props/rituals/corpse_lantern_shrine/corpse_lantern_shrine_idle_sheet.png",
+  "gif": "props/rituals/corpse_lantern_shrine/corpse_lantern_shrine_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

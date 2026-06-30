@@ -1,0 +1,20 @@
+{
+  "id": "seal_flash",
+  "display_name": "Seal Flash",
+  "asset_type": "vfx",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "seal_flash.play"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "ash_bell",
+  "display_name": "Ash Bell",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "ash_bell.idle_glow"
+  ],
+  "ui_role": "Gear icon: Ash Bell"
+}

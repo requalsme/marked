@@ -1,0 +1,47 @@
+{
+  "id": "the_marked.hit_react",
+  "asset_id": "the_marked",
+  "asset_type": "player",
+  "animation": "hit_react",
+  "usage": "Damage recoil while preserving bottom-center anchor.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    76,
+    102,
+    80,
+    130
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "characters/player/the_marked/hit_react/the_marked_hit_react_00.png",
+    "characters/player/the_marked/hit_react/the_marked_hit_react_01.png",
+    "characters/player/the_marked/hit_react/the_marked_hit_react_02.png",
+    "characters/player/the_marked/hit_react/the_marked_hit_react_03.png",
+    "characters/player/the_marked/hit_react/the_marked_hit_react_04.png",
+    "characters/player/the_marked/hit_react/the_marked_hit_react_05.png"
+  ],
+  "sheet": "characters/player/the_marked/the_marked_hit_react_sheet.png",
+  "gif": "characters/player/the_marked/the_marked_hit_react.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

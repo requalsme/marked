@@ -1,0 +1,27 @@
+{
+  "id": "archive_curse_sigil.play",
+  "asset_id": "archive_curse_sigil",
+  "asset_type": "vfx",
+  "animation": "play",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 12,
+  "loop": false,
+  "frames": [
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_00.png",
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_01.png",
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_02.png",
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_03.png",
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_04.png",
+    "vfx/archive_curse_sigil/play/archive_curse_sigil_play_05.png"
+  ],
+  "sheet": "vfx/archive_curse_sigil/archive_curse_sigil_play_sheet.png",
+  "gif": "vfx/archive_curse_sigil/archive_curse_sigil_play.gif"
+}

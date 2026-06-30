@@ -1,0 +1,8 @@
+{
+  "id": "receipt_spike_altar",
+  "type": "environment",
+  "image": "environment/receipt_spike_altar/receipt_spike_altar.png",
+  "animations": [
+    "receipt_spike_altar.idle"
+  ]
+}

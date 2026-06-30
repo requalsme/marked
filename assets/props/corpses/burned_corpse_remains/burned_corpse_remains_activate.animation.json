@@ -1,0 +1,49 @@
+{
+  "id": "burned_corpse_remains.activate",
+  "asset_id": "burned_corpse_remains",
+  "asset_type": "corpse",
+  "animation": "activate",
+  "usage": "Player interaction / activation state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 10,
+  "loop": false,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    62,
+    158,
+    140,
+    58
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_00.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_01.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_02.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_03.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_04.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_05.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_06.png",
+    "props/corpses/burned_corpse_remains/activate/burned_corpse_remains_activate_07.png"
+  ],
+  "sheet": "props/corpses/burned_corpse_remains/burned_corpse_remains_activate_sheet.png",
+  "gif": "props/corpses/burned_corpse_remains/burned_corpse_remains_activate.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

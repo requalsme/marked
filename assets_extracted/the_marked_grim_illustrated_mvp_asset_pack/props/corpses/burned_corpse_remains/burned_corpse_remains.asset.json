@@ -1,0 +1,22 @@
+{
+  "id": "burned_corpse_remains",
+  "display_name": "Burned Corpse Remains",
+  "asset_type": "corpse",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    62,
+    158,
+    140,
+    58
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 2,
+  "animations": [
+    "burned_corpse_remains.idle",
+    "burned_corpse_remains.activate"
+  ],
+  "game_role": "in-world object"
+}

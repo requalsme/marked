@@ -1,0 +1,8 @@
+{
+  "id": "tiny_chained_book",
+  "type": "pickups",
+  "image": "pickups/tiny_chained_book/tiny_chained_book.png",
+  "animations": [
+    "tiny_chained_book.idle"
+  ]
+}

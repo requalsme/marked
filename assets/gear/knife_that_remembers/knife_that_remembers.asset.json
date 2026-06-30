@@ -1,0 +1,21 @@
+{
+  "id": "knife_that_remembers",
+  "display_name": "Knife That Remembers",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "knife_that_remembers.idle_glow"
+  ],
+  "ui_role": "Gear icon: Knife That Remembers"
+}

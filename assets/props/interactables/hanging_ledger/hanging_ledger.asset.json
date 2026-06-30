@@ -1,0 +1,22 @@
+{
+  "id": "hanging_ledger",
+  "display_name": "Hanging Ledger",
+  "asset_type": "interactable",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    70,
+    80,
+    116,
+    144
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 8,
+  "animations": [
+    "hanging_ledger.idle",
+    "hanging_ledger.activate"
+  ],
+  "game_role": "in-world object"
+}

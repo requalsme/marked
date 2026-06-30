@@ -1,0 +1,7 @@
+{
+  "id": "wax_stamp_impact",
+  "type": "vfx",
+  "animations": [
+    "wax_stamp_impact.play"
+  ]
+}

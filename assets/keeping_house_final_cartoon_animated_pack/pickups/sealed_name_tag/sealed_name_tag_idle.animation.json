@@ -1,0 +1,27 @@
+{
+  "id": "sealed_name_tag.idle",
+  "asset_id": "sealed_name_tag",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_00.png",
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_01.png",
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_02.png",
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_03.png",
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_04.png",
+    "pickups/sealed_name_tag/idle/sealed_name_tag_idle_05.png"
+  ],
+  "sheet": "pickups/sealed_name_tag/sealed_name_tag_idle_sheet.png",
+  "gif": "pickups/sealed_name_tag/sealed_name_tag_idle.gif"
+}

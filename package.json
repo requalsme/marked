@@ -1,0 +1,31 @@
+{
+  "name": "the-marked",
+  "version": "1.0.0",
+  "description": "The Marked - Grim 2D Horror Idle ARPG",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8080 -c-1",
+    "start": "npx http-server -p 8080 -c-1",
+
+    "sim": "uv run tools/simulation/run_sim.py",
+    "sim:quick": "uv run tools/simulation/run_sim.py --preset quick",
+    "sim:full": "uv run tools/simulation/run_sim.py --preset full_pass",
+    "sim:long": "uv run tools/simulation/run_sim.py --preset long_all",
+    "sim:minmaxer": "uv run tools/simulation/run_sim.py --preset minmaxer_deep",
+    "sim:idle": "uv run tools/simulation/run_sim.py --preset idle_focus",
+    "sim:sanity": "uv run tools/simulation/run_sim.py --preset sanity_stress",
+    "sim:lore": "uv run tools/simulation/run_sim.py --preset lore_coverage",
+    "sim:verbose": "uv run tools/simulation/run_sim.py --preset quick --verbose"
+  },
+  "keywords": [
+    "horror",
+    "idle",
+    "arpg",
+    "gothic"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

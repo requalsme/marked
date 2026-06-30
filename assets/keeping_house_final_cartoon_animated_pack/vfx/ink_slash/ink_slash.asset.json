@@ -1,0 +1,7 @@
+{
+  "id": "ink_slash",
+  "type": "vfx",
+  "animations": [
+    "ink_slash.play"
+  ]
+}

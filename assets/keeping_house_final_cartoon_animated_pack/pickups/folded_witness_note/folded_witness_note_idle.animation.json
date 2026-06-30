@@ -1,0 +1,27 @@
+{
+  "id": "folded_witness_note.idle",
+  "asset_id": "folded_witness_note",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_00.png",
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_01.png",
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_02.png",
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_03.png",
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_04.png",
+    "pickups/folded_witness_note/idle/folded_witness_note_idle_05.png"
+  ],
+  "sheet": "pickups/folded_witness_note/folded_witness_note_idle_sheet.png",
+  "gif": "pickups/folded_witness_note/folded_witness_note_idle.gif"
+}

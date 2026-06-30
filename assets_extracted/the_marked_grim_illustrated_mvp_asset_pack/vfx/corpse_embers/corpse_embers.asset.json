@@ -1,0 +1,20 @@
+{
+  "id": "corpse_embers",
+  "display_name": "Corpse Embers",
+  "asset_type": "vfx",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "corpse_embers.play"
+  ]
+}

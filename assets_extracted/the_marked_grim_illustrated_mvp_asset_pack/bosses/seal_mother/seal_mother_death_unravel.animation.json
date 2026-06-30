@@ -1,0 +1,53 @@
+{
+  "id": "seal_mother.death_unravel",
+  "asset_id": "seal_mother",
+  "asset_type": "boss",
+  "animation": "death_unravel",
+  "usage": "Boss defeat: throne and body unravel into records.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 12,
+  "fps": 8,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    48,
+    70,
+    160,
+    162
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_00.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_01.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_02.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_03.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_04.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_05.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_06.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_07.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_08.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_09.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_10.png",
+    "bosses/seal_mother/death_unravel/seal_mother_death_unravel_11.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_death_unravel_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_death_unravel.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

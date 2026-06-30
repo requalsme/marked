@@ -1,0 +1,27 @@
+{
+  "id": "tiny_chained_book.idle",
+  "asset_id": "tiny_chained_book",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_00.png",
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_01.png",
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_02.png",
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_03.png",
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_04.png",
+    "pickups/tiny_chained_book/idle/tiny_chained_book_idle_05.png"
+  ],
+  "sheet": "pickups/tiny_chained_book/tiny_chained_book_idle_sheet.png",
+  "gif": "pickups/tiny_chained_book/tiny_chained_book_idle.gif"
+}

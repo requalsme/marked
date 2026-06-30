@@ -1,0 +1,27 @@
+{
+  "id": "wax_seal_growth.idle",
+  "asset_id": "wax_seal_growth",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_00.png",
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_01.png",
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_02.png",
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_03.png",
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_04.png",
+    "environment/wax_seal_growth/idle/wax_seal_growth_idle_05.png"
+  ],
+  "sheet": "environment/wax_seal_growth/wax_seal_growth_idle_sheet.png",
+  "gif": "environment/wax_seal_growth/wax_seal_growth_idle.gif"
+}

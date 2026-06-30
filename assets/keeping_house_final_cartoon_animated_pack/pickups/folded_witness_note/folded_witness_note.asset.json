@@ -1,0 +1,8 @@
+{
+  "id": "folded_witness_note",
+  "type": "pickups",
+  "image": "pickups/folded_witness_note/folded_witness_note.png",
+  "animations": [
+    "folded_witness_note.idle"
+  ]
+}

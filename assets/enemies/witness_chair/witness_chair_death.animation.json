@@ -1,0 +1,51 @@
+{
+  "id": "witness_chair.death",
+  "asset_id": "witness_chair",
+  "asset_type": "enemy",
+  "animation": "death",
+  "usage": "Enemy defeat, dissolving into Keeping House evidence.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 10,
+  "fps": 9,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    63,
+    102,
+    130,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/witness_chair/death/witness_chair_death_00.png",
+    "enemies/witness_chair/death/witness_chair_death_01.png",
+    "enemies/witness_chair/death/witness_chair_death_02.png",
+    "enemies/witness_chair/death/witness_chair_death_03.png",
+    "enemies/witness_chair/death/witness_chair_death_04.png",
+    "enemies/witness_chair/death/witness_chair_death_05.png",
+    "enemies/witness_chair/death/witness_chair_death_06.png",
+    "enemies/witness_chair/death/witness_chair_death_07.png",
+    "enemies/witness_chair/death/witness_chair_death_08.png",
+    "enemies/witness_chair/death/witness_chair_death_09.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_death_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_death.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

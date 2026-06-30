@@ -1,0 +1,11 @@
+{
+  "id": "paper_wraith",
+  "type": "enemies",
+  "style": "smooth_cartoon_2d_thick_lines",
+  "animations": [
+    "paper_wraith.idle",
+    "paper_wraith.walk",
+    "paper_wraith.attack",
+    "paper_wraith.death"
+  ]
+}

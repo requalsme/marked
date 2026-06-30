@@ -1,0 +1,25 @@
+{
+  "id": "witness_chair.attack",
+  "asset_id": "witness_chair",
+  "asset_type": "enemies",
+  "animation": "attack",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    "enemies/witness_chair/attack/witness_chair_attack_00.png",
+    "enemies/witness_chair/attack/witness_chair_attack_01.png",
+    "enemies/witness_chair/attack/witness_chair_attack_02.png",
+    "enemies/witness_chair/attack/witness_chair_attack_03.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_attack_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_attack.gif"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "cracked_archive_wall.idle",
+  "asset_id": "cracked_archive_wall",
+  "asset_type": "environment",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 14,
+  "collision_bounds": [
+    42,
+    82,
+    170,
+    150
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_00.png",
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_01.png",
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_02.png",
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_03.png",
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_04.png",
+    "environment/cracked_archive_wall/idle/cracked_archive_wall_idle_05.png"
+  ],
+  "sheet": "environment/cracked_archive_wall/cracked_archive_wall_idle_sheet.png",
+  "gif": "environment/cracked_archive_wall/cracked_archive_wall_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

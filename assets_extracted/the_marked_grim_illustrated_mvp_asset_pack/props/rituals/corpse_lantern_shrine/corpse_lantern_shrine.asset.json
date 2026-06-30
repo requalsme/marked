@@ -1,0 +1,22 @@
+{
+  "id": "corpse_lantern_shrine",
+  "display_name": "Corpse Lantern Shrine",
+  "asset_type": "ritual_prop",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    58,
+    80,
+    134,
+    148
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 10,
+  "animations": [
+    "corpse_lantern_shrine.idle",
+    "corpse_lantern_shrine.activate"
+  ],
+  "game_role": "in-world object"
+}

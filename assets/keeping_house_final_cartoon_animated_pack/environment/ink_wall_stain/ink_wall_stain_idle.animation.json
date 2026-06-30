@@ -1,0 +1,27 @@
+{
+  "id": "ink_wall_stain.idle",
+  "asset_id": "ink_wall_stain",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_00.png",
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_01.png",
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_02.png",
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_03.png",
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_04.png",
+    "environment/ink_wall_stain/idle/ink_wall_stain_idle_05.png"
+  ],
+  "sheet": "environment/ink_wall_stain/ink_wall_stain_idle_sheet.png",
+  "gif": "environment/ink_wall_stain/ink_wall_stain_idle.gif"
+}

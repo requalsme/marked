@@ -1,0 +1,21 @@
+{
+  "id": "redacted_mail",
+  "display_name": "Redacted Mail",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "redacted_mail.idle_glow"
+  ],
+  "ui_role": "Gear icon: Redacted Mail"
+}

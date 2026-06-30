@@ -1,0 +1,21 @@
+{
+  "id": "loot_satchel",
+  "display_name": "Loot Satchel",
+  "asset_type": "loot",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    82,
+    150,
+    92,
+    70
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "loot_satchel.idle"
+  ],
+  "game_role": "in-world object"
+}

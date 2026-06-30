@@ -1,0 +1,120 @@
+{
+  "id": "ink_redactor.attack",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemy",
+  "animation": "attack",
+  "usage": "Enemy attack with anatomy-specific timing and hit window.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 12,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    78,
+    82,
+    96,
+    150
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [
+    {
+      "frame": 3,
+      "bounds": [
+        146,
+        82,
+        92,
+        112
+      ],
+      "tags": [
+        "ink",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 4,
+      "bounds": [
+        146,
+        82,
+        92,
+        112
+      ],
+      "tags": [
+        "ink",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 5,
+      "bounds": [
+        146,
+        82,
+        92,
+        112
+      ],
+      "tags": [
+        "ink",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 6,
+      "bounds": [
+        146,
+        82,
+        92,
+        112
+      ],
+      "tags": [
+        "ink",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 7,
+      "bounds": [
+        146,
+        82,
+        92,
+        112
+      ],
+      "tags": [
+        "ink",
+        "melee"
+      ],
+      "damage_window": true
+    }
+  ],
+  "frames": [
+    "enemies/ink_redactor/attack/ink_redactor_attack_00.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_01.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_02.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_03.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_04.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_05.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_06.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_07.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_attack_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_attack.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

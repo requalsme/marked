@@ -1,0 +1,49 @@
+{
+  "id": "hanging_ledger.activate",
+  "asset_id": "hanging_ledger",
+  "asset_type": "interactable",
+  "animation": "activate",
+  "usage": "Player interaction / activation state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 10,
+  "loop": false,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    70,
+    80,
+    116,
+    144
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_00.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_01.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_02.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_03.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_04.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_05.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_06.png",
+    "props/interactables/hanging_ledger/activate/hanging_ledger_activate_07.png"
+  ],
+  "sheet": "props/interactables/hanging_ledger/hanging_ledger_activate_sheet.png",
+  "gif": "props/interactables/hanging_ledger/hanging_ledger_activate.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

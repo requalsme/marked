@@ -1,0 +1,47 @@
+{
+  "id": "tarot_devil.idle_glow",
+  "asset_id": "tarot_devil",
+  "asset_type": "tarot",
+  "animation": "idle_glow",
+  "usage": "Rituals strengthen; costs become harsher.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "interaction_bounds": [
+    86,
+    56,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_00.png",
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_01.png",
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_02.png",
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_03.png",
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_04.png",
+    "ui/tarot/tarot_devil/idle_glow/tarot_devil_idle_glow_05.png"
+  ],
+  "sheet": "ui/tarot/tarot_devil/tarot_devil_idle_glow_sheet.png",
+  "gif": "ui/tarot/tarot_devil/tarot_devil_idle_glow.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

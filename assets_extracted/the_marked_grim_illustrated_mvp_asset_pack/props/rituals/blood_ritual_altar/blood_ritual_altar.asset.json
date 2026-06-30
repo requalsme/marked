@@ -1,0 +1,22 @@
+{
+  "id": "blood_ritual_altar",
+  "display_name": "Blood Ritual Altar",
+  "asset_type": "ritual_prop",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    48,
+    114,
+    160,
+    108
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 8,
+  "animations": [
+    "blood_ritual_altar.idle",
+    "blood_ritual_altar.activate"
+  ],
+  "game_role": "in-world object"
+}

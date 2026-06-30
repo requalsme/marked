@@ -1,0 +1,25 @@
+{
+  "id": "ink_redactor.walk",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemies",
+  "animation": "walk",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": true,
+  "frames": [
+    "enemies/ink_redactor/walk/ink_redactor_walk_00.png",
+    "enemies/ink_redactor/walk/ink_redactor_walk_01.png",
+    "enemies/ink_redactor/walk/ink_redactor_walk_02.png",
+    "enemies/ink_redactor/walk/ink_redactor_walk_03.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_walk_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_walk.gif"
+}

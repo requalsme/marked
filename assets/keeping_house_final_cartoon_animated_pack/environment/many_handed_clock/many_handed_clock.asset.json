@@ -1,0 +1,8 @@
+{
+  "id": "many_handed_clock",
+  "type": "environment",
+  "image": "environment/many_handed_clock/many_handed_clock.png",
+  "animations": [
+    "many_handed_clock.idle"
+  ]
+}

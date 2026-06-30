@@ -1,0 +1,31 @@
+{
+  "id": "the_marked",
+  "display_name": "The Marked",
+  "asset_type": "player",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    76,
+    102,
+    80,
+    130
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 0,
+  "animations": [
+    "the_marked.idle",
+    "the_marked.walk",
+    "the_marked.basic_attack",
+    "the_marked.hit_react",
+    "the_marked.death_collapse",
+    "the_marked.interact_pickup",
+    "the_marked.ritual_channel",
+    "the_marked.low_sanity",
+    "the_marked.signal_decode",
+    "the_marked.dodge_step"
+  ],
+  "game_role": "controllable player character",
+  "progression_identity": "The Marked"
+}

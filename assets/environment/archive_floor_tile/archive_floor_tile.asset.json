@@ -1,0 +1,21 @@
+{
+  "id": "archive_floor_tile",
+  "display_name": "Archive Floor Tile",
+  "asset_type": "environment",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    28,
+    190,
+    200,
+    44
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": -4,
+  "animations": [
+    "archive_floor_tile.idle"
+  ],
+  "game_role": "in-world object"
+}

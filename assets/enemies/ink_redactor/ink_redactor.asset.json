@@ -1,0 +1,25 @@
+{
+  "id": "ink_redactor",
+  "display_name": "Ink Redactor",
+  "asset_type": "enemy",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    78,
+    82,
+    96,
+    150
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 2,
+  "animations": [
+    "ink_redactor.combat_idle",
+    "ink_redactor.move",
+    "ink_redactor.attack",
+    "ink_redactor.hit_react",
+    "ink_redactor.death"
+  ],
+  "game_role": "Keeping House enemy"
+}

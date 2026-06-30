@@ -1,0 +1,8 @@
+{
+  "id": "ink_wall_stain",
+  "type": "environment",
+  "image": "environment/ink_wall_stain/ink_wall_stain.png",
+  "animations": [
+    "ink_wall_stain.idle"
+  ]
+}

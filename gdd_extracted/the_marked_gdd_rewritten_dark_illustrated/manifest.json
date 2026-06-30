@@ -1,0 +1,32 @@
+{
+  "title": "The Marked \u2014 Rewritten GDD",
+  "version": "dark_illustrated_rewrite_1",
+  "created_for": "cross-platform 2D horror idle ARPG",
+  "art_direction": "grim illustrated dark fantasy, no chibi",
+  "pages": [
+    "01_vision.md",
+    "02_non_negotiables.md",
+    "03_art_direction_dark_illustrated.md",
+    "04_camera_movement_world_presentation.md",
+    "05_player_identity_the_marked.md",
+    "06_core_gameplay_loop.md",
+    "07_observation_system.md",
+    "08_sanity_tarot_reality_traits.md",
+    "09_combat_and_classes.md",
+    "10_gear_rarity_and_builds.md",
+    "11_rituals_and_bargains.md",
+    "12_corpses_and_death.md",
+    "13_signals_broadcasts_watcher.md",
+    "14_monolith_progression_meta.md",
+    "15_persistent_profiles.md",
+    "16_world_regions_and_expansion.md",
+    "17_ui_ux_crossplatform.md",
+    "18_asset_pack_rules.md",
+    "19_technical_architecture.md",
+    "20_mvp_scope.md",
+    "21_content_roadmap.md",
+    "22_glossary.md",
+    "README.md",
+    "THE_MARKED_FULL_GDD_COMBINED.md"
+  ]
+}

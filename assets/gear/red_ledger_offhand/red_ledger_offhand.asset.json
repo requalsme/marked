@@ -1,0 +1,21 @@
+{
+  "id": "red_ledger_offhand",
+  "display_name": "Red Ledger Offhand",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "red_ledger_offhand.idle_glow"
+  ],
+  "ui_role": "Gear icon: Red Ledger Offhand"
+}

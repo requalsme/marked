@@ -1,0 +1,25 @@
+{
+  "id": "paper_wraith.attack",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemies",
+  "animation": "attack",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    "enemies/paper_wraith/attack/paper_wraith_attack_00.png",
+    "enemies/paper_wraith/attack/paper_wraith_attack_01.png",
+    "enemies/paper_wraith/attack/paper_wraith_attack_02.png",
+    "enemies/paper_wraith/attack/paper_wraith_attack_03.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_attack_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_attack.gif"
+}

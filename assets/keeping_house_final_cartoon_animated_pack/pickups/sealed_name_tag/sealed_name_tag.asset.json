@@ -1,0 +1,8 @@
+{
+  "id": "sealed_name_tag",
+  "type": "pickups",
+  "image": "pickups/sealed_name_tag/sealed_name_tag.png",
+  "animations": [
+    "sealed_name_tag.idle"
+  ]
+}

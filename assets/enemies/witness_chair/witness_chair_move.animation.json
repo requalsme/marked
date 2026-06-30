@@ -1,0 +1,49 @@
+{
+  "id": "witness_chair.move",
+  "asset_id": "witness_chair",
+  "asset_type": "enemy",
+  "animation": "move",
+  "usage": "2.5D enemy movement across the walkable floor plane.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 10,
+  "loop": true,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    63,
+    102,
+    130,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/witness_chair/move/witness_chair_move_00.png",
+    "enemies/witness_chair/move/witness_chair_move_01.png",
+    "enemies/witness_chair/move/witness_chair_move_02.png",
+    "enemies/witness_chair/move/witness_chair_move_03.png",
+    "enemies/witness_chair/move/witness_chair_move_04.png",
+    "enemies/witness_chair/move/witness_chair_move_05.png",
+    "enemies/witness_chair/move/witness_chair_move_06.png",
+    "enemies/witness_chair/move/witness_chair_move_07.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_move_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_move.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "blood_ritual_altar.idle",
+  "asset_id": "blood_ritual_altar",
+  "asset_type": "ritual_prop",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    48,
+    114,
+    160,
+    108
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_00.png",
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_01.png",
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_02.png",
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_03.png",
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_04.png",
+    "props/rituals/blood_ritual_altar/idle/blood_ritual_altar_idle_05.png"
+  ],
+  "sheet": "props/rituals/blood_ritual_altar/blood_ritual_altar_idle_sheet.png",
+  "gif": "props/rituals/blood_ritual_altar/blood_ritual_altar_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

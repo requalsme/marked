@@ -1,0 +1,21 @@
+{
+  "id": "hollow_gravity_boots",
+  "display_name": "Hollow Gravity Boots",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "hollow_gravity_boots.idle_glow"
+  ],
+  "ui_role": "Gear icon: Hollow Gravity Boots"
+}

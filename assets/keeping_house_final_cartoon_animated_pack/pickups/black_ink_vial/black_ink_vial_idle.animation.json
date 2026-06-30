@@ -1,0 +1,27 @@
+{
+  "id": "black_ink_vial.idle",
+  "asset_id": "black_ink_vial",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_00.png",
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_01.png",
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_02.png",
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_03.png",
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_04.png",
+    "pickups/black_ink_vial/idle/black_ink_vial_idle_05.png"
+  ],
+  "sheet": "pickups/black_ink_vial/black_ink_vial_idle_sheet.png",
+  "gif": "pickups/black_ink_vial/black_ink_vial_idle.gif"
+}

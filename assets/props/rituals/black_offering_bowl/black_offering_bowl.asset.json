@@ -1,0 +1,22 @@
+{
+  "id": "black_offering_bowl",
+  "display_name": "Black Offering Bowl",
+  "asset_type": "ritual_prop",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    54,
+    146,
+    148,
+    70
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 3,
+  "animations": [
+    "black_offering_bowl.idle",
+    "black_offering_bowl.activate"
+  ],
+  "game_role": "in-world object"
+}

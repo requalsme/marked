@@ -1,0 +1,8 @@
+{
+  "id": "wax_sealed_door",
+  "type": "environment",
+  "image": "environment/wax_sealed_door/wax_sealed_door.png",
+  "animations": [
+    "wax_sealed_door.idle"
+  ]
+}

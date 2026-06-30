@@ -1,0 +1,25 @@
+{
+  "id": "ink_redactor.death",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemies",
+  "animation": "death",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "enemies/ink_redactor/death/ink_redactor_death_00.png",
+    "enemies/ink_redactor/death/ink_redactor_death_01.png",
+    "enemies/ink_redactor/death/ink_redactor_death_02.png",
+    "enemies/ink_redactor/death/ink_redactor_death_03.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_death_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_death.gif"
+}

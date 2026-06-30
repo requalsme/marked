@@ -1,0 +1,122 @@
+{
+  "id": "seal_mother.seal_slam",
+  "asset_id": "seal_mother",
+  "asset_type": "boss",
+  "animation": "seal_slam",
+  "usage": "Boss area attack tied to records and seals.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 10,
+  "fps": 11,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    48,
+    70,
+    160,
+    162
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [
+    {
+      "frame": 4,
+      "bounds": [
+        44,
+        160,
+        168,
+        60
+      ],
+      "tags": [
+        "seal_slam",
+        "aoe"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 5,
+      "bounds": [
+        44,
+        160,
+        168,
+        60
+      ],
+      "tags": [
+        "seal_slam",
+        "aoe"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 6,
+      "bounds": [
+        44,
+        160,
+        168,
+        60
+      ],
+      "tags": [
+        "seal_slam",
+        "aoe"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 7,
+      "bounds": [
+        44,
+        160,
+        168,
+        60
+      ],
+      "tags": [
+        "seal_slam",
+        "aoe"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 8,
+      "bounds": [
+        44,
+        160,
+        168,
+        60
+      ],
+      "tags": [
+        "seal_slam",
+        "aoe"
+      ],
+      "damage_window": true
+    }
+  ],
+  "frames": [
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_00.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_01.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_02.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_03.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_04.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_05.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_06.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_07.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_08.png",
+    "bosses/seal_mother/seal_slam/seal_mother_seal_slam_09.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_seal_slam_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_seal_slam.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

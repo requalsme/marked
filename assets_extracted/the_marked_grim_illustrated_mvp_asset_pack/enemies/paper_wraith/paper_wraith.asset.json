@@ -1,0 +1,25 @@
+{
+  "id": "paper_wraith",
+  "display_name": "Paper Wraith",
+  "asset_type": "enemy",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    70,
+    102,
+    102,
+    126
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 2,
+  "animations": [
+    "paper_wraith.combat_idle",
+    "paper_wraith.move",
+    "paper_wraith.attack",
+    "paper_wraith.hit_react",
+    "paper_wraith.death"
+  ],
+  "game_role": "Keeping House enemy"
+}

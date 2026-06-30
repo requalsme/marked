@@ -1,0 +1,25 @@
+{
+  "id": "cabinet_indexer.attack",
+  "asset_id": "cabinet_indexer",
+  "asset_type": "enemies",
+  "animation": "attack",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_00.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_01.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_02.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_03.png"
+  ],
+  "sheet": "enemies/cabinet_indexer/cabinet_indexer_attack_sheet.png",
+  "gif": "enemies/cabinet_indexer/cabinet_indexer_attack.gif"
+}

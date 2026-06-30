@@ -1,0 +1,8 @@
+{
+  "id": "debt_coin",
+  "type": "pickups",
+  "image": "pickups/debt_coin/debt_coin.png",
+  "animations": [
+    "debt_coin.idle"
+  ]
+}

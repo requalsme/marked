@@ -1,0 +1,7 @@
+{
+  "id": "archive_curse_sigil",
+  "type": "vfx",
+  "animations": [
+    "archive_curse_sigil.play"
+  ]
+}

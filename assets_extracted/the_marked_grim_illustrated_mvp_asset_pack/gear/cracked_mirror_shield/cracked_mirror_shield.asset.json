@@ -1,0 +1,21 @@
+{
+  "id": "cracked_mirror_shield",
+  "display_name": "Cracked Mirror Shield",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "cracked_mirror_shield.idle_glow"
+  ],
+  "ui_role": "Gear icon: Cracked Mirror Shield"
+}

@@ -1,0 +1,49 @@
+{
+  "id": "monolith_scan.play",
+  "asset_id": "monolith_scan",
+  "asset_type": "vfx",
+  "animation": "play",
+  "usage": "VFX animation: Monolith Scan",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 8,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "interaction_bounds": [
+    86,
+    56,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "vfx/monolith_scan/play/monolith_scan_play_00.png",
+    "vfx/monolith_scan/play/monolith_scan_play_01.png",
+    "vfx/monolith_scan/play/monolith_scan_play_02.png",
+    "vfx/monolith_scan/play/monolith_scan_play_03.png",
+    "vfx/monolith_scan/play/monolith_scan_play_04.png",
+    "vfx/monolith_scan/play/monolith_scan_play_05.png",
+    "vfx/monolith_scan/play/monolith_scan_play_06.png",
+    "vfx/monolith_scan/play/monolith_scan_play_07.png"
+  ],
+  "sheet": "vfx/monolith_scan/monolith_scan_play_sheet.png",
+  "gif": "vfx/monolith_scan/monolith_scan_play.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

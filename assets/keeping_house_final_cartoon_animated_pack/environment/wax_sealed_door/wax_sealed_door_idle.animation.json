@@ -1,0 +1,27 @@
+{
+  "id": "wax_sealed_door.idle",
+  "asset_id": "wax_sealed_door",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_00.png",
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_01.png",
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_02.png",
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_03.png",
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_04.png",
+    "environment/wax_sealed_door/idle/wax_sealed_door_idle_05.png"
+  ],
+  "sheet": "environment/wax_sealed_door/wax_sealed_door_idle_sheet.png",
+  "gif": "environment/wax_sealed_door/wax_sealed_door_idle.gif"
+}

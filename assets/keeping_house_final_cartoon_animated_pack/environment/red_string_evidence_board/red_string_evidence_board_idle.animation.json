@@ -1,0 +1,27 @@
+{
+  "id": "red_string_evidence_board.idle",
+  "asset_id": "red_string_evidence_board",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_00.png",
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_01.png",
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_02.png",
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_03.png",
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_04.png",
+    "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_05.png"
+  ],
+  "sheet": "environment/red_string_evidence_board/red_string_evidence_board_idle_sheet.png",
+  "gif": "environment/red_string_evidence_board/red_string_evidence_board_idle.gif"
+}

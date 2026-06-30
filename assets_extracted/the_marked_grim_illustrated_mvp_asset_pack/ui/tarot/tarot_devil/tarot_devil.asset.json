@@ -1,0 +1,21 @@
+{
+  "id": "tarot_devil",
+  "display_name": "The Devil",
+  "asset_type": "tarot",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "tarot_devil.idle_glow"
+  ],
+  "ui_role": "Rituals strengthen; costs become harsher."
+}

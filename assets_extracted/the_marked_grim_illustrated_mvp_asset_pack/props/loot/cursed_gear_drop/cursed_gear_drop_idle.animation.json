@@ -1,0 +1,47 @@
+{
+  "id": "cursed_gear_drop.idle",
+  "asset_id": "cursed_gear_drop",
+  "asset_type": "loot",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    70,
+    132,
+    114,
+    92
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_00.png",
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_01.png",
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_02.png",
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_03.png",
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_04.png",
+    "props/loot/cursed_gear_drop/idle/cursed_gear_drop_idle_05.png"
+  ],
+  "sheet": "props/loot/cursed_gear_drop/cursed_gear_drop_idle_sheet.png",
+  "gif": "props/loot/cursed_gear_drop/cursed_gear_drop_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

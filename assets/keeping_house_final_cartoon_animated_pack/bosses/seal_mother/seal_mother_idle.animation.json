@@ -1,0 +1,25 @@
+{
+  "id": "seal_mother.idle",
+  "asset_id": "seal_mother",
+  "asset_type": "bosses",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "bosses/seal_mother/idle/seal_mother_idle_00.png",
+    "bosses/seal_mother/idle/seal_mother_idle_01.png",
+    "bosses/seal_mother/idle/seal_mother_idle_02.png",
+    "bosses/seal_mother/idle/seal_mother_idle_03.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_idle_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_idle.gif"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "many_handed_clock.idle",
+  "asset_id": "many_handed_clock",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/many_handed_clock/idle/many_handed_clock_idle_00.png",
+    "environment/many_handed_clock/idle/many_handed_clock_idle_01.png",
+    "environment/many_handed_clock/idle/many_handed_clock_idle_02.png",
+    "environment/many_handed_clock/idle/many_handed_clock_idle_03.png",
+    "environment/many_handed_clock/idle/many_handed_clock_idle_04.png",
+    "environment/many_handed_clock/idle/many_handed_clock_idle_05.png"
+  ],
+  "sheet": "environment/many_handed_clock/many_handed_clock_idle_sheet.png",
+  "gif": "environment/many_handed_clock/many_handed_clock_idle.gif"
+}

@@ -1,0 +1,108 @@
+{
+  "id": "seal_mother.summon_seals",
+  "asset_id": "seal_mother",
+  "asset_type": "boss",
+  "animation": "summon_seals",
+  "usage": "Boss summon attack: wax seals and recorded subjects. ",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 10,
+  "fps": 10,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    48,
+    70,
+    160,
+    162
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [
+    {
+      "frame": 5,
+      "bounds": [
+        52,
+        110,
+        152,
+        104
+      ],
+      "tags": [
+        "summon",
+        "seal"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 6,
+      "bounds": [
+        52,
+        110,
+        152,
+        104
+      ],
+      "tags": [
+        "summon",
+        "seal"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 7,
+      "bounds": [
+        52,
+        110,
+        152,
+        104
+      ],
+      "tags": [
+        "summon",
+        "seal"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 8,
+      "bounds": [
+        52,
+        110,
+        152,
+        104
+      ],
+      "tags": [
+        "summon",
+        "seal"
+      ],
+      "damage_window": true
+    }
+  ],
+  "frames": [
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_00.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_01.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_02.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_03.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_04.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_05.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_06.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_07.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_08.png",
+    "bosses/seal_mother/summon_seals/seal_mother_summon_seals_09.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_summon_seals_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_summon_seals.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

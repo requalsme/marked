@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Marked - Grim Horror Idle ARPG</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23050404'/%3E%3Ccircle cx='32' cy='32' r='22' fill='%23a9251e'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%23eadfbd' stroke-width='3'/%3E%3Cpath d='M32 13v38M13 32h38M19 19l26 26M45 19 19 45' stroke='%23c79a42' stroke-width='2'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Outfit:wght@300;400;600&family=Courier+Prime&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="title-screen" class="screen-overlay">
+        <div class="title-container">
+            <h1 class="logo-text">THE MARKED</h1>
+            <div class="logo-subtext">Survive too long, and the world learns what you are.</div>
+
+            <div class="title-split-grid">
+                <div class="title-box">
+                    <h2 class="section-title">Witnessed Records</h2>
+                    <div id="profile-list-container" class="profile-list"></div>
+                </div>
+
+                <div class="title-box">
+                    <h2 class="section-title">Introduce New Shape</h2>
+                    <form id="char-creation-form">
+                        <label for="char-name-input" class="ledger-label">Shape Name</label>
+                        <input type="text" id="char-name-input" placeholder="Wanderer name..." required maxlength="16" class="ledger-input">
+
+                        <label for="char-class-select" class="ledger-label">Affiliated Seal</label>
+                        <select id="char-class-select" class="ledger-select">
+                            <option value="Blood Marked">Blood Marked - High Risk Melee</option>
+                            <option value="Signal Marked">Signal Marked - Occult Antenna Caster</option>
+                            <option value="Bone Marked">Bone Marked - Defensive Corpse Shield</option>
+                            <option value="Static Marked">Static Marked - Evasion and Eerie Speed</option>
+                            <option value="Ritual Marked">Ritual Marked - Pact-based Summons</option>
+                        </select>
+
+                        <div class="class-summary-box">
+                            Choose a lineage. The Monolith observes all behaviors and structures its counters accordingly.
+                        </div>
+
+                        <button type="submit" class="game-btn btn-primary">Carve Sigil and Begin</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="open-archive-btn" class="game-btn" style="background-color: #2b1f33; border-color: #9a4ab8; color: #eeddff;">
+                    Access The Archive (Meta-Progression)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="archive-modal" class="screen-overlay" style="display: none;">
+        <div class="ledger-modal" style="border-color: #9a4ab8;">
+            <h2 class="logo-text modal-logo" style="color: #eeddff; text-shadow: 0 0 10px #9a4ab8;">THE ARCHIVE</h2>
+            <div class="divider" style="background: linear-gradient(90deg, transparent, #9a4ab8, transparent);"></div>
+
+            <p class="offline-intro" style="color: #d1bfe0;">
+                Spend Memory Fragments across lifetimes to permanently carve structural advantages into all future Shapes.
+            </p>
+            
+            <div style="text-align: center; margin: 15px 0; font-size: 1.2rem; color: #a366ff; font-family: 'Cinzel', serif;">
+                Stored Memory Fragments: <span id="archive-fragments-count">0</span>
+            </div>
+
+            <div class="offline-stats-grid" style="margin-top: 20px;">
+                <div class="stat-item" style="display: flex; flex-direction: column; align-items: center; border-color: #9a4ab8;">
+                    <span style="color: #eeddff;">Vitality Sigil</span>
+                    <span style="font-size: 0.85rem; color: #aaa;">+25 Base Health</span>
+                    <span id="archive-health-level" style="margin-top: 5px; color: #9a4ab8;">Lv. 0</span>
+                    <button id="upgrade-health-btn" class="game-btn" style="margin-top: 10px; font-size: 0.8rem; padding: 5px 10px;">Cost: 5</button>
+                </div>
+                <div class="stat-item" style="display: flex; flex-direction: column; align-items: center; border-color: #9a4ab8;">
+                    <span style="color: #eeddff;">Edge of Memory</span>
+                    <span style="font-size: 0.85rem; color: #aaa;">+5 Base Damage</span>
+                    <span id="archive-damage-level" style="margin-top: 5px; color: #9a4ab8;">Lv. 0</span>
+                    <button id="upgrade-damage-btn" class="game-btn" style="margin-top: 10px; font-size: 0.8rem; padding: 5px 10px;">Cost: 5</button>
+                </div>
+                <div class="stat-item" style="display: flex; flex-direction: column; align-items: center; border-color: #9a4ab8;">
+                    <span style="color: #eeddff;">Inherited Debt</span>
+                    <span style="font-size: 0.85rem; color: #aaa;">+50 Starting Gold</span>
+                    <span id="archive-gold-level" style="margin-top: 5px; color: #9a4ab8;">Lv. 0</span>
+                    <button id="upgrade-gold-btn" class="game-btn" style="margin-top: 10px; font-size: 0.8rem; padding: 5px 10px;">Cost: 5</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="close-archive-btn" class="game-btn">Return to Ledger</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="offline-modal" class="screen-overlay">
+        <div class="ledger-modal">
+            <h2 class="logo-text modal-logo">ABSENCE RECORDED</h2>
+            <div class="divider"></div>
+
+            <p class="offline-intro">
+                While you were gone, your shape wandered the deep archives of the Keeping House.
+                The Monolith monitored your offline survival vector.
+            </p>
+
+            <div class="offline-time-stats">
+                <div>Absence time: <strong id="offline-hours">0.00</strong> hours</div>
+                <div>Survived time: <strong id="offline-survival">0.00</strong> hours</div>
+            </div>
+
+            <div class="offline-rewards-box" id="offline-rewards-detail"></div>
+
+            <div class="watcher-whisper-card">
+                <span class="whisper-quote-symbol">"</span>
+                <span id="offline-watcher-note">Watcher Diagnostic: Subject shows static patterns.</span>
+                <span class="whisper-quote-symbol">"</span>
+            </div>
+
+            <button id="proceed-offline-btn" class="game-btn btn-primary modal-action">Proceed</button>
+        </div>
+    </div>
+
+    <div id="game-layout">
+        <header id="game-hud">
+            <div class="hud-left">
+                <div class="character-avatar-container">
+                    <img src="assets/avatar.png" alt="Marked Shape" class="avatar-img">
+                </div>
+                <div class="hud-profile-info">
+                    <div id="hud-level" class="hud-txt font-cinzel">Level 1</div>
+                    <div id="hud-obs-diag" class="hud-txt obs-diag">Diagnosis: Unread / Fresh</div>
+                </div>
+            </div>
+
+            <div class="hud-center">
+                <div class="hud-bar-container">
+                    <div class="hud-bar-label font-cinzel">FLESH</div>
+                    <div class="bar-bg">
+                        <div id="hud-hp-bar" class="bar-fill hp-fill"></div>
+                        <div id="hud-hp-text" class="bar-text">150 / 150</div>
+                    </div>
+                </div>
+
+                <div class="hud-bar-container">
+                    <div class="hud-bar-label font-cinzel">SANITY</div>
+                    <div class="bar-bg">
+                        <div id="hud-sanity-bar" class="bar-fill sanity-fill"></div>
+                        <div id="hud-sanity-text" class="bar-text">100% Sanity</div>
+                    </div>
+                </div>
+
+                <div class="hud-bar-container">
+                    <div class="hud-bar-label font-cinzel">OBSERVED</div>
+                    <div class="bar-bg">
+                        <div id="hud-obs-bar" class="bar-fill obs-fill"></div>
+                        <div id="hud-obs-text" class="bar-text">Observation: 0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <div class="currency-row">
+                    <div class="currency-item"><span class="currency-label">DG</span><span id="hud-gold">0</span></div>
+                    <div class="currency-item"><span class="currency-label">PAR</span><span id="hud-parchment">0</span></div>
+                    <div class="currency-item"><span class="currency-label">INK</span><span id="hud-ink">0</span></div>
+                    <div class="currency-item"><span class="currency-label">WAX</span><span id="hud-seal">0</span></div>
+                </div>
+            </div>
+        </header>
+
+        <main id="game-body">
+            <div id="canvas-panel">
+                <canvas id="game-canvas" width="750" height="450"></canvas>
+
+                <div class="canvas-controls">
+                    <button id="auto-attack-btn" class="game-btn btn-active">Auto-Combat: ON</button>
+                    <div class="controls-hint">Move: [WASD / Arrows] | Attack: [Click Canvas / Space] | Interact: [E]</div>
+                </div>
+
+                <div id="trait-box" class="trait-badge-hud">
+                    <div class="trait-title">Trait Active</div>
+                    <div class="trait-desc">Trait Description</div>
+                </div>
+            </div>
+            <div id="tutorial-overlay" class="tutorial-overlay hidden">
+                <div class="tutorial-box">
+                    <h3 class="tutorial-title font-cinzel">SYSTEM DIRECTIVE</h3>
+                    <p id="tutorial-text" class="tutorial-text">Welcome.</p>
+                    <button id="tutorial-skip-btn" class="game-btn">Skip Tutorial</button>
+                </div>
+            </div>
+
+            <div id="sidebar-panel">
+                <nav class="sidebar-tabs">
+                    <button class="tab-btn tab-btn-active" data-tab="inventory">Inventory</button>
+                    <button class="tab-btn" data-tab="rituals">Rituals</button>
+                    <button class="tab-btn" data-tab="signals">Signals</button>
+                    <button class="tab-btn" data-tab="corpses">Corpses</button>
+                    <button class="tab-btn" data-tab="monolith">Monolith</button>
+                </nav>
+
+                <div class="sidebar-content">
+                    <div id="panel-inventory" class="tab-content active-panel">
+                        <h3>Wanderer Equipment</h3>
+
+                        <div class="equipped-grid">
+                            <div id="equip-weapon" class="equip-slot slot-empty"><div class="equip-label">WEAPON</div>Empty</div>
+                            <div id="equip-armor" class="equip-slot slot-empty"><div class="equip-label">ARMOR</div>Empty</div>
+                            <div id="equip-amulet" class="equip-slot slot-empty"><div class="equip-label">AMULET</div>Empty</div>
+                        </div>
+
+                        <div id="stats-summary" class="stats-box"></div>
+
+                        <h4>Backpack Storage (15 slots)</h4>
+                        <div id="inventory-grid" class="inventory-grid"></div>
+                    </div>
+
+                    <div id="panel-rituals" class="tab-content"></div>
+                    <div id="panel-signals" class="tab-content"></div>
+                    <div id="panel-corpses" class="tab-content"></div>
+                    <div id="panel-monolith" class="tab-content"></div>
+                </div>
+
+                <div id="tarot-box" class="tarot-card-visual">
+                    <div class="tarot-title">No active Tarot draw</div>
+                    <div class="tarot-desc">Modifiers roll during descent initialization.</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="game-over-screen" class="screen-overlay">
+        <div class="ledger-modal death-modal">
+            <h2 id="death-title" class="logo-text text-danger death-title">SIGIL COLLAPSED</h2>
+            <div class="divider death-divider"></div>
+
+            <p class="death-desc">
+                The wanderer shape <strong id="death-char-name">The Marked</strong> was noticed and overwhelmed.
+                The Monolith has cataloged their bones, adding to its behavior matrices.
+            </p>
+
+            <div id="death-cause-text" class="death-cause">
+                Consequence: Combat defeat.
+            </div>
+
+            <div class="corpse-hint-card">
+                A corpse remnant has been registered at the collapse location. Retrieve it on your next descent to recover resources.
+            </div>
+
+            <button id="respawn-btn" class="game-btn btn-primary death-action">Return to Hub</button>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

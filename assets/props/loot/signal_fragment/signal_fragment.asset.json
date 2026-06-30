@@ -1,0 +1,21 @@
+{
+  "id": "signal_fragment",
+  "display_name": "Signal Fragment",
+  "asset_type": "loot",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    86,
+    132,
+    84,
+    92
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "signal_fragment.idle"
+  ],
+  "game_role": "in-world object"
+}

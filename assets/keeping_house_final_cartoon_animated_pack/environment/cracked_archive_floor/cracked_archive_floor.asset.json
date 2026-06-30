@@ -1,0 +1,8 @@
+{
+  "id": "cracked_archive_floor",
+  "type": "environment",
+  "image": "environment/cracked_archive_floor/cracked_archive_floor.png",
+  "animations": [
+    "cracked_archive_floor.idle"
+  ]
+}

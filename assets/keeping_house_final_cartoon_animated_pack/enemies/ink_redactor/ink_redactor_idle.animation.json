@@ -1,0 +1,25 @@
+{
+  "id": "ink_redactor.idle",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemies",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": true,
+  "frames": [
+    "enemies/ink_redactor/idle/ink_redactor_idle_00.png",
+    "enemies/ink_redactor/idle/ink_redactor_idle_01.png",
+    "enemies/ink_redactor/idle/ink_redactor_idle_02.png",
+    "enemies/ink_redactor/idle/ink_redactor_idle_03.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_idle_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_idle.gif"
+}

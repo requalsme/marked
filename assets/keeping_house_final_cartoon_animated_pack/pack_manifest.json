@@ -1,0 +1,1139 @@
+{
+  "pack_id": "keeping_house_final_cartoon_animated_pack",
+  "title": "The Keeping House Final Cartoon Animated Pack",
+  "style": "smooth cartoon 2D, thick outlines, consistent 256x256 frames",
+  "frame_size": [
+    256,
+    256
+  ],
+  "animation_count": 43,
+  "animations": [
+    {
+      "id": "ink_redactor.idle",
+      "asset_id": "ink_redactor",
+      "asset_type": "enemies",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/ink_redactor/idle/ink_redactor_idle_00.png",
+        "enemies/ink_redactor/idle/ink_redactor_idle_01.png",
+        "enemies/ink_redactor/idle/ink_redactor_idle_02.png",
+        "enemies/ink_redactor/idle/ink_redactor_idle_03.png"
+      ],
+      "sheet": "enemies/ink_redactor/ink_redactor_idle_sheet.png",
+      "gif": "enemies/ink_redactor/ink_redactor_idle.gif"
+    },
+    {
+      "id": "ink_redactor.walk",
+      "asset_id": "ink_redactor",
+      "asset_type": "enemies",
+      "animation": "walk",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/ink_redactor/walk/ink_redactor_walk_00.png",
+        "enemies/ink_redactor/walk/ink_redactor_walk_01.png",
+        "enemies/ink_redactor/walk/ink_redactor_walk_02.png",
+        "enemies/ink_redactor/walk/ink_redactor_walk_03.png"
+      ],
+      "sheet": "enemies/ink_redactor/ink_redactor_walk_sheet.png",
+      "gif": "enemies/ink_redactor/ink_redactor_walk.gif"
+    },
+    {
+      "id": "ink_redactor.attack",
+      "asset_id": "ink_redactor",
+      "asset_type": "enemies",
+      "animation": "attack",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "enemies/ink_redactor/attack/ink_redactor_attack_00.png",
+        "enemies/ink_redactor/attack/ink_redactor_attack_01.png",
+        "enemies/ink_redactor/attack/ink_redactor_attack_02.png",
+        "enemies/ink_redactor/attack/ink_redactor_attack_03.png"
+      ],
+      "sheet": "enemies/ink_redactor/ink_redactor_attack_sheet.png",
+      "gif": "enemies/ink_redactor/ink_redactor_attack.gif"
+    },
+    {
+      "id": "ink_redactor.death",
+      "asset_id": "ink_redactor",
+      "asset_type": "enemies",
+      "animation": "death",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "enemies/ink_redactor/death/ink_redactor_death_00.png",
+        "enemies/ink_redactor/death/ink_redactor_death_01.png",
+        "enemies/ink_redactor/death/ink_redactor_death_02.png",
+        "enemies/ink_redactor/death/ink_redactor_death_03.png"
+      ],
+      "sheet": "enemies/ink_redactor/ink_redactor_death_sheet.png",
+      "gif": "enemies/ink_redactor/ink_redactor_death.gif"
+    },
+    {
+      "id": "cabinet_indexer.idle",
+      "asset_id": "cabinet_indexer",
+      "asset_type": "enemies",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/cabinet_indexer/idle/cabinet_indexer_idle_00.png",
+        "enemies/cabinet_indexer/idle/cabinet_indexer_idle_01.png",
+        "enemies/cabinet_indexer/idle/cabinet_indexer_idle_02.png",
+        "enemies/cabinet_indexer/idle/cabinet_indexer_idle_03.png"
+      ],
+      "sheet": "enemies/cabinet_indexer/cabinet_indexer_idle_sheet.png",
+      "gif": "enemies/cabinet_indexer/cabinet_indexer_idle.gif"
+    },
+    {
+      "id": "cabinet_indexer.walk",
+      "asset_id": "cabinet_indexer",
+      "asset_type": "enemies",
+      "animation": "walk",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/cabinet_indexer/walk/cabinet_indexer_walk_00.png",
+        "enemies/cabinet_indexer/walk/cabinet_indexer_walk_01.png",
+        "enemies/cabinet_indexer/walk/cabinet_indexer_walk_02.png",
+        "enemies/cabinet_indexer/walk/cabinet_indexer_walk_03.png"
+      ],
+      "sheet": "enemies/cabinet_indexer/cabinet_indexer_walk_sheet.png",
+      "gif": "enemies/cabinet_indexer/cabinet_indexer_walk.gif"
+    },
+    {
+      "id": "cabinet_indexer.attack",
+      "asset_id": "cabinet_indexer",
+      "asset_type": "enemies",
+      "animation": "attack",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "enemies/cabinet_indexer/attack/cabinet_indexer_attack_00.png",
+        "enemies/cabinet_indexer/attack/cabinet_indexer_attack_01.png",
+        "enemies/cabinet_indexer/attack/cabinet_indexer_attack_02.png",
+        "enemies/cabinet_indexer/attack/cabinet_indexer_attack_03.png"
+      ],
+      "sheet": "enemies/cabinet_indexer/cabinet_indexer_attack_sheet.png",
+      "gif": "enemies/cabinet_indexer/cabinet_indexer_attack.gif"
+    },
+    {
+      "id": "cabinet_indexer.death",
+      "asset_id": "cabinet_indexer",
+      "asset_type": "enemies",
+      "animation": "death",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "enemies/cabinet_indexer/death/cabinet_indexer_death_00.png",
+        "enemies/cabinet_indexer/death/cabinet_indexer_death_01.png",
+        "enemies/cabinet_indexer/death/cabinet_indexer_death_02.png",
+        "enemies/cabinet_indexer/death/cabinet_indexer_death_03.png"
+      ],
+      "sheet": "enemies/cabinet_indexer/cabinet_indexer_death_sheet.png",
+      "gif": "enemies/cabinet_indexer/cabinet_indexer_death.gif"
+    },
+    {
+      "id": "paper_wraith.idle",
+      "asset_id": "paper_wraith",
+      "asset_type": "enemies",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/paper_wraith/idle/paper_wraith_idle_00.png",
+        "enemies/paper_wraith/idle/paper_wraith_idle_01.png",
+        "enemies/paper_wraith/idle/paper_wraith_idle_02.png",
+        "enemies/paper_wraith/idle/paper_wraith_idle_03.png"
+      ],
+      "sheet": "enemies/paper_wraith/paper_wraith_idle_sheet.png",
+      "gif": "enemies/paper_wraith/paper_wraith_idle.gif"
+    },
+    {
+      "id": "paper_wraith.walk",
+      "asset_id": "paper_wraith",
+      "asset_type": "enemies",
+      "animation": "walk",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/paper_wraith/walk/paper_wraith_walk_00.png",
+        "enemies/paper_wraith/walk/paper_wraith_walk_01.png",
+        "enemies/paper_wraith/walk/paper_wraith_walk_02.png",
+        "enemies/paper_wraith/walk/paper_wraith_walk_03.png"
+      ],
+      "sheet": "enemies/paper_wraith/paper_wraith_walk_sheet.png",
+      "gif": "enemies/paper_wraith/paper_wraith_walk.gif"
+    },
+    {
+      "id": "paper_wraith.attack",
+      "asset_id": "paper_wraith",
+      "asset_type": "enemies",
+      "animation": "attack",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "enemies/paper_wraith/attack/paper_wraith_attack_00.png",
+        "enemies/paper_wraith/attack/paper_wraith_attack_01.png",
+        "enemies/paper_wraith/attack/paper_wraith_attack_02.png",
+        "enemies/paper_wraith/attack/paper_wraith_attack_03.png"
+      ],
+      "sheet": "enemies/paper_wraith/paper_wraith_attack_sheet.png",
+      "gif": "enemies/paper_wraith/paper_wraith_attack.gif"
+    },
+    {
+      "id": "paper_wraith.death",
+      "asset_id": "paper_wraith",
+      "asset_type": "enemies",
+      "animation": "death",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "enemies/paper_wraith/death/paper_wraith_death_00.png",
+        "enemies/paper_wraith/death/paper_wraith_death_01.png",
+        "enemies/paper_wraith/death/paper_wraith_death_02.png",
+        "enemies/paper_wraith/death/paper_wraith_death_03.png"
+      ],
+      "sheet": "enemies/paper_wraith/paper_wraith_death_sheet.png",
+      "gif": "enemies/paper_wraith/paper_wraith_death.gif"
+    },
+    {
+      "id": "witness_chair.idle",
+      "asset_id": "witness_chair",
+      "asset_type": "enemies",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/witness_chair/idle/witness_chair_idle_00.png",
+        "enemies/witness_chair/idle/witness_chair_idle_01.png",
+        "enemies/witness_chair/idle/witness_chair_idle_02.png",
+        "enemies/witness_chair/idle/witness_chair_idle_03.png"
+      ],
+      "sheet": "enemies/witness_chair/witness_chair_idle_sheet.png",
+      "gif": "enemies/witness_chair/witness_chair_idle.gif"
+    },
+    {
+      "id": "witness_chair.walk",
+      "asset_id": "witness_chair",
+      "asset_type": "enemies",
+      "animation": "walk",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "enemies/witness_chair/walk/witness_chair_walk_00.png",
+        "enemies/witness_chair/walk/witness_chair_walk_01.png",
+        "enemies/witness_chair/walk/witness_chair_walk_02.png",
+        "enemies/witness_chair/walk/witness_chair_walk_03.png"
+      ],
+      "sheet": "enemies/witness_chair/witness_chair_walk_sheet.png",
+      "gif": "enemies/witness_chair/witness_chair_walk.gif"
+    },
+    {
+      "id": "witness_chair.attack",
+      "asset_id": "witness_chair",
+      "asset_type": "enemies",
+      "animation": "attack",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 10,
+      "loop": false,
+      "frames": [
+        "enemies/witness_chair/attack/witness_chair_attack_00.png",
+        "enemies/witness_chair/attack/witness_chair_attack_01.png",
+        "enemies/witness_chair/attack/witness_chair_attack_02.png",
+        "enemies/witness_chair/attack/witness_chair_attack_03.png"
+      ],
+      "sheet": "enemies/witness_chair/witness_chair_attack_sheet.png",
+      "gif": "enemies/witness_chair/witness_chair_attack.gif"
+    },
+    {
+      "id": "witness_chair.death",
+      "asset_id": "witness_chair",
+      "asset_type": "enemies",
+      "animation": "death",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "enemies/witness_chair/death/witness_chair_death_00.png",
+        "enemies/witness_chair/death/witness_chair_death_01.png",
+        "enemies/witness_chair/death/witness_chair_death_02.png",
+        "enemies/witness_chair/death/witness_chair_death_03.png"
+      ],
+      "sheet": "enemies/witness_chair/witness_chair_death_sheet.png",
+      "gif": "enemies/witness_chair/witness_chair_death.gif"
+    },
+    {
+      "id": "seal_mother.idle",
+      "asset_id": "seal_mother",
+      "asset_type": "bosses",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "bosses/seal_mother/idle/seal_mother_idle_00.png",
+        "bosses/seal_mother/idle/seal_mother_idle_01.png",
+        "bosses/seal_mother/idle/seal_mother_idle_02.png",
+        "bosses/seal_mother/idle/seal_mother_idle_03.png"
+      ],
+      "sheet": "bosses/seal_mother/seal_mother_idle_sheet.png",
+      "gif": "bosses/seal_mother/seal_mother_idle.gif"
+    },
+    {
+      "id": "seal_mother.summon",
+      "asset_id": "seal_mother",
+      "asset_type": "bosses",
+      "animation": "summon",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "bosses/seal_mother/summon/seal_mother_summon_00.png",
+        "bosses/seal_mother/summon/seal_mother_summon_01.png",
+        "bosses/seal_mother/summon/seal_mother_summon_02.png",
+        "bosses/seal_mother/summon/seal_mother_summon_03.png"
+      ],
+      "sheet": "bosses/seal_mother/seal_mother_summon_sheet.png",
+      "gif": "bosses/seal_mother/seal_mother_summon.gif"
+    },
+    {
+      "id": "seal_mother.death",
+      "asset_id": "seal_mother",
+      "asset_type": "bosses",
+      "animation": "death",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 4,
+      "fps": 8,
+      "loop": false,
+      "frames": [
+        "bosses/seal_mother/death/seal_mother_death_00.png",
+        "bosses/seal_mother/death/seal_mother_death_01.png",
+        "bosses/seal_mother/death/seal_mother_death_02.png",
+        "bosses/seal_mother/death/seal_mother_death_03.png"
+      ],
+      "sheet": "bosses/seal_mother/seal_mother_death_sheet.png",
+      "gif": "bosses/seal_mother/seal_mother_death.gif"
+    },
+    {
+      "id": "ink_slash.play",
+      "asset_id": "ink_slash",
+      "asset_type": "vfx",
+      "animation": "play",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        128
+      ],
+      "frame_count": 6,
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "vfx/ink_slash/play/ink_slash_play_00.png",
+        "vfx/ink_slash/play/ink_slash_play_01.png",
+        "vfx/ink_slash/play/ink_slash_play_02.png",
+        "vfx/ink_slash/play/ink_slash_play_03.png",
+        "vfx/ink_slash/play/ink_slash_play_04.png",
+        "vfx/ink_slash/play/ink_slash_play_05.png"
+      ],
+      "sheet": "vfx/ink_slash/ink_slash_play_sheet.png",
+      "gif": "vfx/ink_slash/ink_slash_play.gif"
+    },
+    {
+      "id": "wax_stamp_impact.play",
+      "asset_id": "wax_stamp_impact",
+      "asset_type": "vfx",
+      "animation": "play",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        128
+      ],
+      "frame_count": 6,
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_00.png",
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_01.png",
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_02.png",
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_03.png",
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_04.png",
+        "vfx/wax_stamp_impact/play/wax_stamp_impact_play_05.png"
+      ],
+      "sheet": "vfx/wax_stamp_impact/wax_stamp_impact_play_sheet.png",
+      "gif": "vfx/wax_stamp_impact/wax_stamp_impact_play.gif"
+    },
+    {
+      "id": "paper_burst.play",
+      "asset_id": "paper_burst",
+      "asset_type": "vfx",
+      "animation": "play",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        128
+      ],
+      "frame_count": 6,
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "vfx/paper_burst/play/paper_burst_play_00.png",
+        "vfx/paper_burst/play/paper_burst_play_01.png",
+        "vfx/paper_burst/play/paper_burst_play_02.png",
+        "vfx/paper_burst/play/paper_burst_play_03.png",
+        "vfx/paper_burst/play/paper_burst_play_04.png",
+        "vfx/paper_burst/play/paper_burst_play_05.png"
+      ],
+      "sheet": "vfx/paper_burst/paper_burst_play_sheet.png",
+      "gif": "vfx/paper_burst/paper_burst_play.gif"
+    },
+    {
+      "id": "archive_curse_sigil.play",
+      "asset_id": "archive_curse_sigil",
+      "asset_type": "vfx",
+      "animation": "play",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        128
+      ],
+      "frame_count": 6,
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_00.png",
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_01.png",
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_02.png",
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_03.png",
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_04.png",
+        "vfx/archive_curse_sigil/play/archive_curse_sigil_play_05.png"
+      ],
+      "sheet": "vfx/archive_curse_sigil/archive_curse_sigil_play_sheet.png",
+      "gif": "vfx/archive_curse_sigil/archive_curse_sigil_play.gif"
+    },
+    {
+      "id": "cracked_archive_floor.idle",
+      "asset_id": "cracked_archive_floor",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_00.png",
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_01.png",
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_02.png",
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_03.png",
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_04.png",
+        "environment/cracked_archive_floor/idle/cracked_archive_floor_idle_05.png"
+      ],
+      "sheet": "environment/cracked_archive_floor/cracked_archive_floor_idle_sheet.png",
+      "gif": "environment/cracked_archive_floor/cracked_archive_floor_idle.gif"
+    },
+    {
+      "id": "record_shelf_wall.idle",
+      "asset_id": "record_shelf_wall",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_00.png",
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_01.png",
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_02.png",
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_03.png",
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_04.png",
+        "environment/record_shelf_wall/idle/record_shelf_wall_idle_05.png"
+      ],
+      "sheet": "environment/record_shelf_wall/record_shelf_wall_idle_sheet.png",
+      "gif": "environment/record_shelf_wall/record_shelf_wall_idle.gif"
+    },
+    {
+      "id": "wax_sealed_door.idle",
+      "asset_id": "wax_sealed_door",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_00.png",
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_01.png",
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_02.png",
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_03.png",
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_04.png",
+        "environment/wax_sealed_door/idle/wax_sealed_door_idle_05.png"
+      ],
+      "sheet": "environment/wax_sealed_door/wax_sealed_door_idle_sheet.png",
+      "gif": "environment/wax_sealed_door/wax_sealed_door_idle.gif"
+    },
+    {
+      "id": "chained_ledger_altar.idle",
+      "asset_id": "chained_ledger_altar",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_00.png",
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_01.png",
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_02.png",
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_03.png",
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_04.png",
+        "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_05.png"
+      ],
+      "sheet": "environment/chained_ledger_altar/chained_ledger_altar_idle_sheet.png",
+      "gif": "environment/chained_ledger_altar/chained_ledger_altar_idle.gif"
+    },
+    {
+      "id": "witness_chair_prop.idle",
+      "asset_id": "witness_chair_prop",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_00.png",
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_01.png",
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_02.png",
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_03.png",
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_04.png",
+        "environment/witness_chair_prop/idle/witness_chair_prop_idle_05.png"
+      ],
+      "sheet": "environment/witness_chair_prop/witness_chair_prop_idle_sheet.png",
+      "gif": "environment/witness_chair_prop/witness_chair_prop_idle.gif"
+    },
+    {
+      "id": "red_string_evidence_board.idle",
+      "asset_id": "red_string_evidence_board",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_00.png",
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_01.png",
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_02.png",
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_03.png",
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_04.png",
+        "environment/red_string_evidence_board/idle/red_string_evidence_board_idle_05.png"
+      ],
+      "sheet": "environment/red_string_evidence_board/red_string_evidence_board_idle_sheet.png",
+      "gif": "environment/red_string_evidence_board/red_string_evidence_board_idle.gif"
+    },
+    {
+      "id": "brass_nameplate_cluster.idle",
+      "asset_id": "brass_nameplate_cluster",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_00.png",
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_01.png",
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_02.png",
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_03.png",
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_04.png",
+        "environment/brass_nameplate_cluster/idle/brass_nameplate_cluster_idle_05.png"
+      ],
+      "sheet": "environment/brass_nameplate_cluster/brass_nameplate_cluster_idle_sheet.png",
+      "gif": "environment/brass_nameplate_cluster/brass_nameplate_cluster_idle.gif"
+    },
+    {
+      "id": "paper_root_growth.idle",
+      "asset_id": "paper_root_growth",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/paper_root_growth/idle/paper_root_growth_idle_00.png",
+        "environment/paper_root_growth/idle/paper_root_growth_idle_01.png",
+        "environment/paper_root_growth/idle/paper_root_growth_idle_02.png",
+        "environment/paper_root_growth/idle/paper_root_growth_idle_03.png",
+        "environment/paper_root_growth/idle/paper_root_growth_idle_04.png",
+        "environment/paper_root_growth/idle/paper_root_growth_idle_05.png"
+      ],
+      "sheet": "environment/paper_root_growth/paper_root_growth_idle_sheet.png",
+      "gif": "environment/paper_root_growth/paper_root_growth_idle.gif"
+    },
+    {
+      "id": "ink_wall_stain.idle",
+      "asset_id": "ink_wall_stain",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_00.png",
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_01.png",
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_02.png",
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_03.png",
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_04.png",
+        "environment/ink_wall_stain/idle/ink_wall_stain_idle_05.png"
+      ],
+      "sheet": "environment/ink_wall_stain/ink_wall_stain_idle_sheet.png",
+      "gif": "environment/ink_wall_stain/ink_wall_stain_idle.gif"
+    },
+    {
+      "id": "wax_seal_growth.idle",
+      "asset_id": "wax_seal_growth",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_00.png",
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_01.png",
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_02.png",
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_03.png",
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_04.png",
+        "environment/wax_seal_growth/idle/wax_seal_growth_idle_05.png"
+      ],
+      "sheet": "environment/wax_seal_growth/wax_seal_growth_idle_sheet.png",
+      "gif": "environment/wax_seal_growth/wax_seal_growth_idle.gif"
+    },
+    {
+      "id": "receipt_spike_altar.idle",
+      "asset_id": "receipt_spike_altar",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_00.png",
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_01.png",
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_02.png",
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_03.png",
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_04.png",
+        "environment/receipt_spike_altar/idle/receipt_spike_altar_idle_05.png"
+      ],
+      "sheet": "environment/receipt_spike_altar/receipt_spike_altar_idle_sheet.png",
+      "gif": "environment/receipt_spike_altar/receipt_spike_altar_idle.gif"
+    },
+    {
+      "id": "many_handed_clock.idle",
+      "asset_id": "many_handed_clock",
+      "asset_type": "environment",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "environment/many_handed_clock/idle/many_handed_clock_idle_00.png",
+        "environment/many_handed_clock/idle/many_handed_clock_idle_01.png",
+        "environment/many_handed_clock/idle/many_handed_clock_idle_02.png",
+        "environment/many_handed_clock/idle/many_handed_clock_idle_03.png",
+        "environment/many_handed_clock/idle/many_handed_clock_idle_04.png",
+        "environment/many_handed_clock/idle/many_handed_clock_idle_05.png"
+      ],
+      "sheet": "environment/many_handed_clock/many_handed_clock_idle_sheet.png",
+      "gif": "environment/many_handed_clock/many_handed_clock_idle.gif"
+    },
+    {
+      "id": "sealed_name_tag.idle",
+      "asset_id": "sealed_name_tag",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_00.png",
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_01.png",
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_02.png",
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_03.png",
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_04.png",
+        "pickups/sealed_name_tag/idle/sealed_name_tag_idle_05.png"
+      ],
+      "sheet": "pickups/sealed_name_tag/sealed_name_tag_idle_sheet.png",
+      "gif": "pickups/sealed_name_tag/sealed_name_tag_idle.gif"
+    },
+    {
+      "id": "debt_coin.idle",
+      "asset_id": "debt_coin",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/debt_coin/idle/debt_coin_idle_00.png",
+        "pickups/debt_coin/idle/debt_coin_idle_01.png",
+        "pickups/debt_coin/idle/debt_coin_idle_02.png",
+        "pickups/debt_coin/idle/debt_coin_idle_03.png",
+        "pickups/debt_coin/idle/debt_coin_idle_04.png",
+        "pickups/debt_coin/idle/debt_coin_idle_05.png"
+      ],
+      "sheet": "pickups/debt_coin/debt_coin_idle_sheet.png",
+      "gif": "pickups/debt_coin/debt_coin_idle.gif"
+    },
+    {
+      "id": "black_ink_vial.idle",
+      "asset_id": "black_ink_vial",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_00.png",
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_01.png",
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_02.png",
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_03.png",
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_04.png",
+        "pickups/black_ink_vial/idle/black_ink_vial_idle_05.png"
+      ],
+      "sheet": "pickups/black_ink_vial/black_ink_vial_idle_sheet.png",
+      "gif": "pickups/black_ink_vial/black_ink_vial_idle.gif"
+    },
+    {
+      "id": "brass_archive_key.idle",
+      "asset_id": "brass_archive_key",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_00.png",
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_01.png",
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_02.png",
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_03.png",
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_04.png",
+        "pickups/brass_archive_key/idle/brass_archive_key_idle_05.png"
+      ],
+      "sheet": "pickups/brass_archive_key/brass_archive_key_idle_sheet.png",
+      "gif": "pickups/brass_archive_key/brass_archive_key_idle.gif"
+    },
+    {
+      "id": "red_thread_spool.idle",
+      "asset_id": "red_thread_spool",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_00.png",
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_01.png",
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_02.png",
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_03.png",
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_04.png",
+        "pickups/red_thread_spool/idle/red_thread_spool_idle_05.png"
+      ],
+      "sheet": "pickups/red_thread_spool/red_thread_spool_idle_sheet.png",
+      "gif": "pickups/red_thread_spool/red_thread_spool_idle.gif"
+    },
+    {
+      "id": "folded_witness_note.idle",
+      "asset_id": "folded_witness_note",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_00.png",
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_01.png",
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_02.png",
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_03.png",
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_04.png",
+        "pickups/folded_witness_note/idle/folded_witness_note_idle_05.png"
+      ],
+      "sheet": "pickups/folded_witness_note/folded_witness_note_idle_sheet.png",
+      "gif": "pickups/folded_witness_note/folded_witness_note_idle.gif"
+    },
+    {
+      "id": "wax_seal_token.idle",
+      "asset_id": "wax_seal_token",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_00.png",
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_01.png",
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_02.png",
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_03.png",
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_04.png",
+        "pickups/wax_seal_token/idle/wax_seal_token_idle_05.png"
+      ],
+      "sheet": "pickups/wax_seal_token/wax_seal_token_idle_sheet.png",
+      "gif": "pickups/wax_seal_token/wax_seal_token_idle.gif"
+    },
+    {
+      "id": "tiny_chained_book.idle",
+      "asset_id": "tiny_chained_book",
+      "asset_type": "pickups",
+      "animation": "idle",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 6,
+      "loop": true,
+      "frames": [
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_00.png",
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_01.png",
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_02.png",
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_03.png",
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_04.png",
+        "pickups/tiny_chained_book/idle/tiny_chained_book_idle_05.png"
+      ],
+      "sheet": "pickups/tiny_chained_book/tiny_chained_book_idle_sheet.png",
+      "gif": "pickups/tiny_chained_book/tiny_chained_book_idle.gif"
+    }
+  ],
+  "qa": {
+    "status": "PASS",
+    "issues": []
+  }
+}

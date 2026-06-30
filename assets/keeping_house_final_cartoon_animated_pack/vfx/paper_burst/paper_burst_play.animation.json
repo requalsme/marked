@@ -1,0 +1,27 @@
+{
+  "id": "paper_burst.play",
+  "asset_id": "paper_burst",
+  "asset_type": "vfx",
+  "animation": "play",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 12,
+  "loop": false,
+  "frames": [
+    "vfx/paper_burst/play/paper_burst_play_00.png",
+    "vfx/paper_burst/play/paper_burst_play_01.png",
+    "vfx/paper_burst/play/paper_burst_play_02.png",
+    "vfx/paper_burst/play/paper_burst_play_03.png",
+    "vfx/paper_burst/play/paper_burst_play_04.png",
+    "vfx/paper_burst/play/paper_burst_play_05.png"
+  ],
+  "sheet": "vfx/paper_burst/paper_burst_play_sheet.png",
+  "gif": "vfx/paper_burst/paper_burst_play.gif"
+}

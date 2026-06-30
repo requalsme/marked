@@ -1,0 +1,47 @@
+{
+  "id": "wax_record_chest.idle",
+  "asset_id": "wax_record_chest",
+  "asset_type": "interactable",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    46,
+    116,
+    166,
+    106
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_00.png",
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_01.png",
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_02.png",
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_03.png",
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_04.png",
+    "props/interactables/wax_record_chest/idle/wax_record_chest_idle_05.png"
+  ],
+  "sheet": "props/interactables/wax_record_chest/wax_record_chest_idle_sheet.png",
+  "gif": "props/interactables/wax_record_chest/wax_record_chest_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

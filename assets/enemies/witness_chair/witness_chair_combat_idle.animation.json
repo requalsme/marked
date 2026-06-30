@@ -1,0 +1,49 @@
+{
+  "id": "witness_chair.combat_idle",
+  "asset_id": "witness_chair",
+  "asset_type": "enemy",
+  "animation": "combat_idle",
+  "usage": "World enemy idle while aggro-ready.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 8,
+  "loop": true,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    63,
+    102,
+    130,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_00.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_01.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_02.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_03.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_04.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_05.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_06.png",
+    "enemies/witness_chair/combat_idle/witness_chair_combat_idle_07.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_combat_idle_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_combat_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

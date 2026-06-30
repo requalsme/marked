@@ -1,0 +1,25 @@
+{
+  "id": "paper_wraith.death",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemies",
+  "animation": "death",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "enemies/paper_wraith/death/paper_wraith_death_00.png",
+    "enemies/paper_wraith/death/paper_wraith_death_01.png",
+    "enemies/paper_wraith/death/paper_wraith_death_02.png",
+    "enemies/paper_wraith/death/paper_wraith_death_03.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_death_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_death.gif"
+}

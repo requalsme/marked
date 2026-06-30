@@ -1,0 +1,51 @@
+{
+  "id": "ink_redactor.death",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemy",
+  "animation": "death",
+  "usage": "Enemy defeat, dissolving into Keeping House evidence.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 10,
+  "fps": 9,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    78,
+    82,
+    96,
+    150
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/ink_redactor/death/ink_redactor_death_00.png",
+    "enemies/ink_redactor/death/ink_redactor_death_01.png",
+    "enemies/ink_redactor/death/ink_redactor_death_02.png",
+    "enemies/ink_redactor/death/ink_redactor_death_03.png",
+    "enemies/ink_redactor/death/ink_redactor_death_04.png",
+    "enemies/ink_redactor/death/ink_redactor_death_05.png",
+    "enemies/ink_redactor/death/ink_redactor_death_06.png",
+    "enemies/ink_redactor/death/ink_redactor_death_07.png",
+    "enemies/ink_redactor/death/ink_redactor_death_08.png",
+    "enemies/ink_redactor/death/ink_redactor_death_09.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_death_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_death.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "signal_static",
+  "display_name": "Signal Static",
+  "asset_type": "vfx",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "signal_static.play"
+  ]
+}

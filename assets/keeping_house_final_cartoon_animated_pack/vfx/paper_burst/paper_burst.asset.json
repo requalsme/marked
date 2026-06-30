@@ -1,0 +1,7 @@
+{
+  "id": "paper_burst",
+  "type": "vfx",
+  "animations": [
+    "paper_burst.play"
+  ]
+}

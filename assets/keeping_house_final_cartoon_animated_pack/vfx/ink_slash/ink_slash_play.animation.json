@@ -1,0 +1,27 @@
+{
+  "id": "ink_slash.play",
+  "asset_id": "ink_slash",
+  "asset_type": "vfx",
+  "animation": "play",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 12,
+  "loop": false,
+  "frames": [
+    "vfx/ink_slash/play/ink_slash_play_00.png",
+    "vfx/ink_slash/play/ink_slash_play_01.png",
+    "vfx/ink_slash/play/ink_slash_play_02.png",
+    "vfx/ink_slash/play/ink_slash_play_03.png",
+    "vfx/ink_slash/play/ink_slash_play_04.png",
+    "vfx/ink_slash/play/ink_slash_play_05.png"
+  ],
+  "sheet": "vfx/ink_slash/ink_slash_play_sheet.png",
+  "gif": "vfx/ink_slash/ink_slash_play.gif"
+}

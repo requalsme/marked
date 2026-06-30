@@ -1,0 +1,25 @@
+{
+  "id": "paper_wraith.walk",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemies",
+  "animation": "walk",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": true,
+  "frames": [
+    "enemies/paper_wraith/walk/paper_wraith_walk_00.png",
+    "enemies/paper_wraith/walk/paper_wraith_walk_01.png",
+    "enemies/paper_wraith/walk/paper_wraith_walk_02.png",
+    "enemies/paper_wraith/walk/paper_wraith_walk_03.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_walk_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_walk.gif"
+}

@@ -1,0 +1,25 @@
+{
+  "id": "cabinet_indexer",
+  "display_name": "Cabinet Indexer",
+  "asset_type": "enemy",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    65,
+    96,
+    126,
+    134
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 5,
+  "animations": [
+    "cabinet_indexer.combat_idle",
+    "cabinet_indexer.move",
+    "cabinet_indexer.attack",
+    "cabinet_indexer.hit_react",
+    "cabinet_indexer.death"
+  ],
+  "game_role": "Keeping House enemy"
+}

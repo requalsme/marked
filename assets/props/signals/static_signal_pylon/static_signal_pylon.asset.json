@@ -1,0 +1,22 @@
+{
+  "id": "static_signal_pylon",
+  "display_name": "Static Signal Pylon",
+  "asset_type": "signal_prop",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    84,
+    54,
+    86,
+    174
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 10,
+  "animations": [
+    "static_signal_pylon.idle",
+    "static_signal_pylon.activate"
+  ],
+  "game_role": "in-world object"
+}

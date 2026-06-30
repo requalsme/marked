@@ -1,0 +1,21 @@
+{
+  "id": "ritual_bargain",
+  "display_name": "Ritual Bargain",
+  "asset_type": "system_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "ritual_bargain.idle_glow"
+  ],
+  "ui_role": "Ritual interface"
+}

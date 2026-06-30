@@ -1,0 +1,25 @@
+{
+  "id": "cabinet_indexer.walk",
+  "asset_id": "cabinet_indexer",
+  "asset_type": "enemies",
+  "animation": "walk",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": true,
+  "frames": [
+    "enemies/cabinet_indexer/walk/cabinet_indexer_walk_00.png",
+    "enemies/cabinet_indexer/walk/cabinet_indexer_walk_01.png",
+    "enemies/cabinet_indexer/walk/cabinet_indexer_walk_02.png",
+    "enemies/cabinet_indexer/walk/cabinet_indexer_walk_03.png"
+  ],
+  "sheet": "enemies/cabinet_indexer/cabinet_indexer_walk_sheet.png",
+  "gif": "enemies/cabinet_indexer/cabinet_indexer_walk.gif"
+}

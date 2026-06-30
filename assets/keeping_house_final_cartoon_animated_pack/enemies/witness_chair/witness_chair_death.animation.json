@@ -1,0 +1,25 @@
+{
+  "id": "witness_chair.death",
+  "asset_id": "witness_chair",
+  "asset_type": "enemies",
+  "animation": "death",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "enemies/witness_chair/death/witness_chair_death_00.png",
+    "enemies/witness_chair/death/witness_chair_death_01.png",
+    "enemies/witness_chair/death/witness_chair_death_02.png",
+    "enemies/witness_chair/death/witness_chair_death_03.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_death_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_death.gif"
+}

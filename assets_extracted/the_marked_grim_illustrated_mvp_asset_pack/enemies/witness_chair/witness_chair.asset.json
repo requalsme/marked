@@ -1,0 +1,25 @@
+{
+  "id": "witness_chair",
+  "display_name": "Witness Chair",
+  "asset_type": "enemy",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    63,
+    102,
+    130,
+    126
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 4,
+  "animations": [
+    "witness_chair.combat_idle",
+    "witness_chair.move",
+    "witness_chair.attack",
+    "witness_chair.hit_react",
+    "witness_chair.death"
+  ],
+  "game_role": "Keeping House enemy"
+}

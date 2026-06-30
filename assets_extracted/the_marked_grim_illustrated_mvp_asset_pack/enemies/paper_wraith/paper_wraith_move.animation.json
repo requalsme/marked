@@ -1,0 +1,49 @@
+{
+  "id": "paper_wraith.move",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemy",
+  "animation": "move",
+  "usage": "2.5D enemy movement across the walkable floor plane.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 10,
+  "loop": true,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    70,
+    102,
+    102,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/paper_wraith/move/paper_wraith_move_00.png",
+    "enemies/paper_wraith/move/paper_wraith_move_01.png",
+    "enemies/paper_wraith/move/paper_wraith_move_02.png",
+    "enemies/paper_wraith/move/paper_wraith_move_03.png",
+    "enemies/paper_wraith/move/paper_wraith_move_04.png",
+    "enemies/paper_wraith/move/paper_wraith_move_05.png",
+    "enemies/paper_wraith/move/paper_wraith_move_06.png",
+    "enemies/paper_wraith/move/paper_wraith_move_07.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_move_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_move.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

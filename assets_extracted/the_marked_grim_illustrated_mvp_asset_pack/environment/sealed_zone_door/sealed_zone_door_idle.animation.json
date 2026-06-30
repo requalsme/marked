@@ -1,0 +1,47 @@
+{
+  "id": "sealed_zone_door.idle",
+  "asset_id": "sealed_zone_door",
+  "asset_type": "environment",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 18,
+  "collision_bounds": [
+    52,
+    54,
+    152,
+    178
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_00.png",
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_01.png",
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_02.png",
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_03.png",
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_04.png",
+    "environment/sealed_zone_door/idle/sealed_zone_door_idle_05.png"
+  ],
+  "sheet": "environment/sealed_zone_door/sealed_zone_door_idle_sheet.png",
+  "gif": "environment/sealed_zone_door/sealed_zone_door_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

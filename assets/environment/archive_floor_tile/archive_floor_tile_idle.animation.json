@@ -1,0 +1,47 @@
+{
+  "id": "archive_floor_tile.idle",
+  "asset_id": "archive_floor_tile",
+  "asset_type": "environment",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": -4,
+  "collision_bounds": [
+    28,
+    190,
+    200,
+    44
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_00.png",
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_01.png",
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_02.png",
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_03.png",
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_04.png",
+    "environment/archive_floor_tile/idle/archive_floor_tile_idle_05.png"
+  ],
+  "sheet": "environment/archive_floor_tile/archive_floor_tile_idle_sheet.png",
+  "gif": "environment/archive_floor_tile/archive_floor_tile_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

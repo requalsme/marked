@@ -1,0 +1,27 @@
+{
+  "id": "brass_archive_key.idle",
+  "asset_id": "brass_archive_key",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_00.png",
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_01.png",
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_02.png",
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_03.png",
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_04.png",
+    "pickups/brass_archive_key/idle/brass_archive_key_idle_05.png"
+  ],
+  "sheet": "pickups/brass_archive_key/brass_archive_key_idle_sheet.png",
+  "gif": "pickups/brass_archive_key/brass_archive_key_idle.gif"
+}

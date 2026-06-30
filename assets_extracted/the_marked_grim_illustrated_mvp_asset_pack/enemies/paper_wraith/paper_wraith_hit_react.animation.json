@@ -1,0 +1,47 @@
+{
+  "id": "paper_wraith.hit_react",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemy",
+  "animation": "hit_react",
+  "usage": "Enemy-specific damage recoil.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    70,
+    102,
+    102,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_00.png",
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_01.png",
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_02.png",
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_03.png",
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_04.png",
+    "enemies/paper_wraith/hit_react/paper_wraith_hit_react_05.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_hit_react_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_hit_react.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

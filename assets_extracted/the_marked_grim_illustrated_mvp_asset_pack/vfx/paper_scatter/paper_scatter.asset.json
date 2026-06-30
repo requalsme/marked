@@ -1,0 +1,20 @@
+{
+  "id": "paper_scatter",
+  "display_name": "Paper Scatter",
+  "asset_type": "vfx",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "paper_scatter.play"
+  ]
+}

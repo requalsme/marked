@@ -1,0 +1,25 @@
+{
+  "id": "ink_redactor.attack",
+  "asset_id": "ink_redactor",
+  "asset_type": "enemies",
+  "animation": "attack",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 10,
+  "loop": false,
+  "frames": [
+    "enemies/ink_redactor/attack/ink_redactor_attack_00.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_01.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_02.png",
+    "enemies/ink_redactor/attack/ink_redactor_attack_03.png"
+  ],
+  "sheet": "enemies/ink_redactor/ink_redactor_attack_sheet.png",
+  "gif": "enemies/ink_redactor/ink_redactor_attack.gif"
+}

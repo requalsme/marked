@@ -1,0 +1,21 @@
+{
+  "id": "abyssal_charm",
+  "display_name": "Abyssal Charm",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "abyssal_charm.idle_glow"
+  ],
+  "ui_role": "Gear icon: Abyssal Charm"
+}

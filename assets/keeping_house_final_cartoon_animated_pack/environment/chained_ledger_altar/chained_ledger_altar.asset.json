@@ -1,0 +1,8 @@
+{
+  "id": "chained_ledger_altar",
+  "type": "environment",
+  "image": "environment/chained_ledger_altar/chained_ledger_altar.png",
+  "animations": [
+    "chained_ledger_altar.idle"
+  ]
+}

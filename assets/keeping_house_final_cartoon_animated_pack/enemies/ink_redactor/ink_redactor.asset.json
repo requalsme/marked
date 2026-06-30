@@ -1,0 +1,11 @@
+{
+  "id": "ink_redactor",
+  "type": "enemies",
+  "style": "smooth_cartoon_2d_thick_lines",
+  "animations": [
+    "ink_redactor.idle",
+    "ink_redactor.walk",
+    "ink_redactor.attack",
+    "ink_redactor.death"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "cabinet_indexer.death",
+  "asset_id": "cabinet_indexer",
+  "asset_type": "enemies",
+  "animation": "death",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "enemies/cabinet_indexer/death/cabinet_indexer_death_00.png",
+    "enemies/cabinet_indexer/death/cabinet_indexer_death_01.png",
+    "enemies/cabinet_indexer/death/cabinet_indexer_death_02.png",
+    "enemies/cabinet_indexer/death/cabinet_indexer_death_03.png"
+  ],
+  "sheet": "enemies/cabinet_indexer/cabinet_indexer_death_sheet.png",
+  "gif": "enemies/cabinet_indexer/cabinet_indexer_death.gif"
+}

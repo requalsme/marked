@@ -1,0 +1,8 @@
+{
+  "id": "brass_archive_key",
+  "type": "pickups",
+  "image": "pickups/brass_archive_key/brass_archive_key.png",
+  "animations": [
+    "brass_archive_key.idle"
+  ]
+}

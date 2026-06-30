@@ -1,0 +1,27 @@
+{
+  "id": "wax_seal_token.idle",
+  "asset_id": "wax_seal_token",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_00.png",
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_01.png",
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_02.png",
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_03.png",
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_04.png",
+    "pickups/wax_seal_token/idle/wax_seal_token_idle_05.png"
+  ],
+  "sheet": "pickups/wax_seal_token/wax_seal_token_idle_sheet.png",
+  "gif": "pickups/wax_seal_token/wax_seal_token_idle.gif"
+}

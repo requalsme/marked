@@ -1,0 +1,22 @@
+{
+  "id": "wax_record_chest",
+  "display_name": "Wax Record Chest",
+  "asset_type": "interactable",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    46,
+    116,
+    166,
+    106
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 4,
+  "animations": [
+    "wax_record_chest.idle",
+    "wax_record_chest.activate"
+  ],
+  "game_role": "in-world object"
+}

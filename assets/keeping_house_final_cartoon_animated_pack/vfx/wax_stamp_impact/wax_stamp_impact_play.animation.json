@@ -1,0 +1,27 @@
+{
+  "id": "wax_stamp_impact.play",
+  "asset_id": "wax_stamp_impact",
+  "asset_type": "vfx",
+  "animation": "play",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 6,
+  "fps": 12,
+  "loop": false,
+  "frames": [
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_00.png",
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_01.png",
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_02.png",
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_03.png",
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_04.png",
+    "vfx/wax_stamp_impact/play/wax_stamp_impact_play_05.png"
+  ],
+  "sheet": "vfx/wax_stamp_impact/wax_stamp_impact_play_sheet.png",
+  "gif": "vfx/wax_stamp_impact/wax_stamp_impact_play.gif"
+}

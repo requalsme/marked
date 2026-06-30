@@ -1,0 +1,8 @@
+{
+  "id": "record_shelf_wall",
+  "type": "environment",
+  "image": "environment/record_shelf_wall/record_shelf_wall.png",
+  "animations": [
+    "record_shelf_wall.idle"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "sealed_zone_door",
+  "display_name": "Sealed Zone Door",
+  "asset_type": "environment",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    52,
+    54,
+    152,
+    178
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 18,
+  "animations": [
+    "sealed_zone_door.idle",
+    "sealed_zone_door.activate"
+  ],
+  "game_role": "in-world object"
+}

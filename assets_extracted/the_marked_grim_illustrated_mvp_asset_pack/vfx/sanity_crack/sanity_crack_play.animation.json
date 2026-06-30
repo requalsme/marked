@@ -1,0 +1,49 @@
+{
+  "id": "sanity_crack.play",
+  "asset_id": "sanity_crack",
+  "asset_type": "vfx",
+  "animation": "play",
+  "usage": "VFX animation: Sanity Crack",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    128
+  ],
+  "frame_count": 8,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "interaction_bounds": [
+    86,
+    56,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "vfx/sanity_crack/play/sanity_crack_play_00.png",
+    "vfx/sanity_crack/play/sanity_crack_play_01.png",
+    "vfx/sanity_crack/play/sanity_crack_play_02.png",
+    "vfx/sanity_crack/play/sanity_crack_play_03.png",
+    "vfx/sanity_crack/play/sanity_crack_play_04.png",
+    "vfx/sanity_crack/play/sanity_crack_play_05.png",
+    "vfx/sanity_crack/play/sanity_crack_play_06.png",
+    "vfx/sanity_crack/play/sanity_crack_play_07.png"
+  ],
+  "sheet": "vfx/sanity_crack/sanity_crack_play_sheet.png",
+  "gif": "vfx/sanity_crack/sanity_crack_play.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

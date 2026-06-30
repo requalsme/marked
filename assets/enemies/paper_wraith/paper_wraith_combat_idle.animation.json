@@ -1,0 +1,49 @@
+{
+  "id": "paper_wraith.combat_idle",
+  "asset_id": "paper_wraith",
+  "asset_type": "enemy",
+  "animation": "combat_idle",
+  "usage": "World enemy idle while aggro-ready.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 8,
+  "loop": true,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 2,
+  "collision_bounds": [
+    70,
+    102,
+    102,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_00.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_01.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_02.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_03.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_04.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_05.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_06.png",
+    "enemies/paper_wraith/combat_idle/paper_wraith_combat_idle_07.png"
+  ],
+  "sheet": "enemies/paper_wraith/paper_wraith_combat_idle_sheet.png",
+  "gif": "enemies/paper_wraith/paper_wraith_combat_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

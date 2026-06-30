@@ -1,0 +1,11 @@
+{
+  "id": "cabinet_indexer",
+  "type": "enemies",
+  "style": "smooth_cartoon_2d_thick_lines",
+  "animations": [
+    "cabinet_indexer.idle",
+    "cabinet_indexer.walk",
+    "cabinet_indexer.attack",
+    "cabinet_indexer.death"
+  ]
+}

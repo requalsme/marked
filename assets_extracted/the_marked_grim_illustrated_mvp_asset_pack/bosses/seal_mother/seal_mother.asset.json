@@ -1,0 +1,26 @@
+{
+  "id": "seal_mother",
+  "display_name": "Seal Mother",
+  "asset_type": "boss",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    48,
+    70,
+    160,
+    162
+  ],
+  "mirror_x": true,
+  "depth_sort_offset": 8,
+  "animations": [
+    "seal_mother.combat_idle",
+    "seal_mother.summon_seals",
+    "seal_mother.seal_slam",
+    "seal_mother.hit_react",
+    "seal_mother.death_unravel",
+    "seal_mother.phase_shift"
+  ],
+  "game_role": "Keeping House boss"
+}

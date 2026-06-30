@@ -1,0 +1,27 @@
+{
+  "id": "red_thread_spool.idle",
+  "asset_id": "red_thread_spool",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_00.png",
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_01.png",
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_02.png",
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_03.png",
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_04.png",
+    "pickups/red_thread_spool/idle/red_thread_spool_idle_05.png"
+  ],
+  "sheet": "pickups/red_thread_spool/red_thread_spool_idle_sheet.png",
+  "gif": "pickups/red_thread_spool/red_thread_spool_idle.gif"
+}

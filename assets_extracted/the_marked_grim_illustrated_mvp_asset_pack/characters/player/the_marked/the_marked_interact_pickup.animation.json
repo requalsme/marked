@@ -1,0 +1,49 @@
+{
+  "id": "the_marked.interact_pickup",
+  "asset_id": "the_marked",
+  "asset_type": "player",
+  "animation": "interact_pickup",
+  "usage": "World pickup/interact animation for loot and records.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 11,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    76,
+    102,
+    80,
+    130
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_00.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_01.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_02.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_03.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_04.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_05.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_06.png",
+    "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_07.png"
+  ],
+  "sheet": "characters/player/the_marked/the_marked_interact_pickup_sheet.png",
+  "gif": "characters/player/the_marked/the_marked_interact_pickup.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

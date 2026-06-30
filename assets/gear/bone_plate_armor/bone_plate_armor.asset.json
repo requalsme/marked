@@ -1,0 +1,21 @@
+{
+  "id": "bone_plate_armor",
+  "display_name": "Bone Plate Armor",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "bone_plate_armor.idle_glow"
+  ],
+  "ui_role": "Gear icon: Bone Plate Armor"
+}

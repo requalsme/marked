@@ -1,0 +1,8 @@
+{
+  "id": "witness_chair_prop",
+  "type": "environment",
+  "image": "environment/witness_chair_prop/witness_chair_prop.png",
+  "animations": [
+    "witness_chair_prop.idle"
+  ]
+}

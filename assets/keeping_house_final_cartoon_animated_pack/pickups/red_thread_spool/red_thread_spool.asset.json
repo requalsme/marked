@@ -1,0 +1,8 @@
+{
+  "id": "red_thread_spool",
+  "type": "pickups",
+  "image": "pickups/red_thread_spool/red_thread_spool.png",
+  "animations": [
+    "red_thread_spool.idle"
+  ]
+}

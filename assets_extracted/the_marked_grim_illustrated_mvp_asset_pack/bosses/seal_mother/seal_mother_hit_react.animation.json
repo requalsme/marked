@@ -1,0 +1,47 @@
+{
+  "id": "seal_mother.hit_react",
+  "asset_id": "seal_mother",
+  "asset_type": "boss",
+  "animation": "hit_react",
+  "usage": "Boss damage feedback with paper and wax rupture.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 12,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    48,
+    70,
+    160,
+    162
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_00.png",
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_01.png",
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_02.png",
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_03.png",
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_04.png",
+    "bosses/seal_mother/hit_react/seal_mother_hit_react_05.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_hit_react_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_hit_react.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

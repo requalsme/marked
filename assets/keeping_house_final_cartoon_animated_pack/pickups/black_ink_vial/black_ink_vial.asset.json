@@ -1,0 +1,8 @@
+{
+  "id": "black_ink_vial",
+  "type": "pickups",
+  "image": "pickups/black_ink_vial/black_ink_vial.png",
+  "animations": [
+    "black_ink_vial.idle"
+  ]
+}

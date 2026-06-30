@@ -1,0 +1,47 @@
+{
+  "id": "hanging_ledger.idle",
+  "asset_id": "hanging_ledger",
+  "asset_type": "interactable",
+  "animation": "idle",
+  "usage": "In-world ambient/static state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 7,
+  "loop": true,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 8,
+  "collision_bounds": [
+    70,
+    80,
+    116,
+    144
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_00.png",
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_01.png",
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_02.png",
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_03.png",
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_04.png",
+    "props/interactables/hanging_ledger/idle/hanging_ledger_idle_05.png"
+  ],
+  "sheet": "props/interactables/hanging_ledger/hanging_ledger_idle_sheet.png",
+  "gif": "props/interactables/hanging_ledger/hanging_ledger_idle.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

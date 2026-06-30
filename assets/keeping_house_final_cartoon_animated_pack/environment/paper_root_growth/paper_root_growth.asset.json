@@ -1,0 +1,8 @@
+{
+  "id": "paper_root_growth",
+  "type": "environment",
+  "image": "environment/paper_root_growth/paper_root_growth.png",
+  "animations": [
+    "paper_root_growth.idle"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "wax_seal_growth",
+  "type": "environment",
+  "image": "environment/wax_seal_growth/wax_seal_growth.png",
+  "animations": [
+    "wax_seal_growth.idle"
+  ]
+}

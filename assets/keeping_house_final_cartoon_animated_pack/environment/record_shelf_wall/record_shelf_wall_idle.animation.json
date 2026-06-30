@@ -1,0 +1,27 @@
+{
+  "id": "record_shelf_wall.idle",
+  "asset_id": "record_shelf_wall",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_00.png",
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_01.png",
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_02.png",
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_03.png",
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_04.png",
+    "environment/record_shelf_wall/idle/record_shelf_wall_idle_05.png"
+  ],
+  "sheet": "environment/record_shelf_wall/record_shelf_wall_idle_sheet.png",
+  "gif": "environment/record_shelf_wall/record_shelf_wall_idle.gif"
+}

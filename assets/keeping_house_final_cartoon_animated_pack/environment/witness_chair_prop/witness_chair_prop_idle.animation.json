@@ -1,0 +1,27 @@
+{
+  "id": "witness_chair_prop.idle",
+  "asset_id": "witness_chair_prop",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_00.png",
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_01.png",
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_02.png",
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_03.png",
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_04.png",
+    "environment/witness_chair_prop/idle/witness_chair_prop_idle_05.png"
+  ],
+  "sheet": "environment/witness_chair_prop/witness_chair_prop_idle_sheet.png",
+  "gif": "environment/witness_chair_prop/witness_chair_prop_idle.gif"
+}

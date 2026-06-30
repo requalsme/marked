@@ -1,0 +1,49 @@
+{
+  "id": "the_marked.low_sanity",
+  "asset_id": "the_marked",
+  "asset_type": "player",
+  "animation": "low_sanity",
+  "usage": "Fractured sanity movement/idling variant with controlled visual noise.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 13,
+  "loop": true,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 0,
+  "collision_bounds": [
+    76,
+    102,
+    80,
+    130
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_00.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_01.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_02.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_03.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_04.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_05.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_06.png",
+    "characters/player/the_marked/low_sanity/the_marked_low_sanity_07.png"
+  ],
+  "sheet": "characters/player/the_marked/the_marked_low_sanity_sheet.png",
+  "gif": "characters/player/the_marked/the_marked_low_sanity.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

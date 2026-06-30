@@ -1,0 +1,8 @@
+{
+  "id": "red_string_evidence_board",
+  "type": "environment",
+  "image": "environment/red_string_evidence_board/red_string_evidence_board.png",
+  "animations": [
+    "red_string_evidence_board.idle"
+  ]
+}

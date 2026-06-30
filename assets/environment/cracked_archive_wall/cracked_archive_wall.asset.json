@@ -1,0 +1,21 @@
+{
+  "id": "cracked_archive_wall",
+  "display_name": "Cracked Archive Wall",
+  "asset_type": "environment",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    42,
+    82,
+    170,
+    150
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 14,
+  "animations": [
+    "cracked_archive_wall.idle"
+  ],
+  "game_role": "in-world object"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "brass_nameplate_cluster",
+  "type": "environment",
+  "image": "environment/brass_nameplate_cluster/brass_nameplate_cluster.png",
+  "animations": [
+    "brass_nameplate_cluster.idle"
+  ]
+}

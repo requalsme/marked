@@ -1,0 +1,25 @@
+{
+  "id": "seal_mother.summon",
+  "asset_id": "seal_mother",
+  "asset_type": "bosses",
+  "animation": "summon",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "bosses/seal_mother/summon/seal_mother_summon_00.png",
+    "bosses/seal_mother/summon/seal_mother_summon_01.png",
+    "bosses/seal_mother/summon/seal_mother_summon_02.png",
+    "bosses/seal_mother/summon/seal_mother_summon_03.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_summon_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_summon.gif"
+}

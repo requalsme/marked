@@ -1,0 +1,27 @@
+{
+  "id": "debt_coin.idle",
+  "asset_id": "debt_coin",
+  "asset_type": "pickups",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "pickups/debt_coin/idle/debt_coin_idle_00.png",
+    "pickups/debt_coin/idle/debt_coin_idle_01.png",
+    "pickups/debt_coin/idle/debt_coin_idle_02.png",
+    "pickups/debt_coin/idle/debt_coin_idle_03.png",
+    "pickups/debt_coin/idle/debt_coin_idle_04.png",
+    "pickups/debt_coin/idle/debt_coin_idle_05.png"
+  ],
+  "sheet": "pickups/debt_coin/debt_coin_idle_sheet.png",
+  "gif": "pickups/debt_coin/debt_coin_idle.gif"
+}

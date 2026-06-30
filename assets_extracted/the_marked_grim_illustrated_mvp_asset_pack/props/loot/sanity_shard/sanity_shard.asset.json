@@ -1,0 +1,21 @@
+{
+  "id": "sanity_shard",
+  "display_name": "Sanity Shard",
+  "asset_type": "loot",
+  "origin": [
+    128,
+    232
+  ],
+  "collision_bounds": [
+    80,
+    110,
+    96,
+    110
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "sanity_shard.idle"
+  ],
+  "game_role": "in-world object"
+}

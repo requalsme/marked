@@ -1,0 +1,21 @@
+{
+  "id": "memory_blade",
+  "display_name": "Memory Blade",
+  "asset_type": "gear_icon",
+  "origin": [
+    128,
+    128
+  ],
+  "collision_bounds": [
+    32,
+    32,
+    192,
+    192
+  ],
+  "mirror_x": false,
+  "depth_sort_offset": 0,
+  "animations": [
+    "memory_blade.idle_glow"
+  ],
+  "ui_role": "Gear icon: Memory Blade"
+}

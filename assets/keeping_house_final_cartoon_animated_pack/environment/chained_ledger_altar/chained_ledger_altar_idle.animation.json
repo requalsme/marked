@@ -1,0 +1,27 @@
+{
+  "id": "chained_ledger_altar.idle",
+  "asset_id": "chained_ledger_altar",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_00.png",
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_01.png",
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_02.png",
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_03.png",
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_04.png",
+    "environment/chained_ledger_altar/idle/chained_ledger_altar_idle_05.png"
+  ],
+  "sheet": "environment/chained_ledger_altar/chained_ledger_altar_idle_sheet.png",
+  "gif": "environment/chained_ledger_altar/chained_ledger_altar_idle.gif"
+}

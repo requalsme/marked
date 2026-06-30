@@ -1,0 +1,47 @@
+{
+  "id": "witness_chair.hit_react",
+  "asset_id": "witness_chair",
+  "asset_type": "enemy",
+  "animation": "hit_react",
+  "usage": "Enemy-specific damage recoil.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 14,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 4,
+  "collision_bounds": [
+    63,
+    102,
+    130,
+    126
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_00.png",
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_01.png",
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_02.png",
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_03.png",
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_04.png",
+    "enemies/witness_chair/hit_react/witness_chair_hit_react_05.png"
+  ],
+  "sheet": "enemies/witness_chair/witness_chair_hit_react_sheet.png",
+  "gif": "enemies/witness_chair/witness_chair_hit_react.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

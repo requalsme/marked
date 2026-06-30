@@ -1,0 +1,108 @@
+{
+  "_comment": "The Marked — Simulation Presets. Edit freely. Profiles: minmaxer, cautious_survivor, ritual_addict, explorer_lore, idle_grinder. All durations in seconds.",
+
+  "presets": {
+
+    "quick": {
+      "description": "Fast smoke-test. 1 simulated hour per profile, 3 seeds. Good for catching obvious breakage.",
+      "duration_seconds": 3600,
+      "profiles": ["minmaxer", "cautious_survivor", "ritual_addict"],
+      "runs_per_profile": 3,
+      "seeds": [1001, 2002, 3003],
+      "mode": "mock_mode",
+      "report_tags": ["quick_check"]
+    },
+
+    "visual_qol_review": {
+      "description": "Runs static analysis and screenshot capture to review visuals, QOL, audio, and game feel.",
+      "duration_seconds": 1800,
+      "profiles": ["minmaxer"],
+      "runs_per_profile": 1,
+      "seeds": [1001],
+      "mode": "mock_mode",
+      "report_tags": ["visual_qol_review"]
+    },
+
+    "full_pass": {
+      "description": "All 5 profiles, 8 simulated hours each, 5 seeds. Good for weekly balance passes.",
+      "duration_seconds": 28800,
+      "profiles": ["minmaxer", "cautious_survivor", "ritual_addict", "explorer_lore", "idle_grinder"],
+      "runs_per_profile": 5,
+      "seeds": [1001, 2002, 3003, 4004, 5005],
+      "mode": "mock_mode",
+      "report_tags": ["full_pass", "balance_check"]
+    },
+
+    "long_all": {
+      "description": "All 5 profiles, 30 simulated days each, 10 seeds. Deep economy and pacing analysis.",
+      "duration_seconds": 2592000,
+      "profiles": ["minmaxer", "cautious_survivor", "ritual_addict", "explorer_lore", "idle_grinder"],
+      "runs_per_profile": 10,
+      "seeds": [1001, 2002, 3003, 4004, 5005, 6006, 7007, 8008, 9009, 1010],
+      "mode": "mock_mode",
+      "report_tags": ["long_run", "economy_check", "pacing"]
+    },
+
+    "minmaxer_deep": {
+      "description": "MinMaxer only, 90 days, 20 runs. Find exploit ceilings and dominant strategies.",
+      "duration_seconds": 7776000,
+      "profiles": ["minmaxer"],
+      "runs_per_profile": 20,
+      "seeds": "auto",
+      "mode": "mock_mode",
+      "report_tags": ["exploit_check", "ceiling_test"]
+    },
+
+    "idle_focus": {
+      "description": "IdleGrinder only, 30 days, 10 runs. Validate offline gains feel meaningful but not exploitable.",
+      "duration_seconds": 2592000,
+      "profiles": ["idle_grinder"],
+      "runs_per_profile": 10,
+      "seeds": "auto",
+      "mode": "mock_mode",
+      "report_tags": ["idle_balance"]
+    },
+
+    "sanity_stress": {
+      "description": "RitualAddict and CautiousSurvivor only, 7 days, 10 runs. Tests sanity system under pressure.",
+      "duration_seconds": 604800,
+      "profiles": ["ritual_addict", "cautious_survivor"],
+      "runs_per_profile": 10,
+      "seeds": "auto",
+      "mode": "mock_mode",
+      "report_tags": ["sanity_balance", "ritual_balance"]
+    },
+
+    "lore_coverage": {
+      "description": "ExplorerLore only, 14 days, 10 runs. Checks signal, corpse, and secret system coverage.",
+      "duration_seconds": 1209600,
+      "profiles": ["explorer_lore"],
+      "runs_per_profile": 10,
+      "seeds": "auto",
+      "mode": "mock_mode",
+      "report_tags": ["signal_coverage", "lore_systems"]
+    }
+  },
+
+  "defaults": {
+    "mode": "mock_mode",
+    "runs_per_profile": 5,
+    "seeds": "auto",
+    "auto_seed_count": 5,
+    "output_dir": "tools/simulation/reports",
+    "timeline_resolution_seconds": 3600,
+    "balance_warning_thresholds": {
+      "death_rate_per_hour_high": 3.0,
+      "death_rate_per_hour_low": 0.05,
+      "sanity_broken_time_pct_high": 0.30,
+      "observation_max_never_reached_warning": true,
+      "observation_max_reached_too_fast_hours": 0.5,
+      "idle_gains_exceeding_active_ratio": 3.0,
+      "unused_system_interaction_threshold": 0.02,
+      "overused_system_interaction_threshold": 0.70,
+      "exploit_same_action_streak": 50
+    }
+  },
+
+  "all_profiles": ["minmaxer", "cautious_survivor", "ritual_addict", "explorer_lore", "idle_grinder"]
+}

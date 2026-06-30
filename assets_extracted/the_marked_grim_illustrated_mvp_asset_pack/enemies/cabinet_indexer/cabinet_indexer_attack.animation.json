@@ -1,0 +1,106 @@
+{
+  "id": "cabinet_indexer.attack",
+  "asset_id": "cabinet_indexer",
+  "asset_type": "enemy",
+  "animation": "attack",
+  "usage": "Enemy attack with anatomy-specific timing and hit window.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 12,
+  "loop": false,
+  "mirror_x": true,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 5,
+  "collision_bounds": [
+    65,
+    96,
+    126,
+    134
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [
+    {
+      "frame": 3,
+      "bounds": [
+        154,
+        108,
+        82,
+        72
+      ],
+      "tags": [
+        "scroll",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 4,
+      "bounds": [
+        154,
+        108,
+        82,
+        72
+      ],
+      "tags": [
+        "scroll",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 5,
+      "bounds": [
+        154,
+        108,
+        82,
+        72
+      ],
+      "tags": [
+        "scroll",
+        "melee"
+      ],
+      "damage_window": true
+    },
+    {
+      "frame": 6,
+      "bounds": [
+        154,
+        108,
+        82,
+        72
+      ],
+      "tags": [
+        "scroll",
+        "melee"
+      ],
+      "damage_window": true
+    }
+  ],
+  "frames": [
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_00.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_01.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_02.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_03.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_04.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_05.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_06.png",
+    "enemies/cabinet_indexer/attack/cabinet_indexer_attack_07.png"
+  ],
+  "sheet": "enemies/cabinet_indexer/cabinet_indexer_attack_sheet.png",
+  "gif": "enemies/cabinet_indexer/cabinet_indexer_attack.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

@@ -1,0 +1,49 @@
+{
+  "id": "black_offering_bowl.activate",
+  "asset_id": "black_offering_bowl",
+  "asset_type": "ritual_prop",
+  "animation": "activate",
+  "usage": "Player interaction / activation state.",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 8,
+  "fps": 10,
+  "loop": false,
+  "mirror_x": false,
+  "facing": "right",
+  "scale": 1.0,
+  "depth_sort_offset": 3,
+  "collision_bounds": [
+    54,
+    146,
+    148,
+    70
+  ],
+  "interaction_bounds": [
+    86,
+    160,
+    84,
+    80
+  ],
+  "attack_hitboxes": [],
+  "frames": [
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_00.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_01.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_02.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_03.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_04.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_05.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_06.png",
+    "props/rituals/black_offering_bowl/activate/black_offering_bowl_activate_07.png"
+  ],
+  "sheet": "props/rituals/black_offering_bowl/black_offering_bowl_activate_sheet.png",
+  "gif": "props/rituals/black_offering_bowl/black_offering_bowl_activate.gif",
+  "source_style": "grim_illustrated_dark_fantasy",
+  "quality_target": "MVP_AA"
+}

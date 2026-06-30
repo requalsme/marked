@@ -1,0 +1,27 @@
+{
+  "id": "paper_root_growth.idle",
+  "asset_id": "paper_root_growth",
+  "asset_type": "environment",
+  "animation": "idle",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 6,
+  "fps": 6,
+  "loop": true,
+  "frames": [
+    "environment/paper_root_growth/idle/paper_root_growth_idle_00.png",
+    "environment/paper_root_growth/idle/paper_root_growth_idle_01.png",
+    "environment/paper_root_growth/idle/paper_root_growth_idle_02.png",
+    "environment/paper_root_growth/idle/paper_root_growth_idle_03.png",
+    "environment/paper_root_growth/idle/paper_root_growth_idle_04.png",
+    "environment/paper_root_growth/idle/paper_root_growth_idle_05.png"
+  ],
+  "sheet": "environment/paper_root_growth/paper_root_growth_idle_sheet.png",
+  "gif": "environment/paper_root_growth/paper_root_growth_idle.gif"
+}

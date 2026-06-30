@@ -1,0 +1,25 @@
+{
+  "id": "seal_mother.death",
+  "asset_id": "seal_mother",
+  "asset_type": "bosses",
+  "animation": "death",
+  "frame_size": [
+    256,
+    256
+  ],
+  "origin": [
+    128,
+    232
+  ],
+  "frame_count": 4,
+  "fps": 8,
+  "loop": false,
+  "frames": [
+    "bosses/seal_mother/death/seal_mother_death_00.png",
+    "bosses/seal_mother/death/seal_mother_death_01.png",
+    "bosses/seal_mother/death/seal_mother_death_02.png",
+    "bosses/seal_mother/death/seal_mother_death_03.png"
+  ],
+  "sheet": "bosses/seal_mother/seal_mother_death_sheet.png",
+  "gif": "bosses/seal_mother/seal_mother_death.gif"
+}
