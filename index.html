@@ -11,46 +11,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Outfit:wght@300;400;600&family=Courier+Prime&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="title-screen" class="screen-overlay">
-        <div class="title-container">
+    <div id="title-screen" class="screen-overlay title-screen">
+        <div class="title-embers" aria-hidden="true"></div>
+
+        <div class="title-left">
             <h1 class="logo-text">THE MARKED</h1>
             <div class="logo-subtext">Survive too long, and the world learns what you are.</div>
 
-            <div class="title-split-grid">
-                <div class="title-box">
-                    <h2 class="section-title">Witnessed Records</h2>
-                    <div id="profile-list-container" class="profile-list"></div>
-                </div>
+            <nav class="main-menu" aria-label="Main menu">
+                <button class="menu-item" data-pane="continue" id="menu-continue-btn">Continue</button>
+                <button class="menu-item" data-pane="new">New Shape</button>
+                <button class="menu-item" id="open-archive-btn">The Archive</button>
+            </nav>
 
-                <div class="title-box">
-                    <h2 class="section-title">Introduce New Shape</h2>
-                    <form id="char-creation-form">
-                        <label for="char-name-input" class="ledger-label">Shape Name</label>
-                        <input type="text" id="char-name-input" placeholder="Wanderer name..." required maxlength="16" class="ledger-input">
+            <div class="menu-foot">M · mute &nbsp;&nbsp; Keyboard and mouse recommended</div>
+        </div>
 
-                        <label for="char-class-select" class="ledger-label">Affiliated Seal</label>
-                        <select id="char-class-select" class="ledger-select">
-                            <option value="Blood Marked">Blood Marked - High Risk Melee</option>
-                            <option value="Signal Marked">Signal Marked - Occult Antenna Caster</option>
-                            <option value="Bone Marked">Bone Marked - Defensive Corpse Shield</option>
-                            <option value="Static Marked">Static Marked - Evasion and Eerie Speed</option>
-                            <option value="Ritual Marked">Ritual Marked - Pact-based Summons</option>
-                        </select>
+        <div class="title-right">
+            <section id="pane-continue" class="menu-pane active">
+                <h2 class="pane-title">Witnessed Records</h2>
+                <div id="profile-list-container" class="profile-list"></div>
+            </section>
 
-                        <div class="class-summary-box">
-                            Choose a lineage. The Monolith observes all behaviors and structures its counters accordingly.
-                        </div>
+            <section id="pane-new" class="menu-pane">
+                <h2 class="pane-title">Choose a Lineage</h2>
+                <form id="char-creation-form">
+                    <div id="class-picker" class="class-picker" role="radiogroup" aria-label="Lineage"></div>
+                    <select id="char-class-select" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                        <option value="Blood Marked">Blood Marked</option>
+                        <option value="Signal Marked">Signal Marked</option>
+                        <option value="Bone Marked">Bone Marked</option>
+                        <option value="Static Marked">Static Marked</option>
+                        <option value="Ritual Marked">Ritual Marked</option>
+                    </select>
 
-                        <button type="submit" class="game-btn btn-primary">Carve Sigil and Begin</button>
-                    </form>
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 30px;">
-                <button id="open-archive-btn" class="game-btn" style="background-color: #2b1f33; border-color: #9a4ab8; color: #eeddff;">
-                    Access The Archive (Meta-Progression)
-                </button>
-            </div>
+                    <div id="class-detail" class="class-detail"></div>
+
+                    <div class="name-row">
+                        <label for="char-name-input" class="ledger-label">Inscribe a name</label>
+                        <input type="text" id="char-name-input" placeholder="Wanderer..." required maxlength="16" class="name-input" autocomplete="off">
+                    </div>
+
+                    <button type="submit" class="game-btn btn-primary begin-btn">Carve Sigil and Descend</button>
+                </form>
+            </section>
         </div>
     </div>
 

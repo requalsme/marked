@@ -1,6 +1,6 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
-import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats } from "./state.js";
+import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats, CLASSES } from "./state.js";
 import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
@@ -11,6 +11,14 @@ import { audioManager } from "./audio.js";
 import { ROOM } from "./world.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
+
+const CLASS_COLORS = {
+    "Blood Marked": "#c4231b",
+    "Signal Marked": "#4a8ed6",
+    "Bone Marked": "#d8ccb0",
+    "Static Marked": "#16d8a4",
+    "Ritual Marked": "#a45ad0"
+};
 
 class GameOrchestrator {
     constructor() {
@@ -217,32 +225,16 @@ class GameOrchestrator {
         document.getElementById("archive-modal").style.display = "none";
         document.getElementById("game-over-screen").style.display = "none";
 
-        const container = document.getElementById("profile-list-container");
-        container.innerHTML = "";
+        this.renderProfileList();
+        this.renderClassPicker();
 
-        if (this.saveData.profiles.length === 0) {
-            container.innerHTML = `<div class="empty-msg">No wanderers registered. Form a new shape to begin.</div>`;
-        } else {
-            this.saveData.profiles.forEach(prof => {
-                const card = document.createElement("div");
-                card.className = "profile-card";
-                card.innerHTML = `
-                    <div style="flex:1;">
-                        <div class="profile-name">${prof.name}</div>
-                        <div class="profile-meta">Level ${prof.level} ${prof.classType} | Monolith Lv: ${prof.monolithLevel}</div>
-                    </div>
-                    <div>
-                        <button class="game-btn load-profile-btn" data-id="${prof.id}">Descent</button>
-                        <button class="game-btn delete-profile-btn btn-danger" data-id="${prof.id}" style="margin-left:5px;">Erase</button>
-                    </div>
-                `;
-
-                card.querySelector(".load-profile-btn").addEventListener("click", () => this.selectProfile(prof.id));
-                card.querySelector(".delete-profile-btn").addEventListener("click", () => this.deleteProfile(prof.id));
-
-                container.appendChild(card);
-            });
-        }
+        // Menu: Continue / New Shape panes
+        const hasProfiles = this.saveData.profiles.length > 0;
+        document.getElementById("menu-continue-btn").style.display = hasProfiles ? "" : "none";
+        document.querySelectorAll(".menu-item[data-pane]").forEach(btn => {
+            btn.onclick = () => this.showTitlePane(btn.dataset.pane);
+        });
+        this.showTitlePane(hasProfiles ? "continue" : "new");
 
         // Setup character creation listeners
         const form = document.getElementById("char-creation-form");
@@ -262,6 +254,109 @@ class GameOrchestrator {
                 this.selectProfile(newP.id);
             }
         };
+    }
+
+    showTitlePane(pane) {
+        document.querySelectorAll(".menu-pane").forEach(el => el.classList.toggle("active", el.id === `pane-${pane}`));
+        document.querySelectorAll(".menu-item[data-pane]").forEach(el => el.classList.toggle("selected", el.dataset.pane === pane));
+        if (pane === "new") {
+            const input = document.getElementById("char-name-input");
+            if (input) setTimeout(() => input.focus(), 50);
+        }
+    }
+
+    renderProfileList() {
+        const container = document.getElementById("profile-list-container");
+        container.innerHTML = "";
+        if (this.saveData.profiles.length === 0) {
+            container.innerHTML = `<div class="empty-msg">No wanderers registered. Form a new shape to begin.</div>`;
+            return;
+        }
+        // Most recently played first
+        const profiles = [...this.saveData.profiles].sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+        for (const prof of profiles) {
+            const card = document.createElement("div");
+            card.className = "profile-card";
+            card.style.setProperty("--sigil", CLASS_COLORS[prof.classType] || "#c79a42");
+            card.innerHTML = `
+                <div class="profile-sigil"><div class="sprite-idle"></div></div>
+                <div class="profile-info">
+                    <div class="profile-name"></div>
+                    <div class="profile-meta"></div>
+                </div>
+                <div class="profile-actions">
+                    <button class="game-btn btn-primary load-profile-btn">Descend</button>
+                    <button class="game-btn delete-profile-btn btn-danger" title="Erase this record">✕</button>
+                </div>
+            `;
+            // User-entered names go in via textContent, never as HTML
+            card.querySelector(".profile-name").textContent = prof.name;
+            const deaths = prof.stats && prof.stats.deaths ? ` · ${prof.stats.deaths} death${prof.stats.deaths === 1 ? "" : "s"}` : "";
+            card.querySelector(".profile-meta").textContent = `Level ${prof.level} ${prof.classType}${deaths}`;
+            card.querySelector(".load-profile-btn").addEventListener("click", () => this.selectProfile(prof.id));
+            card.querySelector(".delete-profile-btn").addEventListener("click", () => this.deleteProfile(prof.id));
+            container.appendChild(card);
+        }
+    }
+
+    renderClassPicker() {
+        const picker = document.getElementById("class-picker");
+        const select = document.getElementById("char-class-select");
+        const detail = document.getElementById("class-detail");
+        if (!picker || picker.childElementCount > 0) return;
+
+        // Stats as combat actually computes them (class base + starting gear)
+        const sheets = Object.keys(CLASSES).map(name => {
+            const prof = createProfile("preview", name);
+            const eq = getEquipmentStats(prof);
+            return {
+                name,
+                desc: CLASSES[name].desc,
+                health: prof.maxHealth + eq.health,
+                damage: playerDamage(prof, eq.damage),
+                speed: basePlayerSpeed(name) + eq.speed,
+                crit: basePlayerCrit(name) + eq.crit
+            };
+        });
+        const max = {
+            health: Math.max(...sheets.map(c => c.health)),
+            damage: Math.max(...sheets.map(c => c.damage)),
+            speed: Math.max(...sheets.map(c => c.speed)),
+            crit: Math.max(...sheets.map(c => c.crit))
+        };
+        const pips = (v, m) => {
+            const n = Math.max(1, Math.round((v / m) * 5));
+            return Array.from({ length: 5 }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+        };
+
+        const choose = (sheet) => {
+            select.value = sheet.name;
+            picker.querySelectorAll(".class-card").forEach(c => c.classList.toggle("selected", c.dataset.cls === sheet.name));
+            detail.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
+            detail.innerHTML = `
+                <div class="class-detail-name font-cinzel">${sheet.name}</div>
+                <div class="class-detail-desc">${sheet.desc}</div>
+                <div class="class-stats">
+                    <span>Flesh</span><span class="pips">${pips(sheet.health, max.health)}</span><b>${sheet.health}</b>
+                    <span>Damage</span><span class="pips">${pips(sheet.damage, max.damage)}</span><b>${sheet.damage}</b>
+                    <span>Speed</span><span class="pips">${pips(sheet.speed, max.speed)}</span><b>${sheet.speed.toFixed(1)}</b>
+                    <span>Critical</span><span class="pips">${pips(sheet.crit, max.crit)}</span><b>${Math.round(sheet.crit * 100)}%</b>
+                </div>`;
+            audioManager.play("button_click");
+        };
+
+        for (const sheet of sheets) {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "class-card";
+            card.dataset.cls = sheet.name;
+            card.setAttribute("role", "radio");
+            card.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
+            card.innerHTML = `<div class="sprite-idle"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
+            card.addEventListener("click", () => choose(sheet));
+            picker.appendChild(card);
+        }
+        choose(sheets.find(c => c.name === select.value) || sheets[0]);
     }
 
     selectProfile(id) {
