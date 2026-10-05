@@ -1,6 +1,28 @@
 // Physics, Collision, and Entity Management
 import { audioManager } from "./audio.js";
 
+// ─── Tuning constants ────────────────────────────────────────────────────────
+export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
+export const PLAYER_DASH_MULT = 2.5;
+export const DEATH_ANIMATION_FRAMES = 75;    // collapse + slow fade before game over
+export const PLAYER_KNOCKBACK = 5;           // initial px/frame push when the player is hit
+export const ENEMY_KNOCKBACK = 6;            // initial px/frame push when an enemy is hit
+export const KNOCKBACK_DAMPING = 0.78;       // velocity multiplier per frame (vx *= ...)
+export const BASE_MAX_ENEMIES = 4;           // grows with Observation, see maxEnemies()
+export const BOSS_OBSERVATION_THRESHOLD = 75;
+
+export function basePlayerSpeed(classType) {
+    return PLAYER_BASE_SPEED + (classType === "Static Marked" ? 1 : 0);
+}
+
+export function basePlayerDamage(classType) {
+    return classType === "Blood Marked" ? 25 : 18;
+}
+
+export function basePlayerCrit(classType) {
+    return classType === "Static Marked" ? 0.25 : 0.10;
+}
+
 export class GameEngine {
     constructor() {
         this.width = 750;
@@ -35,6 +57,8 @@ export class GameEngine {
         this.bossSpawned = false;
         
         this.hitStop = 0; // Frames to freeze the engine
+        this.bossDefeated = false;
+        this.bossAnnounced = false;
         
         // Static Obstacles in Keeping House. These are collision shapes for sprite props.
         this.obstacles = [
@@ -52,12 +76,14 @@ export class GameEngine {
             y: 300,
             vx: 0,
             vy: 0,
+            kbVx: 0,
+            kbVy: 0,
             radius: 16,
             health: profile.health,
             maxHealth: profile.maxHealth + extraStats.health,
-            speed: (profile.classType === "Static Marked" ? 5.5 : 4.5) + (extraStats.speed || 0),
-            damage: (profile.classType === "Blood Marked" ? 25 : 18) + (extraStats.damage || 0),
-            crit: (profile.classType === "Static Marked" ? 0.25 : 0.10) + (extraStats.crit || 0),
+            speed: basePlayerSpeed(profile.classType) + (extraStats.speed || 0),
+            damage: basePlayerDamage(profile.classType) + (extraStats.damage || 0),
+            crit: basePlayerCrit(profile.classType) + (extraStats.crit || 0),
             sanity: profile.sanity,
             attackCooldown: 0,
             attackDelay: 45, // frames between attacks
@@ -140,6 +166,9 @@ export class GameEngine {
             state: "walk",
             attackCooldown: 0,
             behaviorTimer: 0,
+            kbVx: 0,
+            kbVy: 0,
+            hitFlash: 0,
             lootRarity: "Worn"
         };
 
@@ -200,6 +229,9 @@ export class GameEngine {
             attackCooldown: 0,
             behaviorTimer: 0,
             lootRarity: "Cursed",
+            kbVx: 0,
+            kbVy: 0,
+            hitFlash: 0,
             classType: corp.classType // "Blood Marked" etc
         };
         this.enemies.push(e);
@@ -239,6 +271,7 @@ export class GameEngine {
             angle: angle
         };
         this.projectiles.push(p);
+        if (owner === "enemy") audioManager.play("projectile_fire", { pan: this.panFor(x) });
     }
 
     update(onEvent) {
@@ -256,7 +289,13 @@ export class GameEngine {
         if (this.player.health <= 0) {
             this.player.state = "dead";
             this.player.deathTimer++;
-            if (this.player.deathTimer === 60) {
+            // World keeps drifting in slow motion while the body collapses
+            if (this.player.deathTimer % 3 === 0) {
+                this.updateEnemies(() => {});
+                this.updateProjectiles(() => {});
+            }
+            this.updateFloatingTexts();
+            if (this.player.deathTimer === DEATH_ANIMATION_FRAMES) {
                 // Inform orchestrator that player collapsed
                 onEvent("player_died", { x: this.player.x, y: this.player.y });
             }
@@ -293,14 +332,32 @@ export class GameEngine {
         this.updateLoot();
         this.updateInteractables();
 
+        // Boss: the Seal Mother manifests once the Monolith has modeled the player
+        if (!this.bossSpawned && !this.bossDefeated && this.player.profile.observation >= BOSS_OBSERVATION_THRESHOLD) {
+            this.spawnEnemy("Seal Mother", 375, 200);
+            audioManager.play("boss_spawn");
+            onEvent("boss_spawned", {});
+        }
+
         // Spawn timer
         if (!this.bossSpawned) {
             this.enemySpawnTimer += 16.67;
             if (this.enemySpawnTimer >= this.spawnDelay) {
                 this.enemySpawnTimer = 0;
-                this.spawnRandomEnemy();
+                if (this.enemies.length < this.maxEnemies()) {
+                    this.spawnRandomEnemy();
+                }
             }
         }
+    }
+
+    maxEnemies() {
+        // 4 at low Observation, up to 8 when fully Known
+        return BASE_MAX_ENEMIES + Math.floor((this.player.profile.observation || 0) / 25);
+    }
+
+    panFor(x) {
+        return ((x - this.width / 2) / (this.width / 2)) * 0.6;
     }
 
     spawnRandomEnemy() {
@@ -342,8 +399,8 @@ export class GameEngine {
         if (this.player.dashTimer > 0) {
             // Currently dashing
             this.player.dashTimer--;
-            this.player.vx = this.player.dashDx * (this.player.speed * 2.5);
-            this.player.vy = this.player.dashDy * (this.player.speed * 2.5);
+            this.player.vx = this.player.dashDx * (this.player.speed * PLAYER_DASH_MULT);
+            this.player.vy = this.player.dashDy * (this.player.speed * PLAYER_DASH_MULT);
             this.player.state = "dashing";
             this.player.invulnTimer = Math.max(this.player.invulnTimer, 5); // i-frames
             
@@ -366,7 +423,7 @@ export class GameEngine {
                     this.player.dashDx = dx;
                     this.player.dashDy = dy;
                     this.player.state = "dashing";
-                    audioManager.playHit(); // simple sound for now
+                    audioManager.play("dash");
                 } else {
                     this.player.vx = dx * this.player.speed;
                     this.player.vy = dy * this.player.speed;
@@ -383,9 +440,13 @@ export class GameEngine {
             }
         }
 
-        // Apply velocities
-        this.player.x += this.player.vx;
-        this.player.y += this.player.vy;
+        // Apply velocities (input + decaying knockback)
+        this.player.x += this.player.vx + this.player.kbVx;
+        this.player.y += this.player.vy + this.player.kbVy;
+        this.player.kbVx *= KNOCKBACK_DAMPING;
+        this.player.kbVy *= KNOCKBACK_DAMPING;
+        if (Math.abs(this.player.kbVx) < 0.05) this.player.kbVx = 0;
+        if (Math.abs(this.player.kbVy) < 0.05) this.player.kbVy = 0;
 
         // Wall collisions
         if (this.player.x - this.player.radius < this.bounds.minX) this.player.x = this.bounds.minX + this.player.radius;
@@ -451,6 +512,7 @@ export class GameEngine {
             this.player.attackCooldown = this.player.attackDelay;
             this.player.profile.stats.attacks++;
             this.player.state = "attacking";
+            audioManager.play("attack_swing");
 
             // Class-specific attacks
             const type = this.player.profile.classType;
@@ -524,16 +586,21 @@ export class GameEngine {
             if (e.health <= 0) {
                 // Reward and remove
                 this.player.profile.exp += 15;
-                this.player.profile.gold += e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
                 
                 // Roll loot
                 this.spawnLoot(e.x, e.y, e.lootRarity);
                 
                 // Explode particles
                 this.createParticleExplosion(e.x, e.y, "#721010", 20);
+                audioManager.play("enemy_death", { pan: this.panFor(e.x) });
+                const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
+                this.player.profile.gold += goldDrop;
+                this.spawnFloatingText(`+${goldDrop} DG`, e.x, e.y - 34, "#d4af37", false);
                 
                 if (e.type === "Seal Mother") {
                     this.bossSpawned = false;
+                    this.bossDefeated = true;
+                    audioManager.play("boss_defeated");
                     onEvent("boss_defeated", e);
                     const door = this.interactables.find(intr => intr.type === "sealed_zone_door");
                     if (door) {
@@ -567,6 +634,7 @@ export class GameEngine {
 
             e.attackCooldown = Math.max(0, e.attackCooldown - 1);
             e.behaviorTimer++;
+            if (e.hitFlash > 0) e.hitFlash--;
 
             // Enemy AI movement and actions
             let dx = this.player.x - e.x;
@@ -588,7 +656,7 @@ export class GameEngine {
                 // Attack check
                 if (dist < e.radius + this.player.radius + 5 && e.attackCooldown === 0) {
                     e.attackCooldown = 70;
-                    this.damagePlayer(e.damage);
+                    this.damagePlayer(e.damage, 0, e.x, e.y);
                 }
             } else if (e.type === "Ink Redactor") {
                 // Ranged shooter. Tries to maintain 150px distance
@@ -661,7 +729,9 @@ export class GameEngine {
                 // Melee strike
                 if (dist < e.radius + this.player.radius + 10 && e.attackCooldown === 0) {
                     e.attackCooldown = 80;
-                    this.damagePlayer(e.damage);
+                    audioManager.play("boss_attack");
+                    this.damagePlayer(e.damage, 0, e.x, e.y);
+                    if (this.canvasRenderer) this.canvasRenderer.triggerShake(12);
                     this.createParticleExplosion(this.player.x, this.player.y, "#ffcc00", 15);
                 }
             } else if (e.type === "The Shape") {
@@ -710,8 +780,10 @@ export class GameEngine {
                 }
             }
 
-            e.x += e.vx;
-            e.y += e.vy;
+            e.x += e.vx + e.kbVx;
+            e.y += e.vy + e.kbVy;
+            e.kbVx *= KNOCKBACK_DAMPING;
+            e.kbVy *= KNOCKBACK_DAMPING;
 
             // Simple wall boundaries for enemies
             if (e.x < this.bounds.minX) e.x = this.bounds.minX;
@@ -721,7 +793,7 @@ export class GameEngine {
         }
     }
 
-    damagePlayer(amount, sanityAmount = 0) {
+    damagePlayer(amount, sanityAmount = 0, sourceX = null, sourceY = null) {
         if (this.player.health <= 0 || this.player.invulnTimer > 0) return;
 
         // Apply armor formula
@@ -734,11 +806,28 @@ export class GameEngine {
         this.spawnFloatingText(reduced, this.player.x, this.player.y - 20, "#b01212", false);
         this.hitStop = 2; // mini freeze on getting hit
         
-        audioManager.playHit();
-        if (this.canvasRenderer) this.canvasRenderer.triggerShake(5);
+        // Knockback away from the source of the hit
+        if (sourceX !== null && sourceY !== null) {
+            const angle = Math.atan2(this.player.y - sourceY, this.player.x - sourceX);
+            this.player.kbVx += Math.cos(angle) * PLAYER_KNOCKBACK;
+            this.player.kbVy += Math.sin(angle) * PLAYER_KNOCKBACK;
+        }
+
+        audioManager.play("hit_player");
+        if (this.canvasRenderer) {
+            this.canvasRenderer.triggerShake(5);
+            this.canvasRenderer.triggerDamageFlash(0.35);
+        }
         
         if (this.player.health <= 0) {
-            audioManager.playDeath();
+            this.player.health = 0;
+            audioManager.play("player_death");
+            this.hitStop = 10;
+            if (this.canvasRenderer) {
+                this.canvasRenderer.triggerShake(18);
+                this.canvasRenderer.triggerDamageFlash(0.8);
+            }
+            this.createParticleExplosion(this.player.x, this.player.y, "#7a0c0c", 40);
         }
 
         if (sanityAmount > 0) {
@@ -776,14 +865,21 @@ export class GameEngine {
                         this.createParticleExplosion(e.x, e.y, isCrit ? "#ffdd00" : "#aaaaaa", 6);
                         this.spawnFloatingText(finalDmg, e.x, e.y - 20, isCrit ? "#ffdd00" : "#ffffff", isCrit);
                         
-                        if (isCrit) this.hitStop = 4; // satisfying hit-stop on crits
-
-                        audioManager.playHit();
+                        e.hitFlash = 6;
+                        const pan = this.panFor(e.x);
+                        if (isCrit) {
+                            this.hitStop = 4; // satisfying hit-stop on crits
+                            audioManager.play("crit_hit", { pan });
+                            if (this.canvasRenderer) this.canvasRenderer.triggerShake(4);
+                        } else {
+                            audioManager.play("hit_enemy", { pan });
+                        }
                         
-                        // Knockback
+                        // Knockback (bosses are too heavy to shove far)
                         const angle = Math.atan2(e.y - p.y, e.x - p.x);
-                        e.x += Math.cos(angle) * 10;
-                        e.y += Math.sin(angle) * 10;
+                        const kb = e.type === "Seal Mother" ? ENEMY_KNOCKBACK * 0.2 : ENEMY_KNOCKBACK;
+                        e.kbVx += Math.cos(angle) * kb;
+                        e.kbVy += Math.sin(angle) * kb;
                         
                         // Destroy projectile if single-hit
                         p.life = 0;
@@ -793,7 +889,7 @@ export class GameEngine {
             } else {
                 // Check player
                 if (this.player.health > 0 && this.distance(p.x, p.y, this.player.x, this.player.y) < p.radius + this.player.radius) {
-                    this.damagePlayer(p.damage, p.sanityDamage);
+                    this.damagePlayer(p.damage, p.sanityDamage, p.x - p.vx * 3, p.y - p.vy * 3);
                     p.life = 0;
                 }
             }
@@ -882,8 +978,16 @@ export class GameEngine {
             p.signals.unshift("Recovered a Memory Fragment. It pulses with past knowledge.");
         }
 
+        const rare = lootData.id === "memory_fragment" ||
+            (lootData.item && ["Relic", "Abyssal", "Impossible"].includes(lootData.item.rarity));
+        audioManager.play("loot_pickup", { rare });
+        if (rare) {
+            this.spawnFloatingText(lootData.item ? lootData.item.rarity.toUpperCase() + "!" : "MEMORY", lootData.x, lootData.y - 24, color, true);
+            if (this.canvasRenderer) this.canvasRenderer.triggerShake(3);
+        }
+
         // Small particle splash
-        this.createParticleExplosion(lootData.x, lootData.y, color, 5);
+        this.createParticleExplosion(lootData.x, lootData.y, color, rare ? 18 : 5);
     }
 
     updateInteractables() {

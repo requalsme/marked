@@ -1,5 +1,6 @@
 // Canvas Graphics Renderer with sprite-led room dressing, VFX, lighting, and HUD prompts.
 import { assetLoader } from "./assets.js";
+import { DEATH_ANIMATION_FRAMES } from "./engine.js";
 
 const NEW_PICKUP_SPRITES = {
     loot_satchel: "debt_coin.idle",
@@ -22,6 +23,9 @@ export class CanvasRenderer {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
         this.screenShake = 0;
+        this.damageFlash = 0;
+        this.sanityBreakFlash = 0;
+        this.wasSanityBroken = false;
         this.frame = 0;
         this.candles = [
             { x: 96, y: 150, intensity: 0.9 },
@@ -33,7 +37,12 @@ export class CanvasRenderer {
     }
 
     triggerShake(amount) {
+        if (this.reduceMotion) amount *= 0.3;
         this.screenShake = Math.max(this.screenShake, amount);
+    }
+
+    triggerDamageFlash(strength) {
+        this.damageFlash = Math.max(this.damageFlash, strength);
     }
 
     frameFor(animId, frameOffset = 0) {
@@ -47,8 +56,55 @@ export class CanvasRenderer {
     }
 
     showLevelUpBanner(level) {
-        this.levelUpBannerTimer = 180;
-        this.levelUpLevel = level;
+        this.showBanner("LEVEL UP", `Form stabilized — Level ${level} reached. +10 Max Health.`, "#d4af37", 180);
+    }
+
+    // Queue a large centered announcement. Banners play one after another.
+    showBanner(title, subtitle = "", color = "#d4af37", duration = 180) {
+        if (!this.bannerQueue) this.bannerQueue = [];
+        this.bannerQueue.push({ title, subtitle, color, duration, timer: duration });
+    }
+
+    drawBanner(ctx, w) {
+        if (!this.bannerQueue || this.bannerQueue.length === 0) return;
+        const b = this.bannerQueue[0];
+        b.timer--;
+        if (b.timer <= 0) {
+            this.bannerQueue.shift();
+            return;
+        }
+        const elapsed = b.duration - b.timer;
+        const fadeIn = Math.min(1, elapsed / 12);
+        const fadeOut = Math.min(1, b.timer / 30);
+        const alpha = Math.min(fadeIn, fadeOut);
+        const scale = 1 + Math.max(0, 1 - elapsed / 10) * 0.35; // punch-in
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const y = 92;
+        const band = ctx.createLinearGradient(0, 0, w, 0);
+        band.addColorStop(0, "rgba(5,4,4,0)");
+        band.addColorStop(0.2, "rgba(5,4,4,0.82)");
+        band.addColorStop(0.8, "rgba(5,4,4,0.82)");
+        band.addColorStop(1, "rgba(5,4,4,0)");
+        ctx.fillStyle = band;
+        ctx.fillRect(0, y - 40, w, b.subtitle ? 74 : 56);
+
+        ctx.translate(w / 2, y);
+        ctx.scale(scale, scale);
+        ctx.textAlign = "center";
+        ctx.shadowColor = b.color;
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = b.color;
+        ctx.font = "800 30px Cinzel, Courier New";
+        ctx.fillText(b.title, 0, 0);
+        ctx.shadowBlur = 0;
+        if (b.subtitle) {
+            ctx.fillStyle = "#eadfbd";
+            ctx.font = "14px Outfit, Courier New";
+            ctx.fillText(b.subtitle, 0, 24);
+        }
+        ctx.restore();
     }
 
     drawRotatedSprite(ctx, animId, x, y, scale, alpha, rotation, frameOffset = 0) {
@@ -80,7 +136,7 @@ export class CanvasRenderer {
         this.drawLoot(ctx, engine);
 
         const entities = [];
-        if (engine.player && engine.player.health > 0) {
+        if (engine.player) {
             entities.push({ type: "player", y: engine.player.y, ref: engine.player });
         }
         for (const e of engine.enemies) {
@@ -98,8 +154,10 @@ export class CanvasRenderer {
         this.drawFloatingTexts(ctx, engine);
         this.drawMonolithRunes(ctx, engine);
         this.drawLightingPass(ctx, w, h, engine);
+        this.drawSanityEffects(ctx, w, h, engine);
         this.drawCanvasUI(ctx, w, h, engine);
         this.applyGlitchShader(ctx, w, h, engine);
+        this.drawDeathOverlay(ctx, w, h, engine);
 
         ctx.restore();
     }
@@ -342,7 +400,11 @@ export class CanvasRenderer {
             ctx.shadowBlur = 12;
         }
 
+        if (e.hitFlash > 0) {
+            ctx.filter = "brightness(2.6) saturate(0.2)";
+        }
         assetLoader.drawFrame(ctx, key, idx, e.x, e.y, facing, scale, alpha);
+        ctx.filter = "none";
         ctx.restore();
     }
 
@@ -470,17 +532,6 @@ export class CanvasRenderer {
         }
 
         ctx.globalCompositeOperation = "source-over";
-        if (sanityFactor < 0.15) {
-            // Sanity broken vignette
-            const vignette = ctx.createRadialGradient(w/2, h/2, h/4, w/2, h/2, h);
-            vignette.addColorStop(0, "rgba(0,0,0,0)");
-            vignette.addColorStop(1, "rgba(20, 0, 5, 0.95)");
-            ctx.fillStyle = vignette;
-            ctx.fillRect(0, 0, w, h);
-            
-            // Jitter / distort
-            ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
-        }
 
         const vignette = ctx.createRadialGradient(w / 2, h / 2, 120, w / 2, h / 2, 420);
         vignette.addColorStop(0, "rgba(0,0,0,0)");
@@ -496,6 +547,92 @@ export class CanvasRenderer {
             ctx.fillRect(x, y, 1, 1);
         }
 
+        ctx.restore();
+    }
+
+    // Graduated sanity VFX: Strained (<70) faint red edges, Fractured (<40) pulsing
+    // heartbeat vignette, Broken (<15) heavy vignette, chromatic ghosting and a
+    // one-off flash when the break happens.
+    drawSanityEffects(ctx, w, h, engine) {
+        const sanity = engine.player.sanity;
+
+        const broken = sanity < 15;
+        if (broken && !this.wasSanityBroken) {
+            this.sanityBreakFlash = 1;
+            this.triggerShake(14);
+        }
+        this.wasSanityBroken = broken ? true : sanity > 25 ? false : this.wasSanityBroken;
+
+        if (sanity < 70) {
+            const strain = (70 - sanity) / 70; // 0 → 1
+            const beatRate = 0.05 + strain * 0.12;
+            const beat = Math.pow(Math.max(0, Math.sin(this.frame * beatRate)), 8);
+            const edge = 0.18 + strain * 0.55 + beat * strain * 0.25;
+
+            ctx.save();
+            const vignette = ctx.createRadialGradient(w / 2, h / 2, h * (0.55 - strain * 0.3), w / 2, h / 2, h * 0.95);
+            vignette.addColorStop(0, "rgba(0,0,0,0)");
+            vignette.addColorStop(1, `rgba(${Math.round(40 + strain * 60)}, 0, 6, ${Math.min(0.95, edge)})`);
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+        }
+
+        if (broken) {
+            // Ghost image: offset copy of the frame, like a double vision smear
+            const sway = Math.sin(this.frame * 0.07) * 6;
+            ctx.save();
+            ctx.globalAlpha = 0.16;
+            ctx.globalCompositeOperation = "lighter";
+            ctx.drawImage(this.canvas, sway, 0);
+            ctx.drawImage(this.canvas, -sway, 2);
+            ctx.restore();
+        }
+
+        if (this.sanityBreakFlash > 0) {
+            ctx.save();
+            ctx.fillStyle = `rgba(60, 0, 8, ${this.sanityBreakFlash * 0.5})`;
+            ctx.fillRect(0, 0, w, h);
+            if (this.sanityBreakFlash > 0.4) {
+                ctx.shadowColor = "#000";
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = `rgba(214, 40, 40, ${this.sanityBreakFlash})`;
+                ctx.font = "bold 30px Cinzel, Courier New";
+                ctx.textAlign = "center";
+                ctx.fillText("YOUR MIND BREAKS", w / 2 + (Math.random() - 0.5) * 6, h / 2);
+            }
+            ctx.restore();
+            this.sanityBreakFlash = Math.max(0, this.sanityBreakFlash - 0.012);
+        }
+
+        if (this.damageFlash > 0) {
+            ctx.save();
+            const flash = ctx.createRadialGradient(w / 2, h / 2, h * 0.2, w / 2, h / 2, h * 0.9);
+            flash.addColorStop(0, "rgba(160, 0, 0, 0)");
+            flash.addColorStop(1, `rgba(160, 0, 0, ${this.damageFlash})`);
+            ctx.fillStyle = flash;
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+            this.damageFlash = Math.max(0, this.damageFlash - 0.04);
+        }
+    }
+
+    drawDeathOverlay(ctx, w, h, engine) {
+        const p = engine.player;
+        if (!p || p.health > 0) return;
+        const t = Math.min(1, p.deathTimer / DEATH_ANIMATION_FRAMES);
+        ctx.save();
+        ctx.fillStyle = `rgba(8, 0, 0, ${t * 0.85})`;
+        ctx.fillRect(0, 0, w, h);
+        if (t > 0.35) {
+            ctx.globalAlpha = Math.min(1, (t - 0.35) / 0.4);
+            ctx.fillStyle = "#a31c1c";
+            ctx.font = "bold 34px Cinzel, Courier New";
+            ctx.textAlign = "center";
+            ctx.shadowColor = "#000";
+            ctx.shadowBlur = 12;
+            ctx.fillText("SIGIL COLLAPSED", w / 2, h / 2);
+        }
         ctx.restore();
     }
 
@@ -548,17 +685,7 @@ export class CanvasRenderer {
             ctx.fillText(`SEAL MOTHER - ARCHIVE CORE CURSE — ${(pct * 100).toFixed(1)}%`, w / 2, by - 7);
         }
 
-        if (this.levelUpBannerTimer > 0) {
-            this.levelUpBannerTimer--;
-            const alpha = Math.min(1, this.levelUpBannerTimer / 30);
-            ctx.fillStyle = `rgba(212, 175, 55, ${this.levelUpBannerTimer / 60})`;
-            ctx.font = "bold 28px Courier New";
-            ctx.textAlign = "center";
-            ctx.shadowColor = "#000";
-            ctx.shadowBlur = 8;
-            ctx.fillText(`- REGISTRY UPDATED: LEVEL ${this.levelUpLevel} -`, w / 2, 80);
-            ctx.shadowBlur = 0;
-        }
+        this.drawBanner(ctx, w);
 
         ctx.restore();
     }
@@ -585,12 +712,12 @@ export class CanvasRenderer {
         
         // Red Shift
         ctx.globalCompositeOperation = "screen";
-        ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
+        ctx.fillStyle = "rgba(255, 0, 0, 0.08)";
         ctx.drawImage(this.canvas, 0, yOffset, w, sliceHeight, xOffset + 5 * intensity, yOffset, w, sliceHeight);
         ctx.fillRect(xOffset + 5 * intensity, yOffset, w, sliceHeight);
         
         // Cyan Shift
-        ctx.fillStyle = "rgba(0, 255, 255, 0.4)";
+        ctx.fillStyle = "rgba(0, 255, 255, 0.08)";
         ctx.drawImage(this.canvas, 0, yOffset, w, sliceHeight, xOffset - 5 * intensity, yOffset, w, sliceHeight);
         ctx.fillRect(xOffset - 5 * intensity, yOffset, w, sliceHeight);
         

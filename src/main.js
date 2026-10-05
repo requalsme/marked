@@ -1,7 +1,7 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
 import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats } from "./state.js";
-import { GameEngine } from "./engine.js";
+import { GameEngine, basePlayerSpeed, basePlayerDamage, basePlayerCrit } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
@@ -53,10 +53,26 @@ class GameOrchestrator {
     }
 
     bindInputEvents() {
+        // Browsers only allow audio after a user gesture: start the title theme on first input
+        const unlockAudio = () => {
+            audioManager.init();
+            if (this.gameState === "title") audioManager.play("title_music");
+        };
+        window.addEventListener("pointerdown", unlockAudio, { once: true });
+        window.addEventListener("keydown", unlockAudio, { once: true });
+
         // Keyboard inputs
         window.addEventListener("keydown", (e) => {
-            if (this.gameState !== "active") return;
             const key = e.key.toLowerCase();
+            const typing = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT");
+            if (key === "m" && !typing) {
+                const muted = audioManager.toggleMute();
+                this.ui.showToast(muted ? "Audio muted [M]" : "Audio on [M]");
+                return;
+            }
+            if (this.gameState !== "active") return;
+            // Keep Space/arrows from scrolling the page mid-fight
+            if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
             this.engine.keys[key] = true;
 
             // Trigger interact key E
@@ -104,6 +120,7 @@ class GameOrchestrator {
                     this.ui.switchTab("corpses");
                 } else if (intr.type === "wax_record_chest") {
                     if (intr.data.state === "closed") {
+                        audioManager.play("corpse_interact");
                         intr.data.state = "opening";
                         intr.data.timer = 45; // opening animation duration
                         this.activeProfile.signals.unshift("Opening Wax Record Chest...");
@@ -112,6 +129,7 @@ class GameOrchestrator {
                     if (intr.data.state === "open") {
                         this.triggerVictory();
                     } else {
+                        audioManager.play("error_sound");
                         this.activeProfile.signals.unshift("The door is sealed. Defeat the Seal Mother to release the wax seal.");
                     }
                 }
@@ -169,6 +187,7 @@ class GameOrchestrator {
 
     renderTitleScreen() {
         this.gameState = "title";
+        audioManager.play("title_music");
         document.getElementById("title-screen").style.display = "flex";
         document.getElementById("game-layout").style.display = "none";
         document.getElementById("offline-modal").style.display = "none";
@@ -249,6 +268,8 @@ class GameOrchestrator {
 
     showOfflineReport(report) {
         this.gameState = "offline_report";
+        audioManager.init();
+        audioManager.play("idle_return_music");
         document.getElementById("title-screen").style.display = "none";
         document.getElementById("archive-modal").style.display = "none";
         document.getElementById("offline-modal").style.display = "flex";
@@ -281,6 +302,7 @@ class GameOrchestrator {
         
         // Load engine and reset
         this.engine.reset();
+        this.waxTraps = [];
         
         // Tarot Deck Draw
         const keys = Object.keys(TAROT_DECK);
@@ -335,9 +357,9 @@ class GameOrchestrator {
         const eqStats = getEquipmentStats(this.activeProfile);
         this.engine.player.stats = eqStats;
         this.engine.player.maxHealth = this.activeProfile.maxHealth + eqStats.health;
-        this.engine.player.damage = (this.activeProfile.classType === "Blood Marked" ? 25 : 18) + eqStats.damage;
-        this.engine.player.crit = (this.activeProfile.classType === "Static Marked" ? 0.25 : 0.10) + eqStats.crit;
-        this.engine.player.speed = (this.activeProfile.classType === "Static Marked" ? 4.5 : 3.5) + eqStats.speed;
+        this.engine.player.damage = basePlayerDamage(this.activeProfile.classType) + eqStats.damage;
+        this.engine.player.crit = basePlayerCrit(this.activeProfile.classType) + eqStats.crit;
+        this.engine.player.speed = basePlayerSpeed(this.activeProfile.classType) + eqStats.speed;
     }
 
     saveActiveProfile() {
@@ -400,6 +422,8 @@ class GameOrchestrator {
         };
 
         this.activeProfile.corpses.push(corpseData);
+        audioManager.play("corpse_spawn");
+        audioManager.setMusicState("silent");
         this.activeProfile.stats.deaths++;
 
         // Reset stats for next descent
@@ -424,6 +448,8 @@ class GameOrchestrator {
 
     triggerVictory() {
         this.gameState = "game_over";
+        audioManager.setMusicState("silent");
+        audioManager.play("victory");
         document.getElementById("game-layout").style.display = "none";
         const overlay = document.getElementById("game-over-screen");
         overlay.style.display = "flex";
@@ -466,6 +492,7 @@ class GameOrchestrator {
                     this.triggerGameOver("Collapsed in Keeping House battle.");
                 } else if (event === "boss_wax_trap") {
                     // Spawn wax trap
+                    audioManager.play("wax_trap");
                     this.waxTraps.push({
                         x: data.x,
                         y: data.y,
@@ -473,6 +500,10 @@ class GameOrchestrator {
                         timer: 60, // frames to trigger
                         active: true
                     });
+                } else if (event === "boss_spawned") {
+                    this.canvasRenderer.triggerShake(25);
+                    this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
+                    this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
                 } else if (event === "boss_defeated") {
                     this.canvasRenderer.triggerShake(40);
                     this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
@@ -484,7 +515,13 @@ class GameOrchestrator {
             if (this.gameState === "active") {
                 updateObservation(this.activeProfile, this.engine);
                 handleSanityDecay(this.activeProfile, this.engine);
-                audioManager.updateSanity(this.activeProfile.sanity);
+                const p = this.engine.player;
+                audioManager.update({
+                    sanity: p.sanity,
+                    observation: this.activeProfile.observation,
+                    enemiesNear: this.engine.enemies.filter(e => this.engine.distance(p.x, p.y, e.x, e.y) < 260).length,
+                    bossActive: this.engine.bossSpawned
+                });
                 
                 if (this.activeProfile.levelUpTimer > 0) {
                     this.activeProfile.levelUpTimer--;
@@ -522,9 +559,10 @@ class GameOrchestrator {
             if (trap.timer <= 0) {
                 // Trap triggers!
                 if (trap.active) {
+                    audioManager.play("wax_trap_trigger");
                     let dist = this.engine.distance(p.x, p.y, trap.x, trap.y);
                     if (dist < trap.radius + p.radius) {
-                        this.engine.damagePlayer(25, 15);
+                        this.engine.damagePlayer(25, 15, trap.x, trap.y);
                         this.canvasRenderer.triggerShake(15);
                         
                         // Stall player velocity/action (stun effect)

@@ -18,10 +18,10 @@ export class GameUI {
 
         if (this.tutorialSkipBtn) {
             this.tutorialSkipBtn.addEventListener("click", () => {
-                if (this.orch.profile) {
-                    this.orch.profile.tutorialStep = 4;
+                if (this.orch.activeProfile) {
+                    this.orch.activeProfile.tutorialStep = 4;
                     this.orch.saveActiveProfile();
-                    this.renderTutorial(this.orch.profile);
+                    this.renderTutorial(this.orch.activeProfile);
                     this.renderActiveTab();
                 }
             });
@@ -43,14 +43,15 @@ export class GameUI {
                 if (btn.classList.contains("tab-locked")) {
                     return; // Prevent switching to locked tabs
                 }
-                const tab = e.target.getAttribute("data-tab");
+                const tab = btn.getAttribute("data-tab");
+                audioManager.play("tab_switch");
                 this.switchTab(tab);
                 
                 // Tutorial Step 2 -> 3 (Open Inventory)
-                if (tab === "inventory" && this.orch.profile && this.orch.profile.tutorialStep === 2) {
-                    this.orch.profile.tutorialStep = 3;
+                if (tab === "inventory" && this.orch.activeProfile && this.orch.activeProfile.tutorialStep === 2) {
+                    this.orch.activeProfile.tutorialStep = 3;
                     this.orch.saveActiveProfile();
-                    this.renderTutorial(this.orch.profile);
+                    this.renderTutorial(this.orch.activeProfile);
                 }
             });
         });
@@ -66,6 +67,20 @@ export class GameUI {
                 }
             });
         }
+    }
+
+    showToast(message, duration = 1800) {
+        let toast = document.getElementById("game-toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "game-toast";
+            toast.className = "game-toast";
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add("visible");
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => toast.classList.remove("visible"), duration);
     }
 
     switchTab(tabId) {
@@ -368,6 +383,7 @@ export class GameUI {
         const slot = item.type;
         const oldEquipped = p.gear[slot];
 
+        audioManager.play("equip_item");
         p.gear[slot] = item;
         if (oldEquipped) {
             p.inventory[invIndex] = oldEquipped;
@@ -386,12 +402,14 @@ export class GameUI {
         if (!item) return;
 
         if (p.inventory.length < 15) {
+            audioManager.play("unequip_item");
             p.inventory.push(item);
             p.gear[slotType] = null;
             this.hideTooltip();
             this.orch.recalculateStats();
             this.renderActiveTab();
         } else {
+            audioManager.play("error_sound");
             p.signals.unshift("Inventory FULL. Cannot unequip gear.");
             this.renderActiveTab();
         }
@@ -446,6 +464,7 @@ export class GameUI {
     executeRitual(profile, type) {
         const now = Date.now();
         if (profile.lastRitualTime && now - profile.lastRitualTime < 120000) {
+            audioManager.play("ritual_fail");
             profile.signals.unshift("Altar rejects you. The blood needs time to dry. Wait 120 seconds.");
             this.renderActiveTab();
             return;
@@ -500,6 +519,11 @@ export class GameUI {
 
         if (ritualSuccess) {
             profile.lastRitualTime = now;
+            audioManager.play("ritual_perform", { kind: type });
+            if (type === "static_comm") audioManager.play("signal_decode");
+            this.orch.canvasRenderer.triggerShake(6);
+        } else {
+            audioManager.play("ritual_fail");
         }
 
         this.orch.saveActiveProfile();
@@ -588,6 +612,7 @@ export class GameUI {
         if (!corp) return;
 
         let removeCorpse = false;
+        audioManager.play("corpse_interact", { kind: action });
 
         if (action === "recover") {
             profile.signals.unshift(`Corpse Recovered: A hostile memory echo manifests!`);
@@ -597,6 +622,7 @@ export class GameUI {
             removeCorpse = true;
         } else if (action === "burn") {
             this.orch.engine.player.sanity = Math.min(100, this.orch.engine.player.sanity + 30);
+            audioManager.play("sanity_recover");
             profile.observation = Math.max(0, profile.observation - 15);
             profile.signals.unshift("Corpse Burned: evidence destroyed. Sanity restored, Observation reduced.");
             corp.state = "burned";
@@ -724,6 +750,8 @@ export class GameUI {
             profile.upgrades.obfuscation++;
         }
 
+        audioManager.play("upgrade_purchase");
+        this.orch.canvasRenderer.triggerShake(4);
         profile.signals.unshift(`Monolith Upgrade Purchased: Strengthened ${up.toUpperCase()} node.`);
         
         // Tutorial Step 1 -> 2
