@@ -42,6 +42,11 @@ export function basePlayerCrit(classType) {
     return classType === "Static Marked" ? 0.25 : 0.10;
 }
 
+// Particle colours that are liquids: they fly as drops and stain the floor
+const LIQUIDS = {
+    "#9a1616": "blood", "#3a0808": "blood", "#7a0c0c": "blood", "#b01212": "blood", "#000000": "ink"
+};
+
 export class GameEngine {
     constructor() {
         this.width = WORLD_WIDTH;
@@ -58,6 +63,8 @@ export class GameEngine {
         this.enemies = [];
         this.projectiles = [];
         this.particles = [];
+        this.decals = [];     // stains waiting for the renderer to press into the floor
+        this.decalEpoch = (this.decalEpoch || 0) + 1; // a new run starts on a clean floor
         this.floatingTexts = [];
         this.deathFx = [];   // enemy death animations playing out
         this.loot = [];
@@ -265,7 +272,18 @@ export class GameEngine {
     }
 
     createParticleExplosion(x, y, color, count) {
+        const liquid = LIQUIDS[color];
         for (let i = 0; i < count; i++) {
+            if (liquid) {
+                // Drops thrown up from the wound, arcing down to stain the floor
+                const a = Math.random() * Math.PI * 2, sp = 0.6 + Math.random() * 2.6;
+                this.particles.push({
+                    x, y, z: 16 + Math.random() * 22,
+                    vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.5, vz: 1 + Math.random() * 2.8,
+                    color, liquid, alpha: 1, decay: 0, size: 1.2 + Math.random() * 2.2
+                });
+                continue;
+            }
             this.particles.push({
                 x: x,
                 y: y,
@@ -696,7 +714,10 @@ export class GameEngine {
                 
                 // Death animation + particles
                 this.deathFx.push({ type: e.type, x: e.x, y: e.y, t: 0, facing: this.player.x < e.x ? "left" : "right" });
-                this.createParticleExplosion(e.x, e.y, "#3a0808", 14);
+                // What each thing leaves behind on the stone
+                const remains = e.type === "Ink Redactor" ? "ink" : e.type === "Paper Wraith" ? "paper" : e.type === "Witness Chair" ? "splinters" : "blood";
+                this.decals.push({ kind: "pool", x: e.x, y: e.y + 4, r: 16 + (e.radius || 18) * 0.6, liquid: remains });
+                this.createParticleExplosion(e.x, e.y, remains === "ink" ? "#000000" : "#3a0808", 14);
                 audioManager.play("enemy_death", { pan: this.panFor(e.x) });
                 const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
                 this.player.profile.gold += goldDrop;
@@ -1025,6 +1046,15 @@ export class GameEngine {
             const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
+            if (p.liquid) {
+                p.z += p.vz;
+                p.vz -= 0.3;
+                if (p.z <= 0) {
+                    this.decals.push({ kind: "drop", x: p.x, y: p.y, r: p.size * (1 + Math.random()), liquid: p.liquid, vx: p.vx, vy: p.vy });
+                    this.particles.splice(i, 1);
+                }
+                continue;
+            }
             p.alpha -= p.decay;
             if (p.alpha <= 0) {
                 this.particles.splice(i, 1);
@@ -1165,6 +1195,11 @@ export class GameEngine {
     }
 
     spawnFloatingText(text, x, y, color, isCrit) {
+        for (let tries = 0; tries < 4; tries++) {
+            const clash = this.floatingTexts.some(ft => ft.life > 25 && Math.abs(ft.x - x) < 46 && Math.abs(ft.y - y) < 18);
+            if (!clash) break;
+            y -= 20;
+        }
         this.floatingTexts.push({
             text: text,
             x: x,

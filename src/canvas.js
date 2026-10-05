@@ -322,6 +322,7 @@ export class CanvasRenderer {
 
         this.drawRoomBackdrop(ctx);
         this.drawFixtureFloors(ctx, engine);
+        this.drawDecals(ctx, engine);
         this.drawLoot(ctx, engine);
 
         const entities = [];
@@ -1059,6 +1060,24 @@ export class CanvasRenderer {
 
     drawParticles(ctx, engine) {
         for (const p of engine.particles) {
+            if (p.liquid) {
+                // A drop in flight: its shadow on the floor, the drop drawn up at its height
+                const col = p.liquid === "ink" ? "10, 10, 16" : "120, 10, 8";
+                ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+                ctx.beginPath();
+                ctx.ellipse(p.x, p.y, p.size * 0.8, p.size * 0.35, 0, 0, Math.PI * 2);
+                ctx.fill();
+                const dx = p.vx, dy = p.vy - p.vz, len = Math.hypot(dx, dy) || 1;
+                ctx.save();
+                ctx.translate(p.x, p.y - p.z);
+                ctx.rotate(Math.atan2(dy, dx));
+                ctx.fillStyle = `rgba(${col}, 0.95)`;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, p.size * (1 + Math.min(1.6, len * 0.35)), p.size * 0.7, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                continue;
+            }
             ctx.save();
             ctx.globalAlpha = p.alpha;
             if (p.color === "#f1e2b7" || p.color === "#aaaaaa" || p.color === "#ffffff") {
@@ -1074,6 +1093,130 @@ export class CanvasRenderer {
             }
             ctx.restore();
         }
+    }
+
+    // ─── Stains: blood, ink, paper and splinters left where things bled and fell ──
+    // Pressed once into a floor-sized layer that slowly fades over minutes.
+    drawDecals(ctx, engine) {
+        if (!this.decalLayer || this.decalEpoch !== engine.decalEpoch) {
+            const sc = Math.min(1.5, this.roomTextureScale || 1);
+            const c = this.decalLayer && this.decalLayer.canvas.width === Math.round(WORLD_WIDTH * sc) ? this.decalLayer.canvas : document.createElement("canvas");
+            c.width = Math.round(WORLD_WIDTH * sc);
+            c.height = Math.round(WORLD_HEIGHT * sc);
+            this.decalLayer = { canvas: c, g: c.getContext("2d"), sc };
+            this.decalEpoch = engine.decalEpoch;
+        }
+        const { canvas, g, sc } = this.decalLayer;
+        if (engine.decals.length) {
+            g.setTransform(sc, 0, 0, sc, 0, 0);
+            for (const d of engine.decals) this.stampDecal(g, d);
+            engine.decals.length = 0;
+        }
+        if (this.frame % 240 === 0) {
+            g.setTransform(1, 0, 0, 1, 0, 0);
+            g.globalCompositeOperation = "destination-out";
+            g.fillStyle = "rgba(0, 0, 0, 0.035)";
+            g.fillRect(0, 0, canvas.width, canvas.height);
+            g.globalCompositeOperation = "source-over";
+        }
+        // Only the part of the layer the camera sees
+        const vx = Math.max(0, this.camera.x), vy = Math.max(0, this.camera.y);
+        const vw = Math.min(WORLD_WIDTH - vx, this.viewW + 2), vh = Math.min(WORLD_HEIGHT - vy, this.viewH + 2);
+        if (vw > 0 && vh > 0) ctx.drawImage(canvas, vx * sc, vy * sc, vw * sc, vh * sc, vx, vy, vw, vh);
+    }
+
+    stampDecal(g, d) {
+        const k = depthScale(d.y);
+        const blob = (x, y, rx, ry, fill, jag = 0.35) => {
+            const n = 14, pts = [];
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * Math.PI * 2, f = 1 - jag / 2 + Math.random() * jag;
+                pts.push([x + Math.cos(a) * rx * f, y + Math.sin(a) * ry * f]);
+            }
+            g.beginPath();
+            g.moveTo((pts[0][0] + pts[n - 1][0]) / 2, (pts[0][1] + pts[n - 1][1]) / 2);
+            for (let i = 0; i < n; i++) {
+                const a = pts[i], b = pts[(i + 1) % n];
+                g.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+            }
+            g.fillStyle = fill;
+            g.fill();
+        };
+        const tone = d.liquid === "ink" ? ["rgba(6, 6, 12, 0.82)", "rgba(2, 2, 6, 0.6)", "rgba(120, 130, 170, 0.12)"]
+            : ["rgba(92, 8, 6, 0.78)", "rgba(40, 3, 2, 0.6)", "rgba(255, 170, 150, 0.1)"];
+        if (d.kind === "drop") {
+            const r = d.r * k * (0.6 + Math.random() * 0.8);
+            g.globalAlpha = 0.45 + Math.random() * 0.45;
+            const a = Math.atan2(d.vy, d.vx), sp = Math.hypot(d.vx, d.vy);
+            if (sp > 1.2 && Math.random() < 0.5) {
+                // Smeared where it landed moving: a tapering streak
+                g.save();
+                g.translate(d.x, d.y);
+                g.scale(1, 0.5);
+                g.rotate(a);
+                g.fillStyle = tone[0];
+                g.beginPath();
+                g.moveTo(-r, -r * 0.6);
+                g.quadraticCurveTo(r * (2 + sp), 0, -r, r * 0.6);
+                g.closePath();
+                g.fill();
+                g.restore();
+            } else {
+                blob(d.x, d.y, r, r * 0.5, tone[0], 0.5);
+            }
+            g.globalAlpha = 1;
+            return;
+        }
+        const R = d.r * k;
+        if (d.liquid === "paper") {
+            for (let i = 0; i < 12; i++) {
+                const a = Math.random() * Math.PI * 2, dist = Math.random() * R * 1.4;
+                const x = d.x + Math.cos(a) * dist, y = d.y + Math.sin(a) * dist * 0.45;
+                g.save();
+                g.translate(x, y);
+                g.rotate(Math.random() * Math.PI);
+                g.scale(1, 0.5);
+                const t = 170 + Math.random() * 50, w = (3 + Math.random() * 5) * k, h = (2 + Math.random() * 4) * k;
+                g.fillStyle = `rgba(${t}, ${t * 0.92}, ${t * 0.74}, 0.9)`;
+                g.fillRect(-w / 2, -h / 2, w, h);
+                g.strokeStyle = "rgba(10, 6, 4, 0.5)";
+                g.lineWidth = 0.5;
+                g.strokeRect(-w / 2, -h / 2, w, h);
+                g.restore();
+            }
+            return;
+        }
+        if (d.liquid === "splinters") {
+            g.lineCap = "round";
+            for (let i = 0; i < 10; i++) {
+                const a = Math.random() * Math.PI * 2, dist = Math.random() * R * 1.3;
+                const x = d.x + Math.cos(a) * dist, y = d.y + Math.sin(a) * dist * 0.45, l = (3 + Math.random() * 7) * k, b = Math.random() * Math.PI;
+                g.strokeStyle = `rgba(${70 + Math.random() * 30}, ${46 + Math.random() * 20}, 26, 0.9)`;
+                g.lineWidth = 1 + Math.random() * 1.2;
+                g.beginPath();
+                g.moveTo(x, y);
+                g.lineTo(x + Math.cos(b) * l, y + Math.sin(b) * l * 0.45);
+                g.stroke();
+            }
+            g.lineCap = "butt";
+            blob(d.x, d.y, R * 0.5, R * 0.22, tone[0]);
+            return;
+        }
+        // A pool with a darker rim, splash streaks and thrown droplets
+        blob(d.x, d.y, R * 1.08, R * 0.5, tone[1]);
+        blob(d.x, d.y, R, R * 0.45, tone[0]);
+        for (let i = 0; i < 9; i++) {
+            const a = Math.random() * Math.PI * 2, dist = R * (0.9 + Math.random() * 0.9);
+            const x = d.x + Math.cos(a) * dist, y = d.y + Math.sin(a) * dist * 0.45;
+            g.strokeStyle = tone[0];
+            g.lineWidth = (0.8 + Math.random() * 1.6) * k;
+            g.beginPath();
+            g.moveTo(d.x + Math.cos(a) * R * 0.7, d.y + Math.sin(a) * R * 0.32);
+            g.lineTo(x, y);
+            g.stroke();
+            blob(x, y, (1 + Math.random() * 2) * k, (0.6 + Math.random()) * k, tone[0]);
+        }
+        blob(d.x - R * 0.25, d.y - R * 0.12, R * 0.35, R * 0.1, tone[2], 0.2);
     }
 
     drawFloatingTexts(ctx, engine) {
