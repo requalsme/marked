@@ -183,7 +183,10 @@
 
         <!-- Bottom-left: wax seal level and inked vitals -->
         <div class="hud-vitals plate">
-            <div class="wax-seal" title="Level"><span id="hud-level">1</span></div>
+            <div class="level-plaque" title="Level">
+                <span class="level-label">Level</span>
+                <span id="hud-level" class="level-num">I</span>
+            </div>
             <div class="vital-bars">
                 <div class="vital flesh">
                     <span class="vital-label">Flesh</span>
@@ -194,6 +197,10 @@
                     <span class="vital-label">Sanity</span>
                     <div class="vital-track"><div id="hud-sanity-bar" class="vital-fill"></div></div>
                     <span id="hud-sanity-text" class="vital-num">100%</span>
+                </div>
+                <div class="xp-line" title="Experience toward the next level">
+                    <div id="hud-xp-bar" class="xp-fill"></div>
+                    <span id="hud-xp-text" class="xp-text">0 / 100</span>
                 </div>
             </div>
         </div>

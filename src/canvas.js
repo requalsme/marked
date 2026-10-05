@@ -1,7 +1,7 @@
 // Canvas Graphics Renderer with sprite-led room dressing, VFX, lighting, and HUD prompts.
 import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
-import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture } from "./world.js";
+import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES } from "./world.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
 
 // Pickup glow colours and labels; gear uses its rarity colour
@@ -82,6 +82,21 @@ const ENEMY_ART = {
             : { key: moving(e) ? "the_marked.walk" : "the_marked.idle" }
     }
 };
+
+// Moonlight shafts falling from the darkness above the walls
+const MOON_SHAFTS = [
+    { top: { x: 330, y: 0 }, w0: 34, floor: { x: 470, y: 560 }, w1: 150 },
+    { top: { x: 1270, y: 0 }, w0: 26, floor: { x: 1130, y: 520 }, w1: 110 }
+];
+
+// Foreground chains: world x anchor and hanging length (world units)
+const FOREGROUND_CHAINS = [
+    { x: 120, len: 260, hook: true },
+    { x: 360, len: 120 },
+    { x: 1250, len: 170, hook: true },
+    { x: 1500, len: 300 },
+    { x: 760, len: 70 }
+];
 
 function moving(e) {
     return Math.abs(e.vx) + Math.abs(e.vy) > 0.05;
@@ -294,6 +309,7 @@ export class CanvasRenderer {
         this.drawParticles(ctx, engine);
         if (this.onDrawWorld) this.onDrawWorld(ctx);
         this.drawLightingPass(ctx, engine);
+        this.drawMoonShafts(ctx);
         // Drawn after lighting so they read clearly in the dark
         this.drawLootHighlights(ctx, engine);
         this.drawFloatingTexts(ctx, engine);
@@ -302,6 +318,7 @@ export class CanvasRenderer {
 
         // ── Screen pass (CSS pixels) ──
         ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        this.drawForeground(ctx, w, h);
         this.drawScreenVignette(ctx, w, h);
         this.drawSanityEffects(ctx, w, h, engine);
         this.drawCanvasUI(ctx, w, h, engine);
@@ -317,58 +334,109 @@ export class CanvasRenderer {
             ctx.fillStyle = "#0d0b09";
             ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
         }
-        // Living details on top of the static room
-        this.drawSprite(ctx, "red_string_evidence_board.idle", 560, 214, 0.42, 0.9);
-        this.drawSprite(ctx, "ink_wall_stain.idle", 1040, 190, 0.4, 0.55);
-        this.drawSprite(ctx, "paper_root_growth.idle", 110, 960, 0.42, 0.55, "right", 9);
-        this.drawSprite(ctx, "wax_seal_growth.idle", 1500, 950, 0.38, 0.55, "right", 31);
-        this.drawSprite(ctx, "wax_seal_growth.idle", 1000, 980, 0.3, 0.4, "right", 12);
-        for (const c of this.candles) this.drawCandle(ctx, c);
+        for (const c of this.candles) {
+            if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
+            else this.drawCandle(ctx, c);
+        }
     }
 
-    // Candle cluster on an iron stand: tallow, drips and a living flame
-    drawCandle(ctx, c) {
+    // Flames for the iron sconces baked into the room texture
+    drawSconceFlames(ctx, c) {
+        const s = c.scale || 1;
+        for (const [dx, hh] of SCONCE_CANDLES) {
+            this.drawFlame(ctx, c.x + dx * s, c.y - (hh + 2.5) * s, s * 1.1, c.x + dx);
+        }
+    }
+
+    drawFlame(ctx, x, top, s, seed) {
         const t = this.frame;
-        const seed = c.x * 0.37;
+        const sway = (Math.sin(t * 0.18 + seed) * 1.2 + (Math.random() - 0.5) * 0.6) * s;
+        const fh = (7 + Math.sin(t * 0.27 + seed) * 1.2) * s;
         ctx.save();
-        // Iron dish and foot
-        ctx.fillStyle = "#0c0a09";
+        ctx.globalCompositeOperation = "lighter";
+        const halo = ctx.createRadialGradient(x, top - fh * 0.5, 0, x, top - fh * 0.5, 14 * s);
+        halo.addColorStop(0, "rgba(255, 170, 80, 0.35)");
+        halo.addColorStop(1, "rgba(255, 120, 40, 0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(x - 14 * s, top - fh * 0.5 - 14 * s, 28 * s, 28 * s);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "rgba(255, 150, 50, 0.9)";
         ctx.beginPath();
-        ctx.ellipse(c.x, c.y + 1, 15, 4.5, 0, 0, Math.PI * 2);
+        ctx.moveTo(x - 2.3 * s, top);
+        ctx.quadraticCurveTo(x - 2.5 * s, top - fh * 0.6, x + sway, top - fh);
+        ctx.quadraticCurveTo(x + 2.5 * s, top - fh * 0.6, x + 2.3 * s, top);
+        ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = "#3a332c";
-        ctx.lineWidth = 1;
+        ctx.fillStyle = "rgba(255, 244, 210, 0.95)";
+        ctx.beginPath();
+        ctx.ellipse(x + sway * 0.3, top - 2 * s, 0.9 * s, 2.1 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Wrought-iron candelabrum: tripod foot, twisted stem, three cups
+    drawCandle(ctx, c) {
+        const k = depthScale(c.y);
+        const seed = c.x * 0.37;
+        const x = c.x, y = c.y;
+        const H = 54 * k;
+        ctx.save();
+        this.drawGroundShadow(ctx, x, y + 1, 16 * k, 5 * k, 0.6);
+        ctx.strokeStyle = "#0f0d0c";
+        ctx.lineCap = "round";
+        // Tripod feet
+        ctx.lineWidth = 2.4 * k;
+        for (const dx of [-9, 0, 9]) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - 7 * k);
+            ctx.quadraticCurveTo(x + dx * 0.6 * k, y - 2 * k, x + dx * k, y + (dx === 0 ? 2 : 0) * k);
+            ctx.stroke();
+        }
+        // Stem with knots
+        ctx.lineWidth = 2.6 * k;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 6 * k);
+        ctx.lineTo(x, y - H);
         ctx.stroke();
-        const sticks = [[-7, 20], [0, 30], [7, 15]];
-        for (const [dx, hgt] of sticks) {
-            const x = c.x + dx, top = c.y - hgt;
-            const g = ctx.createLinearGradient(x - 3, 0, x + 3, 0);
+        ctx.fillStyle = "#151210";
+        for (const t of [0.35, 0.7]) {
+            ctx.beginPath();
+            ctx.ellipse(x, y - H * t, 3 * k, 2 * k, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Arms
+        ctx.lineWidth = 2 * k;
+        ctx.beginPath();
+        ctx.moveTo(x - 15 * k, y - H + 9 * k);
+        ctx.quadraticCurveTo(x - 15 * k, y - H + 1 * k, x, y - H + 3 * k);
+        ctx.quadraticCurveTo(x + 15 * k, y - H + 1 * k, x + 15 * k, y - H + 9 * k);
+        ctx.stroke();
+        // Highlight along the iron
+        ctx.strokeStyle = "rgba(190, 150, 110, 0.25)";
+        ctx.lineWidth = 0.8 * k;
+        ctx.beginPath();
+        ctx.moveTo(x - 0.8 * k, y - 6 * k);
+        ctx.lineTo(x - 0.8 * k, y - H);
+        ctx.stroke();
+        // Cups, candles, flames
+        const cups = [[-15, 9, 13], [0, -2, 18], [15, 9, 11]];
+        for (const [dx, dy, ch] of cups) {
+            const cx = x + dx * k, cy = y - H + dy * k;
+            ctx.fillStyle = "#151210";
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 4.5 * k, 1.8 * k, 0, 0, Math.PI * 2);
+            ctx.fill();
+            const g = ctx.createLinearGradient(cx - 2.4 * k, 0, cx + 2.4 * k, 0);
             g.addColorStop(0, "#6f6250");
-            g.addColorStop(0.45, "#d6c9a8");
+            g.addColorStop(0.45, "#ddd0ae");
             g.addColorStop(1, "#5c5142");
             ctx.fillStyle = g;
-            ctx.fillRect(x - 3, top, 6, hgt);
-            // Drips
-            ctx.fillStyle = "#cbbd9a";
-            ctx.fillRect(x - 3, top, 1.6, 4 + (Math.sin(seed + dx) + 1) * 3);
-            ctx.fillRect(x + 1.5, top, 1.4, 2 + (Math.cos(seed + dx) + 1) * 4);
-            // Wick
+            ctx.fillRect(cx - 2.4 * k, cy - ch * k, 4.8 * k, ch * k);
+            ctx.fillStyle = "#d4c7a4";
+            ctx.fillRect(cx - 2.4 * k, cy - ch * k, 1.3 * k, (3 + (Math.sin(seed + dx) + 1) * 2.5) * k);
             ctx.fillStyle = "#120a06";
-            ctx.fillRect(x - 0.5, top - 3, 1, 3);
-            // Flame
-            const sway = Math.sin(t * 0.18 + seed + dx) * 1.2 + (Math.random() - 0.5) * 0.6;
-            const fh = 7 + Math.sin(t * 0.27 + dx) * 1.2;
-            ctx.fillStyle = "rgba(255, 150, 50, 0.85)";
-            ctx.beginPath();
-            ctx.moveTo(x - 2.4, top - 3);
-            ctx.quadraticCurveTo(x - 2.6, top - fh * 0.6, x + sway, top - 3 - fh);
-            ctx.quadraticCurveTo(x + 2.6, top - fh * 0.6, x + 2.4, top - 3);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = "rgba(255, 240, 200, 0.95)";
-            ctx.beginPath();
-            ctx.ellipse(x + sway * 0.3, top - 5, 1, 2.2, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.fillRect(cx - 0.4 * k, cy - ch * k - 2.5 * k, 0.8 * k, 2.5 * k);
+            this.drawFlame(ctx, cx, cy - ch * k - 2.5 * k, k, seed + dx);
         }
         ctx.restore();
     }
@@ -392,9 +460,9 @@ export class CanvasRenderer {
         const cy = obs.y + (obs.h || 0);
         this.drawGroundShadow(ctx, cx, cy + 4, 56, 15, 0.55);
         if (obs.label === "Evidence Board") {
-            this.drawSprite(ctx, "red_string_evidence_board.idle", cx, cy + 14, 0.46, 1);
+            this.drawSprite(ctx, "red_string_evidence_board.idle", cx, cy + 14, 0.46 * depthScale(cy), 1);
         } else if (obs.label === "Ledger Altar") {
-            this.drawSprite(ctx, "chained_ledger_altar.idle", cx, cy + 14, 0.46, 1);
+            this.drawSprite(ctx, "chained_ledger_altar.idle", cx, cy + 14, 0.46 * depthScale(cy), 1);
         }
     }
 
@@ -404,7 +472,7 @@ export class CanvasRenderer {
         const o = Math.min(100, engine.player.profile.observation) / 100;
         const pl = engine.player;
         const behind = pl.y < obs.y + 10 && Math.abs(pl.x - obs.x) < 46 && pl.y > obs.y - 230;
-        this.monolithAlpha = (this.monolithAlpha ?? 1) + ((behind ? 0.45 : 1) - (this.monolithAlpha ?? 1)) * 0.15;
+        this.monolithAlpha = (this.monolithAlpha ?? 1) + ((behind ? 0.6 : 1) - (this.monolithAlpha ?? 1)) * 0.15;
         const x = obs.x, base = obs.y + 18;
         const h = 210, wb = 74, wt = 40;
         const t = this.frame;
@@ -444,6 +512,20 @@ export class CanvasRenderer {
         ctx.strokeStyle = "#000";
         ctx.stroke();
 
+        // Rim light: warm on the right flank, cold on the left
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = "rgba(255, 150, 90, 0.28)";
+        ctx.beginPath();
+        ctx.moveTo(x + wb / 2 - 2, base - 2);
+        ctx.lineTo(x + wt / 2 - 1, base - h);
+        ctx.lineTo(x, base - h - 24);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(150, 170, 210, 0.18)";
+        ctx.beginPath();
+        ctx.moveTo(x - wb / 2 + 2, base - 2);
+        ctx.lineTo(x - wt / 2 + 1, base - h);
+        ctx.stroke();
+
         // Facet highlight
         ctx.beginPath();
         ctx.moveTo(x - 6, base);
@@ -455,7 +537,7 @@ export class CanvasRenderer {
 
         // Carved glyph column, glowing with Observation
         const flicker = 0.85 + Math.sin(t * 0.13) * 0.08 + Math.random() * 0.07;
-        ctx.strokeStyle = `rgba(${200 + o * 55}, ${30 + o * 20}, 20, ${(0.25 + o * 0.7) * flicker})`;
+        ctx.strokeStyle = `rgba(${200 + o * 55}, ${30 + o * 20}, 20, ${(0.45 + o * 0.55) * flicker})`;
         ctx.shadowColor = "#ff2a10";
         ctx.shadowBlur = 6 + o * 14;
         ctx.lineWidth = 1.6;
@@ -509,7 +591,9 @@ export class CanvasRenderer {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
-        this.drawGroundShadow(ctx, intr.x, intr.y + 2, 40 * visual.scale / 0.5, 12, 0.6);
+        const k = depthScale(intr.y);
+        const vs = visual.scale * k;
+        this.drawGroundShadow(ctx, intr.x, intr.y + 2, 40 * vs / 0.5, 12 * k, 0.6);
 
         const state = intr.data && intr.data.state;
         if (visual.open && (state === "opening" || state === "open")) {
@@ -517,9 +601,9 @@ export class CanvasRenderer {
             const config = assetLoader.animationsMap[visual.open];
             intr.openT = (intr.openT || 0) + 1;
             const idx = config ? Math.min(config.frames - 1, Math.floor(intr.openT * (config.fps / 60))) : 0;
-            assetLoader.drawFrame(ctx, visual.open, idx, intr.x, intr.y + 4, "right", visual.scale, 1);
+            assetLoader.drawFrame(ctx, visual.open, idx, intr.x, intr.y + 4, "right", vs, 1);
         } else {
-            this.drawSprite(ctx, visual.anim, intr.x, intr.y + 4, visual.scale, 1, "right", intr.x);
+            this.drawSprite(ctx, visual.anim, intr.x, intr.y + 4, vs, 1, "right", intr.x);
         }
 
         if (intr.type === "sealed_zone_door" && state === "open") {
@@ -552,7 +636,7 @@ export class CanvasRenderer {
             ctx.save();
             this.drawGroundShadow(ctx, l.x, l.y + 2, 9, 3.5, 0.6);
             if (style.tint) ctx.filter = "sepia(1) saturate(5) hue-rotate(-50deg) brightness(0.85)";
-            this.drawSprite(ctx, anim, l.x, l.y + bob, PICKUP_SCALE, 1, "right", l.x);
+            this.drawSprite(ctx, anim, l.x, l.y + bob, PICKUP_SCALE * depthScale(l.y), 1, "right", l.x);
             ctx.filter = "none";
             ctx.restore();
         }
@@ -622,7 +706,8 @@ export class CanvasRenderer {
 
     drawPlayer(ctx, p) {
         ctx.save();
-        this.drawGroundShadow(ctx, p.x, p.y + 14, 22, 8, 0.5);
+        const k = depthScale(p.y);
+        this.drawGroundShadow(ctx, p.x, p.y + 4, 22 * k, 7 * k, 0.6);
 
         const obsMult = p.profile.observation / 100;
         const brandGrad = ctx.createRadialGradient(p.x, p.y - 10, 2, p.x, p.y - 10, 30);
@@ -658,7 +743,7 @@ export class CanvasRenderer {
         }
 
         const alpha = p.invulnTimer > 0 && Math.floor(this.frame / 4) % 2 === 0 ? 0.48 : 1;
-        assetLoader.drawFrame(ctx, key, idx, p.x, p.y, p.facing, 0.36, alpha);
+        assetLoader.drawFrame(ctx, key, idx, p.x, p.y, p.facing, 0.36 * depthScale(p.y), alpha);
         ctx.restore();
     }
 
@@ -672,14 +757,15 @@ export class CanvasRenderer {
         const fade = fx.t < playFrames ? 1 : Math.max(0, 1 - (fx.t - playFrames) / 50);
         ctx.save();
         this.drawGroundShadow(ctx, fx.x, fx.y + 2, 20, 7, 0.4 * fade);
-        assetLoader.drawFrame(ctx, spec.death, idx, fx.x, fx.y + 6, fx.facing, spec.scale, (spec.alpha ?? 1) * fade);
+        assetLoader.drawFrame(ctx, spec.death, idx, fx.x, fx.y + 6, fx.facing, spec.scale * depthScale(fx.y), (spec.alpha ?? 1) * fade);
         ctx.restore();
     }
 
     drawEnemy(ctx, e) {
         ctx.save();
         const spec = ENEMY_ART[e.type] || ENEMY_ART["Cabinet Indexer"];
-        this.drawGroundShadow(ctx, e.x, e.y + 2, e.radius * 1.5, Math.max(7, e.radius * 0.4), 0.55);
+        const ek = depthScale(e.y);
+        this.drawGroundShadow(ctx, e.x, e.y + 2, e.radius * 1.5 * ek, Math.max(6, e.radius * 0.4) * ek, 0.6);
 
         // Face the player rather than the velocity, so knockback doesn't flip the sprite
         const facing = this.playerX < e.x ? "left" : "right";
@@ -693,7 +779,7 @@ export class CanvasRenderer {
                 : Math.floor((this.frame + e.x) * (config.fps / 60)) % config.frames;
         }
 
-        const scale = spec.scale;
+        const scale = spec.scale * depthScale(e.y);
         const alpha = spec.alpha ?? 1;
         if (spec.glow) {
             ctx.shadowColor = spec.glow;
@@ -782,7 +868,19 @@ export class CanvasRenderer {
         lights.push({ x: p.x, y: p.y - 24, r: 70, color: [255, 240, 215], a: 0.5 });
         for (const c of this.candles) {
             const f = 1 + Math.sin(t * 0.21 + c.x) * 0.05 + (Math.random() - 0.5) * 0.08;
-            lights.push({ x: c.x, y: c.y - 10, r: 140 * c.intensity * f, color: [255, 170, 95], a: 0.75 * f });
+            if (c.kind === "sconce") {
+                const sc = c.scale || 1;
+                lights.push({ x: c.x, y: c.y - 22 * sc, r: 230 * c.intensity * f * sc, color: [255, 165, 90], a: 0.8 * f });
+            } else {
+                lights.push({ x: c.x, y: c.y - 50 * depthScale(c.y), r: 165 * c.intensity * f, color: [255, 170, 95], a: 0.85 * f });
+            }
+        }
+        for (const sh of MOON_SHAFTS) {
+            lights.push({ x: sh.floor.x, y: sh.floor.y, r: sh.w1 * 1.1, color: [140, 160, 205], a: 0.55 });
+        }
+        for (const gl of ROOM.glows || []) {
+            const pulse = 0.85 + Math.sin(t * 0.04) * 0.15;
+            lights.push({ x: gl.x, y: gl.y, r: gl.r, color: gl.color, a: gl.a * pulse });
         }
         for (const intr of engine.interactables) {
             const v = INTERACTABLE_SPRITES[intr.type];
@@ -863,6 +961,63 @@ export class CanvasRenderer {
         this.drawAsh(ctx);
     }
 
+    // Cold light falling from a slit high in the dark, with dust turning in it.
+    // Each shaft is pre-rendered once with a heavy blur so its edges are soft.
+    buildShaft(sh) {
+        const pad = 60;
+        const minX = Math.min(sh.top.x - sh.w0, sh.floor.x - sh.w1) - pad;
+        const maxX = Math.max(sh.top.x + sh.w0, sh.floor.x + sh.w1) + pad;
+        const minY = sh.top.y - pad, maxY = sh.floor.y + sh.w1 * 0.4 + pad;
+        const c = document.createElement("canvas");
+        c.width = Math.ceil(maxX - minX);
+        c.height = Math.ceil(maxY - minY);
+        const g = c.getContext("2d");
+        g.translate(-minX, -minY);
+        g.filter = "blur(14px)";
+        const grad = g.createLinearGradient(sh.top.x, sh.top.y, sh.floor.x, sh.floor.y);
+        grad.addColorStop(0, "rgba(150, 170, 210, 0)");
+        grad.addColorStop(0.3, "rgba(150, 170, 210, 0.35)");
+        grad.addColorStop(1, "rgba(175, 190, 225, 0.75)");
+        g.fillStyle = grad;
+        g.beginPath();
+        g.moveTo(sh.top.x - sh.w0 / 2, sh.top.y);
+        g.lineTo(sh.top.x + sh.w0 / 2, sh.top.y);
+        g.lineTo(sh.floor.x + sh.w1 / 2, sh.floor.y);
+        g.lineTo(sh.floor.x - sh.w1 / 2, sh.floor.y);
+        g.closePath();
+        g.fill();
+        // Pool where it lands
+        g.fillStyle = "rgba(175, 190, 225, 0.8)";
+        g.beginPath();
+        g.ellipse(sh.floor.x, sh.floor.y, sh.w1 * 0.6, sh.w1 * 0.2, 0, 0, Math.PI * 2);
+        g.fill();
+        return { canvas: c, x: minX, y: minY };
+    }
+
+    drawMoonShafts(ctx) {
+        if (!this.shafts) this.shafts = MOON_SHAFTS.map(sh => this.buildShaft(sh));
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        MOON_SHAFTS.forEach((sh, i) => {
+            const breathe = 0.85 + Math.sin(this.frame * 0.01 + sh.floor.x) * 0.15;
+            const img = this.shafts[i];
+            ctx.globalAlpha = 0.16 * breathe;
+            ctx.drawImage(img.canvas, img.x, img.y);
+            ctx.globalAlpha = 1;
+            // Motes
+            for (let m = 0; m < 26; m++) {
+                const t = ((m * 0.137 + this.frame * 0.0006 * (1 + (m % 3))) % 1);
+                const lx = sh.top.x + (sh.floor.x - sh.top.x) * t;
+                const ly = sh.top.y + (sh.floor.y - sh.top.y) * t;
+                const half = (sh.w0 + (sh.w1 - sh.w0) * t) / 2;
+                const ox = Math.sin(m * 12.9 + this.frame * 0.01) * half * 0.7;
+                ctx.fillStyle = `rgba(220, 225, 240, ${0.35 * Math.sin(t * Math.PI)})`;
+                ctx.fillRect(lx + ox, ly, 1.3, 1.3);
+            }
+        });
+        ctx.restore();
+    }
+
     // Two layers of slow fog hugging the floor
     drawFog(ctx) {
         if (!this.fogTexture) this.fogTexture = makeFogTexture();
@@ -896,6 +1051,44 @@ export class CanvasRenderer {
             ctx.globalAlpha = ember ? 0.6 + Math.sin(this.frame * 0.1 + i) * 0.3 : 0.22;
             ctx.fillStyle = ember ? "#ff7a3a" : "#cfc3a8";
             ctx.fillRect(x, y, ember ? 1.6 : 1.2, ember ? 1.6 : 1.2);
+        }
+        ctx.restore();
+    }
+
+    // Chains hanging in front of the scene, moving faster than the room
+    // (parallax) so the space reads as deep. Kept dark and to the edges.
+    drawForeground(ctx, w, h) {
+        const par = 1.35;
+        const cxw = this.camera.x + this.viewW / 2;
+        ctx.save();
+        for (const ch of FOREGROUND_CHAINS) {
+            const sx = w / 2 + (ch.x - cxw) * this.zoom * par;
+            if (sx < -60 || sx > w + 60) continue;
+            const len = ch.len * this.zoom;
+            const sway = Math.sin(this.frame * 0.012 + ch.x) * 6;
+            const link = 13 * this.zoom * 0.9;
+            for (let y = -10, i = 0; y < len; y += link * 0.82, i++) {
+                const t = y / len;
+                const x = sx + sway * t * t;
+                ctx.strokeStyle = "rgba(4, 3, 3, 0.96)";
+                ctx.lineWidth = 3.4 * this.zoom * 0.8;
+                ctx.beginPath();
+                if (i % 2 === 0) ctx.ellipse(x, y, link * 0.32, link * 0.55, 0, 0, Math.PI * 2);
+                else ctx.ellipse(x, y, link * 0.1, link * 0.55, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                // Faint rim light from the room
+                ctx.strokeStyle = "rgba(180, 110, 60, 0.12)";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            if (ch.hook) {
+                const x = sx + sway;
+                ctx.strokeStyle = "rgba(4, 3, 3, 0.96)";
+                ctx.lineWidth = 4 * this.zoom * 0.8;
+                ctx.beginPath();
+                ctx.arc(x + 6 * this.zoom, len + 6 * this.zoom, 9 * this.zoom, Math.PI * 1.1, Math.PI * 0.4, true);
+                ctx.stroke();
+            }
         }
         ctx.restore();
     }

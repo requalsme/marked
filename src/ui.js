@@ -15,6 +15,16 @@ export function ritualTerms(n) {
     };
 }
 
+function toRoman(n) {
+    if (!Number.isFinite(n) || n <= 0 || n >= 4000) return String(n);
+    const table = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+    let out = "";
+    for (const [v, sym] of table) {
+        while (n >= v) { out += sym; n -= v; }
+    }
+    return out;
+}
+
 export class GameUI {
     constructor(orchestrator) {
         this.orch = orchestrator;
@@ -290,7 +300,12 @@ export class GameUI {
         }
 
         // Update Level, Gold, Currencies
-        document.getElementById("hud-level").textContent = profile.level;
+        document.getElementById("hud-level").textContent = toRoman(profile.level);
+        const xpNeeded = profile.level * 100;
+        const xpBar = document.getElementById("hud-xp-bar");
+        if (xpBar) xpBar.style.width = `${Math.min(100, (profile.exp / xpNeeded) * 100)}%`;
+        const xpText = document.getElementById("hud-xp-text");
+        if (xpText) xpText.textContent = `${Math.floor(profile.exp)} / ${xpNeeded}`;
         const nameEl = document.getElementById("hud-name");
         if (nameEl) nameEl.textContent = corruptText(profile.name, san);
         document.getElementById("hud-gold").textContent = corruptText(profile.gold.toString(), san);

@@ -462,7 +462,8 @@ class GameOrchestrator {
         this.activeProfile.corpses.forEach(corp => {
             const type = corp.state === "burned" ? "burned_corpse_remains"
                 : corp.state === "broadcasted" ? "broadcast_corpse" : "fresh_marked_corpse";
-            this.engine.addInteractable(type, this.engine.clampX(corp.x), this.engine.clampY(corp.y), { radius: 18, corpse: corp });
+            const cy = this.engine.clampY(corp.y);
+            this.engine.addInteractable(type, this.engine.clampX(corp.x, cy), cy, { radius: 18, corpse: corp });
         });
 
         this.stepAccumulator = 0;

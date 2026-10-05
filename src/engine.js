@@ -1,6 +1,6 @@
 // Physics, Collision, and Entity Management
 import { audioManager } from "./audio.js";
-import { WORLD_WIDTH, WORLD_HEIGHT, ROOM } from "./world.js";
+import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -391,16 +391,23 @@ export class GameEngine {
         const chairs = Math.floor(wave / 2);
         for (let i = 0; i < shapes; i++) {
             const a = (i / shapes) * Math.PI * 2;
-            this.spawnEnemy("The Shape", this.clampX(this.player.x + Math.cos(a) * 140), this.clampY(this.player.y + Math.sin(a) * 90));
+            const sy = this.clampY(this.player.y + Math.sin(a) * 90);
+            this.spawnEnemy("The Shape", this.clampX(this.player.x + Math.cos(a) * 140, sy), sy);
         }
         for (let i = 0; i < chairs; i++) {
-            this.spawnEnemy("Witness Chair", i % 2 ? this.bounds.minX + 20 : this.bounds.maxX - 20, this.bounds.minY + 40 + i * 60);
+            const cy = this.bounds.minY + 40 + i * 60;
+            const span = walkableX(cy);
+            this.spawnEnemy("Witness Chair", i % 2 ? span.min + 20 : span.max - 20, cy);
         }
         profile.signals.unshift(`Watcher Confrontation ${wave}: ${Math.round(this.player.currentLifeDuration / 60)} minutes survived. The Monolith sends ${shapes + chairs} witness${shapes + chairs === 1 ? "" : "es"}.`);
         onEvent("watcher_confrontation", { wave, count: shapes + chairs });
     }
 
-    clampX(x) { return Math.max(this.bounds.minX + 20, Math.min(this.bounds.maxX - 20, x)); }
+    // The floor narrows toward the back wall (perspective), so x limits depend on y
+    clampX(x, y = this.bounds.maxY) {
+        const span = walkableX(y);
+        return Math.max(span.min + 20, Math.min(span.max - 20, x));
+    }
     clampY(y) { return Math.max(this.bounds.minY + 20, Math.min(this.bounds.maxY - 20, y)); }
 
     maxEnemies() {
@@ -416,10 +423,12 @@ export class GameEngine {
         // Spawn along margins
         const side = Math.floor(Math.random() * 4);
         let x = 100, y = 100;
-        if (side === 0) { x = this.bounds.minX + 10; y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY); }
-        else if (side === 1) { x = this.bounds.maxX - 10; y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY); }
-        else if (side === 2) { x = this.bounds.minX + Math.random() * (this.bounds.maxX - this.bounds.minX); y = this.bounds.minY + 10; }
-        else { x = this.bounds.minX + Math.random() * (this.bounds.maxX - this.bounds.minX); y = this.bounds.maxY - 10; }
+        if (side === 0 || side === 1) y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY);
+        else y = side === 2 ? this.bounds.minY + 10 : this.bounds.maxY - 10;
+        const span = walkableX(y);
+        if (side === 0) x = span.min + 10;
+        else if (side === 1) x = span.max - 10;
+        else x = span.min + Math.random() * (span.max - span.min);
 
         // Choose enemy type based on observation and probability
         const roll = Math.random();
@@ -501,10 +510,11 @@ export class GameEngine {
         if (Math.abs(this.player.kbVy) < 0.05) this.player.kbVy = 0;
 
         // Wall collisions
-        if (this.player.x - this.player.radius < this.bounds.minX) this.player.x = this.bounds.minX + this.player.radius;
-        if (this.player.x + this.player.radius > this.bounds.maxX) this.player.x = this.bounds.maxX - this.player.radius;
         if (this.player.y - this.player.radius < this.bounds.minY) this.player.y = this.bounds.minY + this.player.radius;
         if (this.player.y + this.player.radius > this.bounds.maxY) this.player.y = this.bounds.maxY - this.player.radius;
+        const span = walkableX(this.player.y);
+        if (this.player.x - this.player.radius < span.min) this.player.x = span.min + this.player.radius;
+        if (this.player.x + this.player.radius > span.max) this.player.x = span.max - this.player.radius;
 
         // Obstacle collisions
         for (const obs of this.obstacles) {
@@ -842,10 +852,11 @@ export class GameEngine {
             e.kbVy *= KNOCKBACK_DAMPING;
 
             // Simple wall boundaries for enemies
-            if (e.x < this.bounds.minX) e.x = this.bounds.minX;
-            if (e.x > this.bounds.maxX) e.x = this.bounds.maxX;
             if (e.y < this.bounds.minY) e.y = this.bounds.minY;
             if (e.y > this.bounds.maxY) e.y = this.bounds.maxY;
+            const espan = walkableX(e.y, 30);
+            if (e.x < espan.min) e.x = espan.min;
+            if (e.x > espan.max) e.x = espan.max;
         }
     }
 
