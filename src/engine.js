@@ -10,6 +10,16 @@ export const ENEMY_KNOCKBACK = 6;            // initial px/frame push when an en
 export const KNOCKBACK_DAMPING = 0.78;       // velocity multiplier per frame (vx *= ...)
 export const BASE_MAX_ENEMIES = 4;           // grows with Observation, see maxEnemies()
 export const BOSS_OBSERVATION_THRESHOLD = 75;
+export const CONFRONTATION_INTERVAL = 600;   // seconds of survival between Watcher Confrontations
+export const CONFRONTATION_OBSERVATION = 10; // Observation added per confrontation
+export const ENEMY_SCALING_PER_LEVEL = 0.12;  // +12% enemy health/damage per player level above 1
+export const BLOOD_VIAL_CHANCE = 0.15;        // share of drops that are healing vials
+export const BLOOD_VIAL_HEAL_PCT = 0.20;      // of max health
+
+// The Monolith counters what survives: enemies grow with the player's level
+export function enemyScale(level) {
+    return 1 + ENEMY_SCALING_PER_LEVEL * Math.max(0, (level || 1) - 1);
+}
 
 export function basePlayerSpeed(classType) {
     return PLAYER_BASE_SPEED + (classType === "Static Marked" ? 1 : 0);
@@ -17,6 +27,12 @@ export function basePlayerSpeed(classType) {
 
 export function basePlayerDamage(classType) {
     return classType === "Blood Marked" ? 25 : 18;
+}
+
+// Total attack damage: class base + gear + permanent ritual/corpse bonuses
+export function playerDamage(profile, gearDamage = 0) {
+    const flat = basePlayerDamage(profile.classType) + gearDamage + (profile.ritualDamage || 0);
+    return Math.round(flat * (profile.devourMult || 1));
 }
 
 export function basePlayerCrit(classType) {
@@ -82,7 +98,7 @@ export class GameEngine {
             health: profile.health,
             maxHealth: profile.maxHealth + extraStats.health,
             speed: basePlayerSpeed(profile.classType) + (extraStats.speed || 0),
-            damage: basePlayerDamage(profile.classType) + (extraStats.damage || 0),
+            damage: playerDamage(profile, extraStats.damage || 0),
             crit: basePlayerCrit(profile.classType) + (extraStats.crit || 0),
             sanity: profile.sanity,
             attackCooldown: 0,
@@ -95,7 +111,8 @@ export class GameEngine {
             dashCooldown: 0,
             dashDx: 0,
             dashDy: 0,
-            currentLifeDuration: profile.currentLifeDuration || 0
+            currentLifeDuration: profile.currentLifeDuration || 0,
+            confrontationWave: Math.floor((profile.currentLifeDuration || 0) / CONFRONTATION_INTERVAL)
         };
     }
 
@@ -118,14 +135,18 @@ export class GameEngine {
             let parchment = 0;
             let ink = 0;
             let sanityRestore = 0;
+            let healPct = 0;
 
-            if (rand < 0.20) {
+            if (rand < BLOOD_VIAL_CHANCE) {
+                lootType = "blood_vial";
+                healPct = BLOOD_VIAL_HEAL_PCT;
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.20) {
                 lootType = "cursed_gear_drop";
                 item = stateMod.generateLootItem(rarityLimit);
-            } else if (rand < 0.45) {
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.40) {
                 lootType = "sanity_shard";
                 sanityRestore = 15;
-            } else if (rand < 0.70) {
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.60) {
                 lootType = "signal_fragment";
                 parchment = 1;
                 ink = Math.random() < 0.5 ? 1 : 0;
@@ -143,6 +164,7 @@ export class GameEngine {
                 parchment: parchment,
                 ink: ink,
                 sanityRestore: sanityRestore,
+                healPct: healPct,
                 vx: (Math.random() - 0.5) * 4,
                 vy: (Math.random() - 0.5) * 4 - 3,
                 bounce: 0,
@@ -194,19 +216,26 @@ export class GameEngine {
             e.damage = 15;
             e.lootRarity = "Unsettling";
         } else if (type === "Seal Mother") {
-            e.health = e.maxHealth = 250;
+            e.health = e.maxHealth = 600;
             e.radius = 28;
             e.speed = 1.35;
             e.damage = 18;
             e.lootRarity = "Cursed";
             this.bossSpawned = true;
-        } else if (type === "The Shape") {
+        }
+
+        if (type === "The Shape") {
             // Player clone
             e.health = e.maxHealth = this.player.maxHealth * 0.8;
             e.radius = 16;
             e.speed = this.player.speed * 0.75;
             e.damage = this.player.damage * 0.6;
             e.lootRarity = "Relic";
+        } else {
+            // The Shape already mirrors the player's stats; everything else scales with level
+            const scale = enemyScale(this.player.profile.level);
+            e.health = e.maxHealth = Math.round(e.health * scale);
+            e.damage = Math.round(e.damage * scale);
         }
 
         this.enemies.push(e);
@@ -304,16 +333,23 @@ export class GameEngine {
         }
 
         this.player.currentLifeDuration += 1 / 60;
+        this.player.profile.currentLifeDuration = this.player.currentLifeDuration;
+        this.player.profile.stats.activeSeconds = (this.player.profile.stats.activeSeconds || 0) + 1 / 60;
 
-        // 3-hour pressure event (10800 seconds)
-        if (this.player.currentLifeDuration >= 10800 && !this.player.profile.pressureEventTriggered) {
-            this.player.profile.pressureEventTriggered = true;
-            this.player.profile.observation = Math.min(100, this.player.profile.observation + 25);
-            this.spawnEnemy("The Shape", this.player.x + 100, this.player.y);
-            this.player.profile.signals.unshift("Watcher Warning: 3 hours survived. The Shape descends.");
+        // Recurring pressure: every CONFRONTATION_INTERVAL seconds alive, the Watcher
+        // confronts the player with an escalating wave. Surviving longer gets harder.
+        const wave = Math.floor(this.player.currentLifeDuration / CONFRONTATION_INTERVAL);
+        if (wave > (this.player.confrontationWave || 0)) {
+            this.player.confrontationWave = wave;
+            this.triggerConfrontation(wave, onEvent);
         }
 
         if (this.player.invulnTimer > 0) this.player.invulnTimer--;
+
+        // Gear regeneration (healthRegen = HP per second)
+        if (this.player.stats.healthRegen > 0 && this.player.health < this.player.maxHealth) {
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + this.player.stats.healthRegen / 60);
+        }
         if (this.player.attackCooldown > 0) this.player.attackCooldown--;
         if (this.player.dashCooldown > 0) this.player.dashCooldown--;
 
@@ -350,6 +386,26 @@ export class GameEngine {
             }
         }
     }
+
+    triggerConfrontation(wave, onEvent) {
+        const profile = this.player.profile;
+        profile.observation = Math.min(100, profile.observation + CONFRONTATION_OBSERVATION);
+        // Wave 1: one Shape. Every two waves adds a Witness Chair escort.
+        const shapes = 1 + Math.floor(wave / 3);
+        const chairs = Math.floor(wave / 2);
+        for (let i = 0; i < shapes; i++) {
+            const a = (i / shapes) * Math.PI * 2;
+            this.spawnEnemy("The Shape", this.clampX(this.player.x + Math.cos(a) * 140), this.clampY(this.player.y + Math.sin(a) * 90));
+        }
+        for (let i = 0; i < chairs; i++) {
+            this.spawnEnemy("Witness Chair", i % 2 ? this.bounds.minX + 20 : this.bounds.maxX - 20, this.bounds.minY + 40 + i * 60);
+        }
+        profile.signals.unshift(`Watcher Confrontation ${wave}: ${Math.round(this.player.currentLifeDuration / 60)} minutes survived. The Monolith sends ${shapes + chairs} witness${shapes + chairs === 1 ? "" : "es"}.`);
+        onEvent("watcher_confrontation", { wave, count: shapes + chairs });
+    }
+
+    clampX(x) { return Math.max(this.bounds.minX + 20, Math.min(this.bounds.maxX - 20, x)); }
+    clampY(y) { return Math.max(this.bounds.minY + 20, Math.min(this.bounds.maxY - 20, y)); }
 
     maxEnemies() {
         // 4 at low Observation, up to 8 when fully Known
@@ -595,6 +651,7 @@ export class GameEngine {
                 audioManager.play("enemy_death", { pan: this.panFor(e.x) });
                 const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
                 this.player.profile.gold += goldDrop;
+                this.trackActiveGain(goldDrop, 15);
                 this.spawnFloatingText(`+${goldDrop} DG`, e.x, e.y - 34, "#d4af37", false);
                 
                 if (e.type === "Seal Mother") {
@@ -953,8 +1010,15 @@ export class GameEngine {
 
         if (lootData.id === "loot_satchel") {
             p.gold += lootData.gold;
+            this.trackActiveGain(lootData.gold, 0);
             color = "#ffd700";
             p.signals.unshift(`Collected Satchel: Debt Gold reduced by ${lootData.gold}.`);
+        } else if (lootData.id === "blood_vial") {
+            const heal = Math.round(this.player.maxHealth * lootData.healPct);
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
+            color = "#d12a2a";
+            this.spawnFloatingText(`+${heal}`, this.player.x, this.player.y - 30, "#ff5a5a", false);
+            p.signals.unshift(`Drank a Blood Vial: Restored ${heal} Flesh.`);
         } else if (lootData.id === "sanity_shard") {
             this.player.sanity = Math.min(100, this.player.sanity + lootData.sanityRestore);
             color = "#00ffff";
@@ -1014,6 +1078,13 @@ export class GameEngine {
                 }
             }
         }
+    }
+
+    // Lifetime active-play earnings, used to cap offline gains (see idle.js)
+    trackActiveGain(gold, exp) {
+        const st = this.player.profile.stats;
+        st.activeGold = (st.activeGold || 0) + gold;
+        st.activeExp = (st.activeExp || 0) + exp;
     }
 
     distance(x1, y1, x2, y2) {

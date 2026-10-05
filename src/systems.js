@@ -100,18 +100,24 @@ export function corruptText(text, sanity) {
     return arr.join("");
 }
 
-export function updateObservation(profile, engine) {
+// Rates are per second of active play (frame-rate independent). Mirrored in
+// tools/simulation/adapters/mock_adapter.py.
+export const OBSERVATION_PER_SEC = 0.06;         // passive: ~3.6% per minute
+export const OBSERVATION_MOVING_PER_SEC = 0.024; // extra while moving
+export const OBSERVATION_PER_ATTACK = 0.03;      // each attack is recorded
+export const SANITY_DECAY_PER_SEC = 0.12;        // before light / gear / upgrade modifiers
+
+export function updateObservation(profile, engine, dt = 1 / 60) {
     // Increment base observation based on survival time and upgrades (obfuscation slows it down)
-    const baseGain = 0.005; // per frame/update tick roughly
     const obfLevel = profile.upgrades.obfuscation || 0;
     const modifier = 1.0 - (obfLevel * 0.15); // 15% reduction per level
     const tarotMod = profile.activeTarot === "Judgement" ? 1.5 : 1.0;
 
-    let totalGain = baseGain * modifier * tarotMod;
+    let totalGain = OBSERVATION_PER_SEC * dt * modifier * tarotMod;
     
-    // Additional gain based on player action counts
-    if (engine.player.vx !== 0 || engine.player.vy !== 0) totalGain += 0.002 * modifier;
-    if (engine.player.attackCooldown === engine.player.attackDelay) totalGain += 0.01 * modifier;
+    // Additional gain based on player actions
+    if (engine.player.vx !== 0 || engine.player.vy !== 0) totalGain += OBSERVATION_MOVING_PER_SEC * dt * modifier;
+    if (engine.player.attackCooldown === engine.player.attackDelay) totalGain += OBSERVATION_PER_ATTACK * modifier * tarotMod;
 
     profile.observation = Math.min(100, profile.observation + totalGain);
 
@@ -168,9 +174,9 @@ export function triggerWatcherWhisper(profile) {
     }
 }
 
-export function handleSanityDecay(profile, engine) {
+export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     // Decay sanity slowly over time
-    const baseDecay = 0.0084; // per tick
+    const baseDecay = SANITY_DECAY_PER_SEC * dt;
     
     // Reduced by mind upgrades and equipment sanity resistance
     const mindUp = profile.upgrades.mind || 0;

@@ -1,13 +1,15 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
 import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats } from "./state.js";
-import { GameEngine, basePlayerSpeed, basePlayerDamage, basePlayerCrit } from "./engine.js";
+import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
 import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
+
+const STEP_MS = 1000 / 60; // fixed simulation step
 
 class GameOrchestrator {
     constructor() {
@@ -324,7 +326,8 @@ class GameOrchestrator {
             sanityResist: eqStats.sanityResist,
             signalClarity: eqStats.signalClarity,
             crit: eqStats.crit,
-            speed: eqStats.speed
+            speed: eqStats.speed,
+            healthRegen: eqStats.healthRegen
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
@@ -343,7 +346,7 @@ class GameOrchestrator {
             }
         });
 
-        this.lastTime = performance.now();
+        this.stepAccumulator = 0;
         
         // Show tutorial if active
         this.ui.renderTutorial(this.activeProfile);
@@ -355,9 +358,12 @@ class GameOrchestrator {
     recalculateStats() {
         if (!this.engine.player) return;
         const eqStats = getEquipmentStats(this.activeProfile);
+        const archStats = getArchiveStats(this.saveData.archive);
+        eqStats.damage += archStats.damage;
+        eqStats.health += archStats.health;
         this.engine.player.stats = eqStats;
         this.engine.player.maxHealth = this.activeProfile.maxHealth + eqStats.health;
-        this.engine.player.damage = basePlayerDamage(this.activeProfile.classType) + eqStats.damage;
+        this.engine.player.damage = playerDamage(this.activeProfile, eqStats.damage);
         this.engine.player.crit = basePlayerCrit(this.activeProfile.classType) + eqStats.crit;
         this.engine.player.speed = basePlayerSpeed(this.activeProfile.classType) + eqStats.speed;
     }
@@ -373,6 +379,11 @@ class GameOrchestrator {
             this.activeProfile.level += 1;
             this.activeProfile.maxHealth += 10;
             this.activeProfile.health = this.activeProfile.maxHealth;
+            // Apply to the live body too: +10 max and a full heal
+            if (this.engine.player) {
+                this.engine.player.maxHealth += 10;
+                this.engine.player.health = this.engine.player.maxHealth;
+            }
             this.activeProfile.signals.unshift(`DIAGNOSTIC: Form stabilized. Level ${this.activeProfile.level} reached.`);
             
             // Audio and Visual Feedback
@@ -397,6 +408,16 @@ class GameOrchestrator {
         }
 
         saveProfiles(this.saveData);
+    }
+
+    // Close out the current life: record its length and reset per-descent counters
+    endLife() {
+        const p = this.activeProfile;
+        const life = this.engine.player ? this.engine.player.currentLifeDuration : 0;
+        p.longestLife = Math.max(p.longestLife || 0, life);
+        p.currentLifeDuration = 0;
+        p.ritualsThisDescent = 0;
+        p.lastRitualTime = 0;
     }
 
     triggerGameOver(cause = "Combat defeat") {
@@ -427,6 +448,7 @@ class GameOrchestrator {
         this.activeProfile.stats.deaths++;
 
         // Reset stats for next descent
+        this.endLife();
         this.activeProfile.health = this.activeProfile.maxHealth;
         this.activeProfile.sanity = 100;
         this.activeProfile.observation = 0; // resets observation on death to start fresh slice
@@ -460,6 +482,7 @@ class GameOrchestrator {
         document.getElementById("death-cause-text").textContent = "Success: Descent completed, observation records synced with Monolith.";
         
         // Reset descent stats, preserving gold and inventory items
+        this.endLife();
         this.activeProfile.sanity = 100;
         this.activeProfile.observation = 0;
         if (!this.activeProfile.stats.escapes) this.activeProfile.stats.escapes = 0;
@@ -483,62 +506,27 @@ class GameOrchestrator {
         };
     }
 
-    loop() {
+    loop(now) {
+        // Fixed-timestep simulation: game logic always advances at 60 steps per
+        // second regardless of the display's refresh rate; rendering happens once
+        // per animation frame.
+        if (this.lastTime === undefined) this.lastTime = now;
+        const elapsed = Math.min(250, Math.max(0, now - this.lastTime));
+        this.lastTime = now;
+
         if (this.gameState === "active" && this.engine.player) {
-            // Engine update callback events
-            this.engine.update((event, data) => {
-                if (event === "player_died") {
-                    this.canvasRenderer.triggerShake(30);
-                    this.triggerGameOver("Collapsed in Keeping House battle.");
-                } else if (event === "boss_wax_trap") {
-                    // Spawn wax trap
-                    audioManager.play("wax_trap");
-                    this.waxTraps.push({
-                        x: data.x,
-                        y: data.y,
-                        radius: 35,
-                        timer: 60, // frames to trigger
-                        active: true
-                    });
-                } else if (event === "boss_spawned") {
-                    this.canvasRenderer.triggerShake(25);
-                    this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
-                    this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
-                } else if (event === "boss_defeated") {
-                    this.canvasRenderer.triggerShake(40);
-                    this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
-                    this.activeProfile.exp += 300;
-                }
-            });
+            this.stepAccumulator = (this.stepAccumulator || 0) + elapsed;
+            let steps = 0;
+            while (this.stepAccumulator >= STEP_MS && steps < 5 && this.gameState === "active") {
+                this.update();
+                this.stepAccumulator -= STEP_MS;
+                steps++;
+            }
+            if (steps === 5) this.stepAccumulator = 0; // too far behind: drop the backlog
 
-            // Run systems update (Observation, Sanity decay)
-            if (this.gameState === "active") {
-                updateObservation(this.activeProfile, this.engine);
-                handleSanityDecay(this.activeProfile, this.engine);
-                const p = this.engine.player;
-                audioManager.update({
-                    sanity: p.sanity,
-                    observation: this.activeProfile.observation,
-                    enemiesNear: this.engine.enemies.filter(e => this.engine.distance(p.x, p.y, e.x, e.y) < 260).length,
-                    bossActive: this.engine.bossSpawned
-                });
-                
-                if (this.activeProfile.levelUpTimer > 0) {
-                    this.activeProfile.levelUpTimer--;
-                }
-
-                // Update traps
-                this.updateWaxTraps();
-
-                // Save automatically every 3 seconds to keep offline dates accurate
-                if (this.canvasRenderer.frame % 180 === 0) {
-                    this.saveActiveProfile();
-                }
-
-                // Render active UI Tab updates
-                if (this.canvasRenderer.frame % 10 === 0) {
-                    this.ui.updateHUD(this.activeProfile, this.engine);
-                }
+            // Render active UI updates
+            if (this.gameState === "active" && this.canvasRenderer.frame % 10 === 0) {
+                this.ui.updateHUD(this.activeProfile, this.engine);
             }
 
             // Draw game
@@ -549,6 +537,62 @@ class GameOrchestrator {
         }
 
         requestAnimationFrame(this.loop);
+    }
+
+    update() {
+        this.simTick = (this.simTick || 0) + 1;
+
+        // Engine update callback events
+        this.engine.update((event, data) => {
+            if (event === "player_died") {
+                this.canvasRenderer.triggerShake(30);
+                this.triggerGameOver("Collapsed in Keeping House battle.");
+            } else if (event === "boss_wax_trap") {
+                // Spawn wax trap
+                audioManager.play("wax_trap");
+                this.waxTraps.push({
+                    x: data.x,
+                    y: data.y,
+                    radius: 35,
+                    timer: 60, // frames to trigger
+                    active: true
+                });
+            } else if (event === "watcher_confrontation") {
+                audioManager.play("observation_threshold", { tier: Math.min(4, data.wave) });
+                this.canvasRenderer.triggerShake(16);
+                this.canvasRenderer.showBanner(`WATCHER CONFRONTATION ${data.wave}`, `${data.count} witness${data.count === 1 ? "" : "es"} descend${data.count === 1 ? "s" : ""}. Survival is being studied.`, "#9a4ab8", 200);
+            } else if (event === "boss_spawned") {
+                this.canvasRenderer.triggerShake(25);
+                this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
+                this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
+            } else if (event === "boss_defeated") {
+                this.canvasRenderer.triggerShake(40);
+                this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
+                this.activeProfile.exp += 300;
+            }
+        });
+
+        if (this.gameState !== "active") return;
+
+        // Run systems update (Observation, Sanity decay)
+        const dt = STEP_MS / 1000;
+        updateObservation(this.activeProfile, this.engine, dt);
+        handleSanityDecay(this.activeProfile, this.engine, dt);
+        const p = this.engine.player;
+        audioManager.update({
+            sanity: p.sanity,
+            observation: this.activeProfile.observation,
+            enemiesNear: this.engine.enemies.filter(e => this.engine.distance(p.x, p.y, e.x, e.y) < 260).length,
+            bossActive: this.engine.bossSpawned
+        });
+
+        // Update traps
+        this.updateWaxTraps();
+
+        // Save automatically every 3 seconds to keep offline dates accurate
+        if (this.simTick % 180 === 0) {
+            this.saveActiveProfile();
+        }
     }
 
     updateWaxTraps() {

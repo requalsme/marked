@@ -4,6 +4,17 @@ import { getEquipmentStats, CLASSES } from "./state.js";
 import { corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
 import { audioManager } from "./audio.js";
 
+// Ritual terms worsen with each bargain signed in the current descent
+// (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
+export function ritualTerms(n) {
+    return {
+        cooldownMs: Math.round(120000 * (1 + 0.5 * n)),
+        titheDamage: Math.max(2, Math.round(8 / (1 + 0.35 * n))),
+        commSanity: 10 + 5 * n,
+        eraseGold: 80 * (n + 1)
+    };
+}
+
 export class GameUI {
     constructor(orchestrator) {
         this.orch = orchestrator;
@@ -178,7 +189,7 @@ export class GameUI {
             hpBar.style.width = `${pct}%`;
         }
         if (hpText) {
-            hpText.textContent = corruptText(`${engine.player.health} / ${engine.player.maxHealth}`, san);
+            hpText.textContent = corruptText(`${Math.ceil(engine.player.health)} / ${engine.player.maxHealth}`, san);
         }
 
         // Apply sanity bar width
@@ -271,9 +282,11 @@ export class GameUI {
         const equipStats = getEquipmentStats(profile);
         const baseClass = CLASSES[profile.classType];
         
-        const dmgTotal = baseClass.baseDamage + equipStats.damage;
-        const hpTotal = baseClass.baseHealth + equipStats.health;
-        const critPct = Math.round((baseClass.baseCrit + equipStats.crit) * 100);
+        // Show the live combat values when in a descent, otherwise the class sheet
+        const live = this.orch.engine && this.orch.engine.player;
+        const dmgTotal = live ? live.damage : baseClass.baseDamage + equipStats.damage;
+        const hpTotal = live ? live.maxHealth : baseClass.baseHealth + equipStats.health;
+        const critPct = Math.round((live ? live.crit : baseClass.baseCrit + equipStats.crit) * 100);
 
         document.getElementById("stats-summary").innerHTML = `
             <div>Base Class: <strong>${corruptText(profile.classType, san)}</strong></div>
@@ -417,25 +430,29 @@ export class GameUI {
 
     renderRituals(profile) {
         const panel = document.getElementById("panel-rituals");
+        const n = profile.ritualsThisDescent || 0;
+        const r = ritualTerms(n);
+        const cooldownLeft = Math.max(0, Math.ceil((r.cooldownMs - (Date.now() - (profile.lastRitualTime || 0))) / 1000));
         panel.innerHTML = `<h3>Rituals & Blood Bargains</h3>
             <p class="tab-desc">Step close to the Altar in the Keeping House to sign dark ledgers. Bargains grant supreme power with steep costs.</p>
             <div class="ritual-list">
                 <div class="ritual-card">
                     <div class="ritual-name">Blood Tithe</div>
-                    <div class="ritual-deal">Permanently lose 25 Max Health. Gain +8 Base Attack Damage.</div>
+                    <div class="ritual-deal">Permanently lose 25 Max Health. Gain +${r.titheDamage} Base Attack Damage.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="blood_tithe">Sign Contract</button>
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Static Communion</div>
-                    <div class="ritual-deal">Spend 10 Sanity. Immediately intercept and decode a hidden Warning Signal.</div>
+                    <div class="ritual-deal">Spend ${r.commSanity} Sanity. Immediately intercept and decode a hidden Warning Signal.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="static_comm">Consume Sanity</button>
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Name Erasure</div>
-                    <div class="ritual-deal">Sacrifice 1 Character Level and 80 Debt Gold. Mask your steps, reducing Observation by 25%.</div>
+                    <div class="ritual-deal">Sacrifice 1 Character Level and ${r.eraseGold} Debt Gold. Mask your steps, reducing Observation by 25%.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="name_erase">Erase Registry</button>
                 </div>
-            </div>`;
+            </div>
+            <div class="ritual-meta">Bargains signed this descent: <strong>${n}</strong> · Altar cooldown: <strong>${Math.round(r.cooldownMs / 1000)}s</strong>${cooldownLeft > 0 ? ` · <span class="ritual-wait">ready in ${cooldownLeft}s</span>` : ""}<br>Each bargain hungers more: cooldowns lengthen and rewards thin until you die or escape.</div>`;
 
         // Check distance to altar
         let nearAltar = false;
@@ -463,9 +480,11 @@ export class GameUI {
 
     executeRitual(profile, type) {
         const now = Date.now();
-        if (profile.lastRitualTime && now - profile.lastRitualTime < 120000) {
+        const terms = ritualTerms(profile.ritualsThisDescent || 0);
+        if (profile.lastRitualTime && now - profile.lastRitualTime < terms.cooldownMs) {
+            const wait = Math.ceil((terms.cooldownMs - (now - profile.lastRitualTime)) / 1000);
             audioManager.play("ritual_fail");
-            profile.signals.unshift("Altar rejects you. The blood needs time to dry. Wait 120 seconds.");
+            profile.signals.unshift(`Altar rejects you. The blood needs time to dry. Wait ${wait} seconds.`);
             this.renderActiveTab();
             return;
         }
@@ -480,7 +499,8 @@ export class GameUI {
                 if (this.orch.engine.player.health > profile.maxHealth) {
                     this.orch.engine.player.health = profile.maxHealth;
                 }
-                this.orch.engine.player.damage += 8;
+                profile.ritualDamage = (profile.ritualDamage || 0) + terms.titheDamage;
+                this.orch.recalculateStats();
                 profile.signals.unshift("Blood Tithe Contract Signed. Max HP decreased, Attack Power amplified.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#9a1616", 20);
                 this.orch.engine.player.sanity = Math.max(0, this.orch.engine.player.sanity - 10);
@@ -489,8 +509,8 @@ export class GameUI {
                 profile.signals.unshift("The Altar rejects your tithe. Your vital blood is too thin.");
             }
         } else if (type === "static_comm") {
-            if (this.orch.engine.player.sanity >= 10) {
-                this.orch.engine.player.sanity -= 10;
+            if (this.orch.engine.player.sanity >= terms.commSanity) {
+                this.orch.engine.player.sanity -= terms.commSanity;
                 // Add a warning signal
                 const warnings = [
                     "Memory Signal: The Keeping House was once a cathedral. We filed names under index tags.",
@@ -505,9 +525,9 @@ export class GameUI {
                 profile.signals.unshift("Comm fails. Your mind is too fractured to tune the static.");
             }
         } else if (type === "name_erase") {
-            if (profile.level > 1 && profile.gold >= 80) {
+            if (profile.level > 1 && profile.gold >= terms.eraseGold) {
                 profile.level -= 1;
-                profile.gold -= 80;
+                profile.gold -= terms.eraseGold;
                 profile.observation = Math.max(0, profile.observation - 25);
                 profile.signals.unshift("Registry erased. Your presence slips into shadow. Observation reduced.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#545454", 20);
@@ -519,6 +539,7 @@ export class GameUI {
 
         if (ritualSuccess) {
             profile.lastRitualTime = now;
+            profile.ritualsThisDescent = (profile.ritualsThisDescent || 0) + 1;
             audioManager.play("ritual_perform", { kind: type });
             if (type === "static_comm") audioManager.play("signal_decode");
             this.orch.canvasRenderer.triggerShake(6);
@@ -643,7 +664,8 @@ export class GameUI {
                 if (intr) intr.type = "broadcast_corpse";
             }
         } else if (action === "devour") {
-            this.orch.engine.player.damage = Math.round(this.orch.engine.player.damage * 1.15);
+            profile.devourMult = (profile.devourMult || 1) * 1.15;
+            this.orch.recalculateStats();
             profile.observation = Math.min(100, profile.observation + 10);
             profile.signals.unshift("Corpse Devoured: fed on tissue snapshots. Attuned +15% damage, but Monolith observed closely.");
             removeCorpse = true;

@@ -1279,3 +1279,14 @@ body.sanity-broken::after {
     opacity: 1;
     transform: translate(-50%, 0);
 }
+
+.ritual-meta {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #b8a98a;
+    line-height: 1.5;
+}
+
+.ritual-wait {
+    color: #d4a343;
+}

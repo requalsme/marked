@@ -4,7 +4,8 @@ import { DEATH_ANIMATION_FRAMES } from "./engine.js";
 
 const NEW_PICKUP_SPRITES = {
     loot_satchel: "debt_coin.idle",
-    sanity_shard: "black_ink_vial.idle",
+    sanity_shard: "sanity_shard.idle",
+    blood_vial: "black_ink_vial.idle",
     signal_fragment: "folded_witness_note.idle",
     cursed_gear_drop: "sealed_name_tag.idle",
     memory_fragment: "impossible_key.idle"
