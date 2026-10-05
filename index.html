@@ -124,76 +124,76 @@
     <div id="game-layout">
         <canvas id="game-canvas"></canvas>
 
-        <!-- Top-left: identity, tarot and active reality trait -->
+        <!-- Top-left: portrait medallion, tarot and reality trait -->
         <div id="game-hud" class="hud-top-left">
             <div class="hud-identity">
-                <div class="character-avatar-container">
-                    <img src="assets/avatar.png" alt="Marked Shape" class="avatar-img">
+                <div class="portrait">
+                    <img src="assets/avatar.png" alt="" class="avatar-img">
+                    <div id="hud-level" class="level-badge font-cinzel">1</div>
                 </div>
                 <div class="hud-profile-info">
-                    <div id="hud-level" class="hud-txt font-cinzel">Level 1</div>
-                    <div id="hud-obs-diag" class="hud-txt obs-diag">Diagnosis: Unread / Fresh</div>
+                    <div id="hud-name" class="hud-name font-cinzel">The Marked</div>
+                    <div id="hud-obs-diag" class="obs-diag">Diagnosis: Unread / Fresh</div>
+                    <div class="hud-cards">
+                        <div id="tarot-box" class="tarot-card-visual"></div>
+                        <div id="trait-box" class="trait-badge-hud">
+                            <div class="trait-title">Trait</div>
+                            <div class="trait-desc"></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div id="tarot-box" class="tarot-card-visual">
-                <div class="tarot-title">No active Tarot draw</div>
-                <div class="tarot-desc">Modifiers roll during descent initialization.</div>
-            </div>
-            <div id="trait-box" class="trait-badge-hud">
-                <div class="trait-title">Trait Active</div>
-                <div class="trait-desc">Trait Description</div>
             </div>
         </div>
 
         <!-- Top-centre: the Monolith's gaze -->
         <div class="hud-top-center">
-            <div class="hud-bar-label font-cinzel">OBSERVED</div>
-            <div class="bar-bg obs-bg">
-                <div id="hud-obs-bar" class="bar-fill obs-fill"></div>
-                <div class="obs-ticks"><span></span><span></span><span></span></div>
-                <div id="hud-obs-text" class="bar-text">Observation: 0%</div>
+            <div class="eye-gauge">
+                <div class="eye-icon" aria-hidden="true"></div>
+                <div class="bar-bg obs-bg" title="Observation: how much the Monolith has learned. Noticed 25% · Studied 50% · Modeled 75% · Known 100%">
+                    <div id="hud-obs-bar" class="bar-fill obs-fill"></div>
+                    <div class="obs-ticks"><span></span><span></span><span></span></div>
+                    <div id="hud-obs-text" class="bar-text">Observation: 0%</div>
+                </div>
             </div>
         </div>
 
         <!-- Top-right: currencies -->
         <div class="hud-top-right">
             <div class="currency-row">
-                <div class="currency-item" title="Debt Gold: spent on rituals and erasures"><span class="currency-label">DG</span><span id="hud-gold">0</span></div>
-                <div class="currency-item" title="Parchment: Strengthen Body upgrades"><span class="currency-label">PAR</span><span id="hud-parchment">0</span></div>
-                <div class="currency-item" title="Ink: Reinforce Mind upgrades"><span class="currency-label">INK</span><span id="hud-ink">0</span></div>
-                <div class="currency-item" title="Wax Seals: Structure Obfuscation upgrades"><span class="currency-label">WAX</span><span id="hud-seal">0</span></div>
+                <div class="currency-item" title="Debt Gold: spent on rituals and erasures"><span class="cur-icon cur-gold"></span><span id="hud-gold">0</span></div>
+                <div class="currency-item" title="Parchment: Strengthen Body upgrades"><span class="cur-icon cur-parchment"></span><span id="hud-parchment">0</span></div>
+                <div class="currency-item" title="Ink: Reinforce Mind upgrades"><span class="cur-icon cur-ink"></span><span id="hud-ink">0</span></div>
+                <div class="currency-item" title="Wax Seals: Structure Obfuscation upgrades"><span class="cur-icon cur-wax"></span><span id="hud-seal">0</span></div>
             </div>
         </div>
 
-        <!-- Bottom: vitals around the action bar -->
+        <!-- Bottom: Flesh and Sanity orbs around the action bar -->
         <div class="hud-bottom">
-            <div class="vital vital-flesh">
-                <div class="hud-bar-label font-cinzel">FLESH</div>
-                <div class="bar-bg">
-                    <div id="hud-hp-bar" class="bar-fill hp-fill"></div>
-                    <div id="hud-hp-text" class="bar-text">150 / 150</div>
-                </div>
+            <div class="orb orb-flesh" title="Flesh">
+                <div id="hud-hp-bar" class="orb-liquid"></div>
+                <div class="orb-glass"></div>
+                <div id="hud-hp-text" class="orb-text">150 / 150</div>
+                <div class="orb-label font-cinzel">Flesh</div>
             </div>
 
             <nav class="action-bar" aria-label="Panels">
-                <button class="tab-btn action-btn" data-tab="inventory" title="Inventory [I]"><span class="action-glyph">⚔</span><span class="action-name">Gear</span><kbd>I</kbd></button>
-                <button class="tab-btn action-btn" data-tab="rituals" title="Rituals [R]"><span class="action-glyph">✠</span><span class="action-name">Rituals</span><kbd>R</kbd></button>
-                <button class="tab-btn action-btn" data-tab="signals" title="Signals [J]"><span class="action-glyph">≋</span><span class="action-name">Signals</span><kbd>J</kbd></button>
-                <button class="tab-btn action-btn" data-tab="corpses" title="Corpses [C]"><span class="action-glyph">☠</span><span class="action-name">Corpses</span><kbd>C</kbd></button>
-                <button class="tab-btn action-btn" data-tab="monolith" title="Monolith [U]"><span class="action-glyph">◈</span><span class="action-name">Monolith</span><kbd>U</kbd></button>
+                <button class="tab-btn action-btn" data-tab="inventory" title="Gear [I]"><span class="slot-icon icon-gear"></span><kbd>I</kbd></button>
+                <button class="tab-btn action-btn" data-tab="rituals" title="Rituals [R]"><span class="slot-icon icon-rituals"></span><kbd>R</kbd></button>
+                <button class="tab-btn action-btn" data-tab="signals" title="Signals [J]"><span class="slot-icon icon-signals"></span><kbd>J</kbd></button>
+                <button class="tab-btn action-btn" data-tab="corpses" title="Corpses [C]"><span class="slot-icon icon-corpses"></span><kbd>C</kbd></button>
+                <button class="tab-btn action-btn" data-tab="monolith" title="Monolith [U]"><span class="slot-icon icon-monolith"></span><kbd>U</kbd></button>
                 <span class="action-sep"></span>
-                <button id="auto-attack-btn" class="action-btn toggle-btn btn-active" title="Auto-combat [T]"><span class="action-glyph">⟳</span><span class="action-name">Auto: ON</span><kbd>T</kbd></button>
+                <button id="auto-attack-btn" class="action-btn toggle-btn btn-active" title="Auto-combat [T]"><span class="slot-glyph">⚔</span><span class="action-name">AUTO</span><kbd>T</kbd></button>
             </nav>
 
-            <div class="vital vital-sanity">
-                <div class="hud-bar-label font-cinzel">SANITY</div>
-                <div class="bar-bg">
-                    <div id="hud-sanity-bar" class="bar-fill sanity-fill"></div>
-                    <div id="hud-sanity-text" class="bar-text">100% Sanity</div>
-                </div>
+            <div class="orb orb-sanity" title="Sanity">
+                <div id="hud-sanity-bar" class="orb-liquid"></div>
+                <div class="orb-glass"></div>
+                <div id="hud-sanity-text" class="orb-text">100%</div>
+                <div class="orb-label font-cinzel">Sanity</div>
             </div>
         </div>
-        <div class="controls-hint">WASD move · Click / Space attack · Shift dash · E interact · M mute · Esc close</div>
+        <div class="controls-hint">WASD move · Click / Space attack · Shift dash · E interact · M mute</div>
 
         <!-- Slide-in panel drawer -->
         <aside id="sidebar-panel" class="drawer" aria-hidden="true">

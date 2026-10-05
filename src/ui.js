@@ -242,7 +242,7 @@ export class GameUI {
         const hpText = document.getElementById("hud-hp-text");
         if (hpBar) {
             const pct = Math.max(0, engine.player.health / engine.player.maxHealth) * 100;
-            hpBar.style.width = `${pct}%`;
+            hpBar.style.height = `${pct}%`;
         }
         if (hpText) {
             hpText.textContent = corruptText(`${Math.ceil(engine.player.health)} / ${engine.player.maxHealth}`, san);
@@ -252,10 +252,10 @@ export class GameUI {
         const sanBar = document.getElementById("hud-sanity-bar");
         const sanText = document.getElementById("hud-sanity-text");
         if (sanBar) {
-            sanBar.style.width = `${san}%`;
+            sanBar.style.height = `${san}%`;
         }
         if (sanText) {
-            sanText.textContent = corruptText(`${san}% Sanity`, san);
+            sanText.textContent = corruptText(`${san}%`, san);
         }
 
         // Apply observation bar width
@@ -273,7 +273,9 @@ export class GameUI {
         }
 
         // Update Level, Gold, Currencies
-        document.getElementById("hud-level").textContent = corruptText(`Level ${profile.level}`, san);
+        document.getElementById("hud-level").textContent = profile.level;
+        const nameEl = document.getElementById("hud-name");
+        if (nameEl) nameEl.textContent = corruptText(profile.name, san);
         document.getElementById("hud-gold").textContent = corruptText(profile.gold.toString(), san);
         document.getElementById("hud-parchment").textContent = corruptText(profile.parchment.toString(), san);
         document.getElementById("hud-ink").textContent = corruptText(profile.ink.toString(), san);
@@ -395,7 +397,7 @@ export class GameUI {
             if (item.icon) {
                 el.innerHTML = `
                     <div class="equip-label">${slotType.toUpperCase()}</div>
-                    <img src="${item.icon}" class="slot-icon-img" style="width: 32px; height: 32px; object-fit: contain; margin-top: 1px;">
+                    <img src="${item.icon}" class="slot-icon-img equip-icon-img">
                 `;
             } else {
                 el.innerHTML = `<div class="equip-label">${slotType.toUpperCase()}</div><span style="color: ${item.color}">${item.name}</span>`;
