@@ -2,7 +2,7 @@
 import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
 import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES, ERA } from "./world.js";
-import { buildModernRoom } from "./roommodern.js";
+import { paintPresentOverlay } from "./roommodern.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
 import { buildPropSprites, propCovers } from "./props.js";
 import { buildFixtures } from "./fixtures.js";
@@ -158,7 +158,8 @@ export class CanvasRenderer {
         }
         if (!this.paintedRoom && (newProps || !this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
-            this.roomTexture = ERA === "present" ? buildModernRoom(wanted) : buildRoomTexture(wanted);
+            this.roomTexture = buildRoomTexture(wanted);
+            if (ERA === "present") paintPresentOverlay(this.roomTexture, wanted);
             this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
@@ -395,8 +396,7 @@ export class CanvasRenderer {
             }
         }
         for (const c of this.candles) {
-            if (c.kind === "sconce" && ERA === "present") this.drawBulkhead(ctx, c);
-            else if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
+            if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
             else if (c.kind === "worklight") this.drawWorkLight(ctx, c);
             else if (c.kind === "floorcandles") this.drawFloorCandles(ctx, c);
             else this.drawCandle(ctx, c);
@@ -437,37 +437,7 @@ export class CanvasRenderer {
         ctx.restore();
     }
 
-    // Caged bulkhead lamp screwed to a column (the present day's sconces)
-    drawBulkhead(ctx, c) {
-        const s = (c.scale || 1) * 1.2, x = c.x, y = c.y - 16 * s;
-        ctx.save();
-        ctx.fillStyle = "#2a2c2f";
-        ctx.beginPath();
-        ctx.ellipse(x, y, 7 * s, 5 * s, 0, 0, Math.PI * 2);
-        ctx.fill();
-        const flick = this.frame % 520 < 6 ? 0.2 : 1;
-        ctx.fillStyle = `rgba(255, 236, 200, ${0.95 * flick})`;
-        ctx.beginPath();
-        ctx.ellipse(x, y, 5 * s, 3.4 * s, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#1a1b1d";
-        ctx.lineWidth = 1 * s;
-        for (const dx of [-2.5, 0, 2.5]) {
-            ctx.beginPath();
-            ctx.moveTo(x + dx * s, y - 4 * s);
-            ctx.lineTo(x + dx * s, y + 4 * s);
-            ctx.stroke();
-        }
-        ctx.globalCompositeOperation = "lighter";
-        const g = ctx.createRadialGradient(x, y, 0, x, y, 24 * s);
-        g.addColorStop(0, `rgba(255, 225, 180, ${0.45 * flick})`);
-        g.addColorStop(1, "rgba(255, 225, 180, 0)");
-        ctx.fillStyle = g;
-        ctx.fillRect(x - 24 * s, y - 24 * s, 48 * s, 48 * s);
-        ctx.restore();
-    }
-
-    // Ritual candles someone has stood straight on the concrete, wax pooled round them
+    // Ritual candles stood straight on the floor, wax pooled round them
     drawFloorCandles(ctx, c) {
         const k = depthScale(c.y);
         const cs = [[-9, 2, 16], [0, -3, 24], [8, 1, 12], [-3, 6, 8], [12, -4, 18]];
@@ -1422,11 +1392,6 @@ export class CanvasRenderer {
             const f = 1 + Math.sin(t * 0.21 + c.x) * 0.05 + (Math.random() - 0.5) * 0.08;
             if (c.kind === "worklight") {
                 lights.push({ x: c.x, y: c.y - 40, r: 300 * c.intensity, color: [225, 235, 255], a: 1.0 });
-                continue;
-            }
-            if (c.kind === "sconce" && ERA === "present") {
-                const sc = c.scale || 1;
-                lights.push({ x: c.x, y: c.y - 16 * sc, r: 200 * c.intensity * sc, color: [255, 225, 185], a: this.frame % 520 < 6 ? 0.15 : 0.8 });
                 continue;
             }
             if (c.kind === "floorcandles") {

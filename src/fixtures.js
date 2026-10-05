@@ -1166,7 +1166,7 @@ function paintShrine(ctx, rand, u, w, out) {
 // Iron-bound oak, its lid sealed shut with wax and ribbon. Painted at several
 // lid angles; the renderer steps through them while it opens.
 
-function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
+function paintChest(lidAngle) {
     return (ctx, rand, u, w, out) => {
         const L = 30, D = 17, BH = 24, LH = 9;
         floorShadow(out.floor, u - L, u + L, w - D, w + D, 0.7);
@@ -1190,7 +1190,7 @@ function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
                 inkPoly(ctx, rand, f.inner, 1);
             }
             if (facing(f.outer) > 0) {
-                fillFace(ctx, f.outer, mat.top, 14, -4);
+                fillFace(ctx, f.outer, DARKWOOD.top, 14, -4);
                 ctx.save();
                 pathPoly(ctx, f.outer);
                 ctx.clip();
@@ -1198,19 +1198,19 @@ function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
                     const A = lidAngle, pt = (uu, dw) => hinge(uu, dw, LH + 0.2, A, w + D, BH);
                     const a0 = pt(u + k - 3, 0), a1 = pt(u + k + 3, 0), b1 = pt(u + k + 3, -2 * D - 1), b0 = pt(u + k - 3, -2 * D - 1);
                     pathPoly(ctx, [a0, a1, b1, b0]);
-                    ctx.fillStyle = (style === "case" ? "#a0a6ac" : "#1e1b19");
+                    ctx.fillStyle = "#1e1b19";
                     ctx.fill();
                 }
                 ctx.restore();
                 inkPoly(ctx, rand, f.outer, 1.1);
             }
             if (facing(f.lip) > 0) {
-                fillFace(ctx, f.lip, mat.front);
+                fillFace(ctx, f.lip, DARKWOOD.front);
                 inkPoly(ctx, rand, f.lip, 1.1);
                 if (!open) {
                     for (const k of [-20, 20]) {
                         const a = P(u + k - 3, w - D - 1, BH), b = P(u + k + 3, w - D - 1, BH + LH);
-                        ctx.fillStyle = (style === "case" ? "#a0a6ac" : "#1e1b19");
+                        ctx.fillStyle = "#1e1b19";
                         ctx.fillRect(a.x, b.y, b.x - a.x, a.y - b.y);
                     }
                 }
@@ -1219,7 +1219,7 @@ function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
 
         if (open && lidAngle > 1.3) drawLid();
         // Body
-        box(ctx, rand, u - L, u + L, w - D, w + D, 0, BH, mat, { hatchFront: 0.2, top: !open });
+        box(ctx, rand, u - L, u + L, w - D, w + D, 0, BH, DARKWOOD, { hatchFront: 0.2, top: !open });
         // Plank seams and iron furniture
         for (const h of [8, 16]) {
             const a = P(u - L + 1, w - D, h), b = P(u + L - 1, w - D, h);
@@ -1227,7 +1227,7 @@ function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
         }
         for (const k of [-20, 20]) {
             const a = P(u + k - 3, w - D, 0), b = P(u + k + 3, w - D, BH);
-            ctx.fillStyle = (style === "case" ? "#a0a6ac" : "#1e1b19");
+            ctx.fillStyle = "#1e1b19";
             ctx.fillRect(a.x, b.y, b.x - a.x, a.y - b.y);
             ctx.fillStyle = "rgba(200, 180, 150, 0.35)";
             for (let h = 3; h < BH; h += 5) {
@@ -1237,7 +1237,7 @@ function paintChest(lidAngle, mat = DARKWOOD, style = "chest") {
         }
         for (const sd of [-1, 1]) {
             const c = P(u + sd * L, w - D, 0), c2 = P(u + sd * (L - 6), w - D, 6);
-            ctx.fillStyle = (style === "case" ? "#a0a6ac" : "#1e1b19");
+            ctx.fillStyle = "#1e1b19";
             ctx.fillRect(Math.min(c.x, c2.x), c2.y, Math.abs(c2.x - c.x), c.y - c2.y);
         }
         // Lock plate
@@ -1811,19 +1811,11 @@ function paintCorpse(kind) {
 // the door bay (world.js). Two oak leaves, iron straps and studs; a great
 // wax seal across the meeting stiles and chains crossed over both leaves.
 
-// Past: oak leaves in the innermost archivolt. Present: steel doors in the
-// rectangular frame of the modern shell (roommodern.js).
-const DOOR = ERA === "present"
-    ? { x0: 748, x1: 852, spring: 108, apex: 108, bottom: 291, square: true }
-    : { x0: 757, x1: 843, spring: 139.6, apex: 90.4, bottom: 286 };
+const DOOR = { x0: 757, x1: 843, spring: 139.6, apex: 90.4, bottom: 286 };
 
 function doorArch(ctx) {
     const cx = (DOOR.x0 + DOOR.x1) / 2;
     ctx.beginPath();
-    if (DOOR.square) {
-        ctx.rect(DOOR.x0, DOOR.apex, DOOR.x1 - DOOR.x0, DOOR.bottom - DOOR.apex);
-        return;
-    }
     ctx.moveTo(DOOR.x0, DOOR.bottom);
     ctx.lineTo(DOOR.x0, DOOR.spring);
     ctx.quadraticCurveTo(DOOR.x0, DOOR.apex + (DOOR.spring - DOOR.apex) * 0.2, cx, DOOR.apex);
@@ -1855,119 +1847,75 @@ function paintDoor(scale) {
         g.beginPath();
         g.rect(lx0, apex - 2, lx1 - lx0, bottom - apex + 4);
         g.clip();
-        if (ERA === "present") {
-            // Grey steel leaf: a wired-glass vision panel, push bar, kick plate
-            const sg = g.createLinearGradient(lx0, 0, lx1, 0);
-            sg.addColorStop(0, side < 0 ? "#6e757b" : "#5a6066");
-            sg.addColorStop(1, side < 0 ? "#5a6066" : "#464b50");
-            g.fillStyle = sg;
-            g.fillRect(lx0, apex, lx1 - lx0, bottom - apex);
-            for (let i = 0; i < 40; i++) {
-                g.fillStyle = rand() < 0.5 ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.05)";
-                g.fillRect(lx0 + rand() * (lx1 - lx0), apex + rand() * (bottom - apex), 2 + rand() * 6, 1);
-            }
-            const wx0 = lx0 + 9, wx1 = lx1 - 9, wy0 = apex + 18, wy1 = apex + 70;
-            g.fillStyle = "#0d1214";
-            g.fillRect(wx0, wy0, wx1 - wx0, wy1 - wy0);
-            g.strokeStyle = "rgba(160, 170, 175, 0.35)";
-            g.lineWidth = 0.5;
-            for (let x = wx0; x < wx1; x += 4) { g.beginPath(); g.moveTo(x, wy0); g.lineTo(x, wy1); g.stroke(); }
-            for (let y = wy0; y < wy1; y += 4) { g.beginPath(); g.moveTo(wx0, y); g.lineTo(wx1, y); g.stroke(); }
-            g.strokeStyle = "#2c3034";
-            g.lineWidth = 2;
-            g.strokeRect(wx0, wy0, wx1 - wx0, wy1 - wy0);
-            // Something pale pressed against the glass on one side
-            if (side > 0) {
-                g.fillStyle = "rgba(200, 195, 185, 0.35)";
+        // Vertical oak boards
+        for (let x = lx0; x < lx1; x += 7.2) {
+            const t = 0.85 + rand() * 0.3;
+            g.fillStyle = `rgb(${66 * t}, ${44 * t}, ${28 * t})`;
+            g.fillRect(x, apex, 7.2, bottom - apex);
+            g.strokeStyle = "rgba(10, 5, 2, 0.3)";
+            g.lineWidth = 0.6;
+            for (let k = 0; k < 3; k++) {
+                const gx = x + 1.5 + rand() * 4;
                 g.beginPath();
-                g.ellipse((wx0 + wx1) / 2, wy0 + 22, 6, 8, 0, 0, Math.PI * 2);
-                g.fill();
-            }
-            g.fillStyle = "#2a2d31";
-            g.fillRect(lx0 + 4, 212, lx1 - lx0 - 8, 5);
-            g.fillStyle = "rgba(255,255,255,0.2)";
-            g.fillRect(lx0 + 4, 212, lx1 - lx0 - 8, 1);
-            g.fillStyle = "#7c8287";
-            g.fillRect(lx0 + 2, bottom - 22, lx1 - lx0 - 4, 20);
-            g.fillStyle = "rgba(0,0,0,0.3)";
-            for (let i = 0; i < 6; i++) g.fillRect(lx0 + 4 + rand() * (lx1 - lx0 - 10), bottom - 20 + rand() * 16, 4 + rand() * 6, 1);
-            hatch(g, rand, lx0, apex, lx1 - lx0, bottom - apex, { angle: 1.15, gap: 3.2, alpha: side > 0 ? 0.2 : 0.1 });
-            // Hinges on the outer edge
-            for (const y of [130, 200, 268]) {
-                g.fillStyle = "#2a2d31";
-                g.fillRect(side < 0 ? lx0 : lx1 - 4, y, 4, 12);
-            }
-        } else {
-            // Vertical oak boards
-            for (let x = lx0; x < lx1; x += 7.2) {
-                const t = 0.85 + rand() * 0.3;
-                g.fillStyle = `rgb(${66 * t}, ${44 * t}, ${28 * t})`;
-                g.fillRect(x, apex, 7.2, bottom - apex);
-                g.strokeStyle = "rgba(10, 5, 2, 0.3)";
-                g.lineWidth = 0.6;
-                for (let k = 0; k < 3; k++) {
-                    const gx = x + 1.5 + rand() * 4;
-                    g.beginPath();
-                    g.moveTo(gx, apex);
-                    g.bezierCurveTo(gx + 1.5, apex + 60, gx - 1.5, bottom - 80, gx + 0.5, bottom);
-                    g.stroke();
-                }
-                g.fillStyle = "rgba(0,0,0,0.55)";
-                g.fillRect(x, apex, 0.9, bottom - apex);
-            }
-            // Darkness gathering under the arch and at the hinge side
-            const v = g.createLinearGradient(0, apex, 0, bottom);
-            v.addColorStop(0, "rgba(0,0,0,0.6)");
-            v.addColorStop(0.35, "rgba(0,0,0,0.15)");
-            v.addColorStop(1, "rgba(0,0,0,0.35)");
-            g.fillStyle = v;
-            g.fillRect(lx0, apex, lx1 - lx0, bottom - apex);
-            hatch(g, rand, lx0, apex, lx1 - lx0, bottom - apex, { angle: 1.15, gap: 3, alpha: side > 0 ? 0.22 : 0.12 });
-            // Strap hinges with split scroll ends, from the hinge side
-            for (const y of [128, 196, 262]) {
-                const from = side < 0 ? x0 : x1, to = cx - side * 5;
-                g.fillStyle = "#171412";
-                g.fillRect(Math.min(from, to), y - 2.6, Math.abs(to - from), 5.2);
-                g.strokeStyle = "#171412";
-                g.lineWidth = 1.6;
-                g.beginPath();
-                g.moveTo(to, y);
-                g.quadraticCurveTo(to + side * 4, y - 6, to + side * 1, y - 8);
-                g.moveTo(to, y);
-                g.quadraticCurveTo(to + side * 4, y + 6, to + side * 1, y + 8);
-                g.stroke();
-                g.fillStyle = "rgba(200, 180, 150, 0.4)";
-                for (let x = Math.min(from, to) + 3; x < Math.max(from, to); x += 6) g.fillRect(x, y - 0.6, 1.2, 1.2);
-                g.strokeStyle = "rgba(200, 180, 150, 0.15)";
-                g.lineWidth = 0.6;
-                g.beginPath();
-                g.moveTo(Math.min(from, to), y - 2.4);
-                g.lineTo(Math.max(from, to), y - 2.4);
+                g.moveTo(gx, apex);
+                g.bezierCurveTo(gx + 1.5, apex + 60, gx - 1.5, bottom - 80, gx + 0.5, bottom);
                 g.stroke();
             }
-            // Studs
-            for (let y = 150; y < bottom - 6; y += 22) {
-                for (let x = lx0 + 6; x < lx1 - 3; x += 9) {
-                    g.fillStyle = "#14110f";
-                    g.beginPath();
-                    g.arc(x, y, 1.3, 0, Math.PI * 2);
-                    g.fill();
-                    g.fillStyle = "rgba(220, 200, 170, 0.3)";
-                    g.fillRect(x - 0.6, y - 0.9, 0.8, 0.8);
-                }
-            }
-            // Ring pull near the meeting stile
-            const rx = cx - side * 7, ry = 226;
-            g.strokeStyle = "#1a1715";
-            g.lineWidth = 1.8;
-            g.beginPath();
-            g.arc(rx, ry + 4, 4, 0, Math.PI * 2);
-            g.stroke();
-            g.fillStyle = "#1a1715";
-            g.beginPath();
-            g.arc(rx, ry, 2.2, 0, Math.PI * 2);
-            g.fill();
+            g.fillStyle = "rgba(0,0,0,0.55)";
+            g.fillRect(x, apex, 0.9, bottom - apex);
         }
+        // Darkness gathering under the arch and at the hinge side
+        const v = g.createLinearGradient(0, apex, 0, bottom);
+        v.addColorStop(0, "rgba(0,0,0,0.6)");
+        v.addColorStop(0.35, "rgba(0,0,0,0.15)");
+        v.addColorStop(1, "rgba(0,0,0,0.35)");
+        g.fillStyle = v;
+        g.fillRect(lx0, apex, lx1 - lx0, bottom - apex);
+        hatch(g, rand, lx0, apex, lx1 - lx0, bottom - apex, { angle: 1.15, gap: 3, alpha: side > 0 ? 0.22 : 0.12 });
+        // Strap hinges with split scroll ends, from the hinge side
+        for (const y of [128, 196, 262]) {
+            const from = side < 0 ? x0 : x1, to = cx - side * 5;
+            g.fillStyle = "#171412";
+            g.fillRect(Math.min(from, to), y - 2.6, Math.abs(to - from), 5.2);
+            g.strokeStyle = "#171412";
+            g.lineWidth = 1.6;
+            g.beginPath();
+            g.moveTo(to, y);
+            g.quadraticCurveTo(to + side * 4, y - 6, to + side * 1, y - 8);
+            g.moveTo(to, y);
+            g.quadraticCurveTo(to + side * 4, y + 6, to + side * 1, y + 8);
+            g.stroke();
+            g.fillStyle = "rgba(200, 180, 150, 0.4)";
+            for (let x = Math.min(from, to) + 3; x < Math.max(from, to); x += 6) g.fillRect(x, y - 0.6, 1.2, 1.2);
+            g.strokeStyle = "rgba(200, 180, 150, 0.15)";
+            g.lineWidth = 0.6;
+            g.beginPath();
+            g.moveTo(Math.min(from, to), y - 2.4);
+            g.lineTo(Math.max(from, to), y - 2.4);
+            g.stroke();
+        }
+        // Studs
+        for (let y = 150; y < bottom - 6; y += 22) {
+            for (let x = lx0 + 6; x < lx1 - 3; x += 9) {
+                g.fillStyle = "#14110f";
+                g.beginPath();
+                g.arc(x, y, 1.3, 0, Math.PI * 2);
+                g.fill();
+                g.fillStyle = "rgba(220, 200, 170, 0.3)";
+                g.fillRect(x - 0.6, y - 0.9, 0.8, 0.8);
+            }
+        }
+        // Ring pull near the meeting stile
+        const rx = cx - side * 7, ry = 226;
+        g.strokeStyle = "#1a1715";
+        g.lineWidth = 1.8;
+        g.beginPath();
+        g.arc(rx, ry + 4, 4, 0, Math.PI * 2);
+        g.stroke();
+        g.fillStyle = "#1a1715";
+        g.beginPath();
+        g.arc(rx, ry, 2.2, 0, Math.PI * 2);
+        g.fill();
         g.restore();
         // Meeting-stile shadow and an inked outline
         g.save();
@@ -2031,7 +1979,7 @@ function paintDoor(scale) {
     vg.fillStyle = vgr;
     vg.fillRect(x0, apex, x1 - x0, bottom - apex);
     for (let i = 0; i < 7; i++) {
-        const y = bottom - 6 - i * 9, inset = DOOR.square ? 6 + i * 3 : 4 + i * 4.5;
+        const y = bottom - 6 - i * 9, inset = 4 + i * 4.5;
         vg.fillStyle = `rgba(${70 - i * 8}, ${12 - i}, ${8 - i}, 1)`;
         vg.fillRect(x0 + inset, y, x1 - x0 - inset * 2, 4);
         vg.fillStyle = "rgba(0,0,0,0.6)";
@@ -2042,266 +1990,117 @@ function paintDoor(scale) {
     return { left: leaf(-1), right: leaf(1), seal, beyond, cx, arch: DOOR };
 }
 
-// ─── Present-day fixtures (ERA === "present") ───────────────────────────
+// ─── Present-day signal station (ERA === "present") ─────────────────────
+// Whoever holds the broadcasts now does it with a portable PA: a speaker on a
+// tripod, a mixer and a shortwave radio on a folding table, a mic on a stand.
 
-const STAINLESS = { top: [168, 174, 178], front: [120, 126, 130], side: [84, 88, 92] };
-const RACKBLACK = { top: [44, 46, 50], front: [26, 27, 30], side: [18, 19, 21] };
-const CASEBLACK = { top: [48, 50, 54], front: [32, 33, 36], side: [22, 23, 25] };
+const PLASTIC = { top: [52, 54, 58], front: [34, 35, 38], side: [24, 25, 27] };
+const TABLETOP = { top: [182, 176, 160], front: [120, 116, 104], side: [90, 86, 78] };
 
-// Stainless autopsy table on the sprayed circle, turned to ritual use
-function paintSteelTable(ctx, rand, u, w, out) {
-    floorShadow(out.floor, u - 48, u + 48, w - 26, w + 26, 0.7);
-    pool(out.floor, rand, u + 10, w - 32, 20, 8, [96, 8, 6]);
-    // Pedestal and drain pipe
-    box(ctx, rand, u - 12, u + 12, w - 10, w + 10, 0, 28, STAINLESS, { hatchFront: 0.15 });
-    const pp = P(u + 12, w - 6, 8);
-    ctx.strokeStyle = "#5a6066";
+function paintPaStation(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 32, u + 32, w - 22, w + 24, 0.65);
+    // Cables snaking across the floor to the mic
+    out.floor.strokeStyle = "#141416";
+    out.floor.lineWidth = 1.3;
+    for (const [a, b] of [[[u + 4, w - 8], [u + 34, w - 34]], [[u - 6, w + 6], [u - 34, w + 20]]]) {
+        const p0 = P(a[0], a[1], 0.3), p1 = P(b[0], b[1], 0.3);
+        out.floor.beginPath();
+        out.floor.moveTo(p0.x, p0.y);
+        out.floor.quadraticCurveTo((p0.x + p1.x) / 2 + 10, (p0.y + p1.y) / 2 + 8, p1.x, p1.y);
+        out.floor.stroke();
+    }
+    // Speaker on a tripod, behind the table
+    const sb = P(u - 14, w + 16, 0), st = P(u - 14, w + 16, 92);
+    for (const dx of [-12, 0, 12]) {
+        ctx.strokeStyle = "#1b1c1f";
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(sb.x, sb.y - 24);
+        ctx.lineTo(sb.x + dx, sb.y + (dx ? 0 : 3));
+        ctx.stroke();
+    }
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(pp.x, pp.y);
-    ctx.quadraticCurveTo(pp.x + 14, pp.y + 2, pp.x + 18, pp.y + 10);
+    ctx.moveTo(sb.x, sb.y - 24);
+    ctx.lineTo(st.x, st.y);
     ctx.stroke();
-    // The top: a shallow steel tray with a raised lip
-    box(ctx, rand, u - 46, u + 46, w - 24, w + 24, 28, 33, STAINLESS, { hatchFront: 0 });
-    const inner = [P(u - 42, w + 20, 33.2), P(u + 42, w + 20, 33.2), P(u + 42, w - 20, 33.2), P(u - 42, w - 20, 33.2)];
-    pathPoly(ctx, inner);
-    const g = ctx.createLinearGradient(0, inner[0].y, 0, inner[2].y);
-    g.addColorStop(0, "#8e959a");
-    g.addColorStop(1, "#b4babe");
-    ctx.fillStyle = g;
-    ctx.fill();
-    // Brushed-steel streaks and the drain hole
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 0.6;
-    for (let k = -18; k < 18; k += 3) {
-        const a = P(u - 40, w + k, 33.3), b = P(u + 40, w + k, 33.3);
+    box(ctx, rand, u - 26, u - 2, w + 8, w + 22, 92, 136, PLASTIC, { hatchFront: 0.05 });
+    const cone = P(u - 14, w + 8, 108), tw = P(u - 14, w + 8, 126);
+    for (const [c, r] of [[cone, 9], [tw, 4]]) {
+        ctx.fillStyle = "#0e0f11";
         ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-    }
-    const dh = P(u + 36, w, 33.3);
-    ctx.fillStyle = "#1a1c1e";
-    ctx.beginPath();
-    ctx.ellipse(dh.x, dh.y, 3, 1.2, 0, 0, Math.PI * 2);
-    ctx.fill();
-    inkPoly(ctx, rand, inner, 0.8, 0.7);
-    // Blood across the tray, running to the drain and over the edge
-    floorBlob(ctx, rand, u + 10, w - 2, 22, 12, "rgba(70, 4, 3, 0.95)", 33.5);
-    floorBlob(ctx, rand, u + 10, w - 2, 18, 9, "rgba(118, 10, 6, 0.95)", 33.6);
-    const edge = P(u + 12, w - 24, 33);
-    drips(ctx, rand, edge.x - 10, edge.x + 12, edge.y, 5, 22, "rgba(110, 8, 6, 0.95)");
-    // Instrument tray: scalpel, forceps, a bone saw
-    const tr = [P(u - 40, w + 4, 33.4), P(u - 18, w + 4, 33.4), P(u - 18, w - 12, 33.4), P(u - 40, w - 12, 33.4)];
-    pathPoly(ctx, tr);
-    ctx.fillStyle = "#c8cdd0";
-    ctx.fill();
-    inkPoly(ctx, rand, tr, 0.7);
-    for (const [a0, a1] of [[[-38, -2], [-22, -4]], [[-38, -6], [-24, -8]]]) {
-        const a = P(u + a0[0], w + a0[1], 33.6), b = P(u + a1[0], w + a1[1], 33.6);
-        ctx.strokeStyle = "#e8ecee";
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-    }
-    // A phone propped up, recording, its red dot live
-    const ph = P(u + 30, w + 14, 33.5);
-    ctx.fillStyle = "#0c0c10";
-    ctx.fillRect(ph.x - 3.5, ph.y - 13, 7, 13);
-    ctx.fillStyle = "#1e2a40";
-    ctx.fillRect(ph.x - 2.6, ph.y - 12, 5.2, 11);
-    out.rec = { x: ph.x + 1.4, y: ph.y - 10.5 };
-    // Candles crowded along the back of the tray, a skull among them
-    const sk = P(u - 6, w + 14, 33.5);
-    drawSkull(ctx, sk.x, sk.y - 7 * sk.s, 7 * sk.s, rand);
-    for (const [cu, cw, ch, r] of [[-38, 18, 22, 2.8], [-30, 20, 14, 2.6], [6, 18, 26, 3], [16, 19, 18, 2.8], [-18, 18, 10, 2.4]]) {
-        out.flames.push(candle(ctx, rand, u + cu, w + cw, 33.5, ch, r));
-    }
-    out.glowAt = P(u + 10, w - 2, 35);
-}
-
-// Comms rack: a black 19-inch cabinet of radios, patch panels and a scanner,
-// a telescopic aerial clamped on top crackling with static
-function paintRack(ctx, rand, u, w, out) {
-    floorShadow(out.floor, u - 22, u + 22, w - 18, w + 18, 0.7);
-    // Printout spilling from a dot-matrix printer on the floor
-    const tape = out.floor;
-    let tu = u + 10, tw = w - 16;
-    tape.strokeStyle = "#e6e4dc";
-    tape.lineWidth = 6;
-    tape.lineJoin = "round";
-    tape.beginPath();
-    let p = P(tu, tw, 0.4);
-    tape.moveTo(p.x, p.y);
-    for (let i = 0; i < 6; i++) {
-        tu += 5 + rand() * 4;
-        tw -= 3 + rand() * 4;
-        p = P(tu + Math.sin(i) * 4, tw, 0.4);
-        tape.lineTo(p.x, p.y);
-    }
-    tape.stroke();
-    box(ctx, rand, u - 18, u + 18, w - 14, w + 14, 0, 112, RACKBLACK, { hatchFront: 0.05 });
-    // Rack units on the front face
-    const unit = (h0, h1, draw) => {
-        const a = P(u - 15, w - 14, h1), b = P(u + 15, w - 14, h0);
-        ctx.fillStyle = "#1c1d20";
-        ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
-        ctx.strokeStyle = "rgba(120, 125, 130, 0.35)";
-        ctx.lineWidth = 0.6;
-        ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-        draw(a, b);
-    };
-    out.leds = [];
-    unit(92, 106, (a, b) => {
-        // Transceiver with an amber display (lit live as the "dial")
-        ctx.fillStyle = "#2a1a08";
-        ctx.fillRect(a.x + 3, a.y + 3, (b.x - a.x) * 0.45, 6);
-        out.dial = { x: a.x + 3 + (b.x - a.x) * 0.22, y: a.y + 6, r: 4 };
-        ctx.fillStyle = "#3a3c40";
-        ctx.beginPath();
-        ctx.arc(b.x - 7, a.y + 7, 4, 0, Math.PI * 2);
+        ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
         ctx.fill();
-    });
-    unit(70, 88, (a, b) => {
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = "#0a0a0c";
-            ctx.fillRect(a.x + 3 + i * 3.3, a.y + 4, 2.2, 3);
-            out.leds.push({ x: a.x + 4 + i * 3.3, y: a.y + 10, c: i % 3 === 0 ? [255, 160, 40] : [80, 255, 120] });
-        }
-    });
-    unit(46, 66, (a, b) => {
-        // Spectrum scanner: a green trace across a small screen
-        ctx.fillStyle = "#06120a";
-        ctx.fillRect(a.x + 3, a.y + 3, b.x - a.x - 6, b.y - a.y - 6);
-        ctx.strokeStyle = "rgba(90, 255, 140, 0.8)";
-        ctx.lineWidth = 0.7;
-        ctx.beginPath();
-        for (let x = a.x + 4; x < b.x - 4; x += 1.5) {
-            const y = (a.y + b.y) / 2 + Math.sin(x * 0.7) * 2 + (rand() < 0.1 ? -5 : 0);
-            if (x === a.x + 4) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        out.glows = [{ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, r: 18, color: [80, 255, 140], a: 0.3 }];
-    });
-    unit(10, 40, (a, b) => {
-        for (let y = a.y + 3; y < b.y - 2; y += 2.4) {
-            ctx.fillStyle = "#2c2e32";
-            ctx.fillRect(a.x + 3, y, b.x - a.x - 6, 1);
-        }
-    });
-    // Coax looping out of the back and over the top
-    const top = P(u, w, 112);
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(top.x + 12, top.y + 2);
-    ctx.bezierCurveTo(top.x + 40, top.y + 20, top.x + 34, top.y + 70, top.x + 22, top.y + 110);
-    ctx.stroke();
-    // Telescopic aerial and a whip of crossbars
-    const m0 = P(u - 6, w, 112), m1 = P(u - 6, w, 176);
-    ctx.strokeStyle = "#8c9298";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(m0.x, m0.y);
-    ctx.lineTo(m1.x, m1.y);
-    ctx.stroke();
-    out.spikes = [];
-    for (const [h, half] of [[150, 16], [162, 11], [172, 7]]) {
-        const c = P(u - 6, w, h);
-        ctx.strokeStyle = "#5a6066";
-        ctx.lineWidth = 1.3;
-        ctx.beginPath();
-        ctx.moveTo(c.x - half, c.y);
-        ctx.lineTo(c.x + half, c.y);
-        ctx.stroke();
-        out.spikes.push({ x: c.x - half, y: c.y }, { x: c.x + half, y: c.y });
-    }
-    out.crown = { x: m1.x, y: m1.y };
-    out.lightAt = P(u, w, 70);
-}
-
-// Mortuary cold store: three stainless doors, one tray pulled out under a sheet
-function paintColdStore(ctx, rand, u, w, out) {
-    floorShadow(out.floor, u - 32, u + 32, w - 30, w + 18, 0.7);
-    box(ctx, rand, u - 28, u + 28, w - 14, w + 16, 0, 96, STAINLESS, { hatchFront: 0.08 });
-    const doors = [[8, 34], [36, 62], [64, 90]];
-    doors.forEach(([h0, h1], i) => {
-        const q = [P(u - 25, w - 14, h0), P(u + 25, w - 14, h0), P(u + 25, w - 14, h1), P(u - 25, w - 14, h1)];
-        if (i === 0) {
-            pathPoly(ctx, q);
-            ctx.fillStyle = "#08090a";
-            ctx.fill();
-            return;
-        }
-        pathPoly(ctx, q);
-        ctx.strokeStyle = "rgba(6,5,5,0.85)";
+        ctx.strokeStyle = "#3a3c40";
         ctx.lineWidth = 1;
         ctx.stroke();
-        const hd = P(u + 18, w - 14, (h0 + h1) / 2);
-        ctx.fillStyle = "#3a3e42";
-        ctx.fillRect(hd.x - 1.5, hd.y - 6, 3, 12);
-        const lb = P(u - 8, w - 14, h1 - 6);
-        ctx.fillStyle = "#e6e2d6";
-        ctx.fillRect(lb.x - 7, lb.y - 2.5, 14, 5);
-        ctx.fillStyle = "rgba(20, 20, 30, 0.7)";
-        ctx.fillRect(lb.x - 5, lb.y - 0.5, 9, 1);
-    });
-    // The lowest tray pulled out, a sheeted body on it, a foot showing
-    box(ctx, rand, u - 25, u + 25, w - 44, w - 14, 10, 14, STAINLESS, { hatchFront: 0 });
-    const sheet = [P(u - 23, w - 42, 15), P(u - 12, w - 44, 22), P(u + 10, w - 44, 21), P(u + 23, w - 40, 17), P(u + 23, w - 18, 15), P(u - 23, w - 18, 15)];
-    ctx.beginPath();
-    ctx.moveTo(sheet[0].x, sheet[0].y);
-    for (let i = 1; i < sheet.length; i++) {
-        const a = sheet[i - 1], b = sheet[i];
-        ctx.quadraticCurveTo(a.x, a.y - 3, b.x, b.y);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.beginPath();
+        ctx.arc(c.x - r * 0.2, c.y - r * 0.2, r * 0.6, Math.PI, Math.PI * 1.6);
+        ctx.stroke();
     }
-    ctx.closePath();
-    ctx.fillStyle = "#d8dbd8";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(6,5,5,0.8)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(60, 70, 80, 0.4)";
-    for (let i = 0; i < 4; i++) {
-        const a = P(u - 16 + i * 10, w - 43, 20), b = P(u - 14 + i * 10, w - 20, 15);
+    out.crown = { x: cone.x, y: cone.y };
+    out.spikes = [{ x: cone.x - 12, y: cone.y - 8 }, { x: cone.x + 12, y: cone.y - 8 }, { x: cone.x - 10, y: cone.y + 10 }, { x: cone.x + 12, y: cone.y + 8 }];
+    // Folding table with the mixer and the radio
+    for (const [du, dw] of [[-26, -12], [26, -12], [-26, 10], [26, 10]]) {
+        const a = P(u + du, w + dw, 0), b = P(u + du, w + dw, 30);
+        ctx.strokeStyle = "#5a5e62";
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
     }
-    const ft = P(u + 26, w - 32, 16);
-    ctx.fillStyle = "#c0b49c";
-    ctx.beginPath();
-    ctx.ellipse(ft.x, ft.y, 3, 4, 0.3, 0, Math.PI * 2);
+    box(ctx, rand, u - 30, u + 30, w - 14, w + 12, 30, 32, TABLETOP, { hatchFront: 0, ink: 0.9 });
+    // Mixer: rows of knobs and faders, a strip of level meters
+    const m = [P(u - 24, w + 6, 32.5), P(u + 4, w + 6, 32.5), P(u + 4, w - 10, 32.5), P(u - 24, w - 10, 32.5)];
+    pathPoly(ctx, m);
+    ctx.fillStyle = "#1c1d20";
     ctx.fill();
-    ctx.fillStyle = "#e6dfc4";
-    ctx.fillRect(ft.x + 2, ft.y + 1, 6, 4);
-    // Compressor grille on top and a red warning beacon
-    const gr = P(u, w, 96);
-    ctx.fillStyle = "#2a2c30";
-    ctx.fillRect(gr.x - 20, gr.y - 3, 40, 3);
-    const bc = P(u + 18, w - 4, 96);
-    ctx.fillStyle = "#3a0806";
+    inkPoly(ctx, rand, m, 0.7);
+    out.leds = [];
+    for (let i = 0; i < 6; i++) {
+        const k = P(u - 21 + i * 4.4, w + 2, 33);
+        ctx.fillStyle = "#c8c8c8";
+        ctx.fillRect(k.x - 0.8, k.y - 0.8, 1.6, 1.6);
+        const f = P(u - 21 + i * 4.4, w - 6, 33);
+        ctx.fillStyle = "#0a0a0a";
+        ctx.fillRect(f.x - 0.5, f.y - 3, 1, 5);
+        ctx.fillStyle = "#e8e8e8";
+        ctx.fillRect(f.x - 1.2, f.y - 1 + (rand() - 0.5) * 3, 2.4, 1);
+        out.leds.push({ x: k.x, y: k.y - 3, c: i < 4 ? [80, 255, 120] : [255, 80, 40] });
+    }
+    // Shortwave radio: a boxy set with a glowing dial and a telescopic aerial
+    box(ctx, rand, u + 8, u + 28, w - 8, w + 6, 32, 44, PLASTIC, { hatchFront: 0.05, ink: 0.9 });
+    const dl = P(u + 18, w - 8, 39);
+    ctx.fillStyle = "#3a2810";
+    ctx.fillRect(dl.x - 7, dl.y - 2.5, 14, 5);
+    out.dial = { x: dl.x, y: dl.y, r: 5 };
+    const a0 = P(u + 26, w, 44), a1 = P(u + 36, w, 92);
+    ctx.strokeStyle = "#9aa0a6";
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
-    ctx.arc(bc.x, bc.y - 4, 3.2, Math.PI, 0);
+    ctx.moveTo(a0.x, a0.y);
+    ctx.lineTo(a1.x, a1.y);
+    ctx.stroke();
+    // Mic on a boom stand at the front, facing the room
+    const mb = P(u + 22, w - 30, 0), mt = P(u + 22, w - 30, 58), mh = P(u + 8, w - 30, 64);
+    ctx.strokeStyle = "#1b1c1f";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(mb.x, mb.y);
+    ctx.lineTo(mt.x, mt.y);
+    ctx.lineTo(mh.x, mh.y);
+    ctx.stroke();
+    ctx.fillStyle = "#1b1c1f";
+    ctx.beginPath();
+    ctx.ellipse(mb.x, mb.y, 7, 2.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillRect(bc.x - 3.5, bc.y - 4, 7, 3);
-    out.lantern = { x: bc.x, y: bc.y - 5 };
-    out.beacon = { x: bc.x, y: bc.y - 5 };
-    // A clipboard hanging off the handle
-    const cb = P(u + 18, w - 15, 50);
-    ctx.fillStyle = "#8a6a3a";
-    ctx.fillRect(cb.x - 5, cb.y, 10, 13);
-    ctx.fillStyle = "#ecebe4";
-    ctx.fillRect(cb.x - 4, cb.y + 2, 8, 10);
-}
-
-// A black flight case with aluminium edges, latched and sealed with wax
-function paintCase(lidAngle) {
-    return paintChest(lidAngle, CASEBLACK, "case");
+    ctx.fillStyle = "#3a3c40";
+    ctx.beginPath();
+    ctx.ellipse(mh.x - 2, mh.y + 1, 3.2, 2.2, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    out.lightAt = P(u, w, 60);
 }
 
 // Pre-rendered glow for a set of polylines (a blurred halo under a bright
@@ -2338,10 +2137,10 @@ const REF = { x: 800, y: 650 }; // where relocatable fixtures (corpses) are pain
 // Footprints (floor units) for the solid fixtures
 const NOW = ERA === "present";
 const FIXTURE_DEFS = {
-    blood_ritual_altar: { du: 48, dw: 27, height: 80, paint: NOW ? paintSteelTable : paintAltar },
-    static_signal_pylon: { du: 20, dw: 14, height: 190, paint: NOW ? paintRack : paintPylon, extent: { du: 50 } },
-    corpse_lantern_shrine: { du: 28, dw: 17, height: 115, paint: NOW ? paintColdStore : paintShrine, extent: { du: 40, dw0: 50 } },
-    wax_record_chest: { du: 31, dw: 18, height: 70, paint: NOW ? paintCase(0) : paintChest(0) }
+    blood_ritual_altar: { du: 48, dw: 27, height: 80, paint: paintAltar },
+    static_signal_pylon: { du: 22, dw: 16, height: 190, paint: NOW ? paintPaStation : paintPylon, extent: { du: 50, dw0: 50 } },
+    corpse_lantern_shrine: { du: 26, dw: 17, height: 115, paint: paintShrine, extent: { du: 40 } },
+    wax_record_chest: { du: 31, dw: 18, height: 70, paint: paintChest(0) }
 };
 const CHEST_ANGLES = [0, 0.35, 0.75, 1.15, 1.6, 1.9];
 
@@ -2374,7 +2173,7 @@ export function buildFixtures(scale = 1) {
     }
     mm.crackGlow = glowLayer(mm.cracks, scale, "235, 45, 22", 0.9, 2.5);
     const chestAt = at("wax_record_chest");
-    fixtures.chestFrames = CHEST_ANGLES.map(a => sprite("wax_record_chest", chestAt, { ...FIXTURE_DEFS.wax_record_chest, paint: NOW ? paintCase(a) : paintChest(a) }));
+    fixtures.chestFrames = CHEST_ANGLES.map(a => sprite("wax_record_chest", chestAt, { ...FIXTURE_DEFS.wax_record_chest, paint: paintChest(a) }));
     for (const [type, kind] of [["fresh_marked_corpse", "fresh"], ["burned_corpse_remains", "burned"], ["broadcast_corpse", "broadcast"]]) {
         fixtures.interactables[type] = sprite(type, REF, { du: 46, dw: 24, height: 60, paint: paintCorpse(kind), relocatable: true });
     }
