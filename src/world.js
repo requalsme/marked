@@ -77,6 +77,9 @@ const PLINTH_Y = 268;
 // Two tallow candles per sconce: [dx, height]
 export const SCONCE_CANDLES = [[-5, 18], [5, 13]];
 
+// Room geometry for the alternative (present-day) shell in roommodern.js
+export const GEOM = { VP_X, BACK_W, BACK_S, HALF_U, WALL_L, WALL_R, WALL_TOP_H, PILLARS, DOOR_PILLARS, SCONCE_PILLARS, SCONCE_Y };
+
 function sideSconce(side, w) {
     const p = project(side * HALF_U, w, 175);
     return { x: p.x + side * -2 * p.s, y: p.y, intensity: 0.7, kind: "sconce", scale: p.s, wall: true };
@@ -101,9 +104,11 @@ export const ROOM = {
         // Floor candelabras (in 2026 the two at the back are tripod work lights)
         { x: 292, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
         { x: 1308, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
-        { x: 205, y: 730, intensity: 0.75 },
-        { x: 1405, y: 650, intensity: 0.75 },
-        { x: 800, y: 952, intensity: 0.7 },
+        { x: 205, y: 730, intensity: 0.75, kind: ERA === "present" ? "floorcandles" : undefined },
+        { x: 1405, y: 650, intensity: 0.75, kind: ERA === "present" ? "floorcandles" : undefined },
+        { x: 800, y: 952, intensity: 0.7, kind: ERA === "present" ? "floorcandles" : undefined },
+        // Clusters of ritual candles stood straight on the flagstones
+        ...(ERA === "present" ? [] : [{ x: 470, y: 590, intensity: 0.5, kind: "floorcandles" }, { x: 1150, y: 580, intensity: 0.5, kind: "floorcandles" }]),
         // Iron sconces on the back-wall pillars
         ...[...SCONCE_PILLARS].map(x => ({ x, y: SCONCE_Y, intensity: 0.75, kind: "sconce", scale: 1, wall: true })),
         // Sconces on the side walls
@@ -194,7 +199,7 @@ export function hatch(ctx, rand, x, y, w, h, { angle = 0.8, gap = 4, alpha = 0.2
     ctx.restore();
 }
 
-function blotch(ctx, x, y, r, color) {
+export function blotch(ctx, x, y, r, color) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, color);
     g.addColorStop(1, color.replace(/[\d.]+\)$/, "0)"));
@@ -202,7 +207,7 @@ function blotch(ctx, x, y, r, color) {
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
-function makeGrain(size = 256) {
+export function makeGrain(size = 256) {
     const c = document.createElement("canvas");
     c.width = c.height = size;
     const g = c.getContext("2d");
@@ -867,6 +872,9 @@ function drawBackWall(ctx, rand) {
         drawThread(ctx, rand, a + 8, b - 8, 112 + rand() * 10, 10 + rand() * 10);
     }
 
+    drawLadder(ctx, rand, 1150, 1212);
+    drawShelfCandles(ctx, rand);
+
     // Tattered banners flanking the door
     drawBanner(ctx, rand, 672, 6, 236);
     drawBanner(ctx, rand, 928, 6, 228);
@@ -881,7 +889,68 @@ function drawBackWall(ctx, rand) {
     ctx.restore();
 }
 
-function pillarWidth(x) {
+// A rolling library ladder hooked to the top rail of a shelf bay
+function drawLadder(ctx, rand, xTop, xFoot) {
+    const top = 96, foot = WALL_BASE_Y + 2;
+    const rails = [[xTop - 9, xFoot - 13], [xTop + 9, xFoot + 13]];
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.moveTo(xTop - 4, top + 6);
+    ctx.lineTo(xTop + 18, top + 6);
+    ctx.lineTo(xFoot + 26, foot);
+    ctx.lineTo(xFoot + 2, foot);
+    ctx.fill();
+    for (let k = 1; k < 14; k++) {
+        const t = k / 14, y = top + (foot - top) * t;
+        const a = rails[0][0] + (rails[0][1] - rails[0][0]) * t, b = rails[1][0] + (rails[1][1] - rails[1][0]) * t;
+        ctx.fillStyle = "#4a3220";
+        ctx.fillRect(a, y - 1.6, b - a, 3.2);
+        ctx.fillStyle = "rgba(255, 210, 160, 0.14)";
+        ctx.fillRect(a, y - 1.6, b - a, 1);
+        inkLine(ctx, rand, a, y + 1.6, b, y + 1.6, 0.7, 0.6);
+    }
+    for (const [x0, x1] of rails) {
+        ctx.strokeStyle = "#5a3d26";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x0, top);
+        ctx.lineTo(x1, foot);
+        ctx.stroke();
+        inkLine(ctx, rand, x0 - 2, top, x1 - 2, foot, 0.9);
+        inkLine(ctx, rand, x0 + 2, top, x1 + 2, foot, 0.9);
+    }
+    // Brass hooks over the rail and wheels at the foot
+    ctx.fillStyle = "#9a7838";
+    for (const [x0] of rails) ctx.fillRect(x0 - 2, top - 6, 4, 7);
+    for (const [, x1] of rails) {
+        ctx.fillStyle = "#1a1512";
+        ctx.beginPath();
+        ctx.arc(x1, foot - 2, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// Candle stubs left burning on the shelf edges, wax run down the books
+function drawShelfCandles(ctx, rand) {
+    for (const [x, y] of [[268, 188], [462, 142], [612, 232], [1000, 188], [1310, 232], [1176, 142]]) {
+        const h = 6 + rand() * 6;
+        ctx.fillStyle = "#d8cba8";
+        ctx.fillRect(x - 2, y - h, 4, h);
+        ctx.fillStyle = "rgba(214, 202, 170, 0.9)";
+        ctx.fillRect(x - 1, y, 2, 4 + rand() * 8);
+        ctx.fillRect(x + 1.2, y, 1.4, 2 + rand() * 5);
+        ctx.fillStyle = "#120a06";
+        ctx.fillRect(x - 0.4, y - h - 2, 0.8, 2);
+        const g = ctx.createRadialGradient(x, y - h - 4, 0, x, y - h - 4, 10);
+        g.addColorStop(0, "rgba(255, 190, 110, 0.9)");
+        g.addColorStop(0.3, "rgba(255, 140, 60, 0.35)");
+        g.addColorStop(1, "rgba(255, 120, 40, 0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(x - 10, y - h - 14, 20, 20);
+    }
+}
+
+export function pillarWidth(x) {
     return DOOR_PILLARS.has(x) ? 42 : 34;
 }
 

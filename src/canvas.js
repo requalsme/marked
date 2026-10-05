@@ -1,7 +1,8 @@
 // Canvas Graphics Renderer with sprite-led room dressing, VFX, lighting, and HUD prompts.
 import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
-import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES } from "./world.js";
+import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES, ERA } from "./world.js";
+import { buildModernRoom } from "./roommodern.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
 import { buildPropSprites, propCovers } from "./props.js";
 import { buildFixtures } from "./fixtures.js";
@@ -157,7 +158,7 @@ export class CanvasRenderer {
         }
         if (!this.paintedRoom && (newProps || !this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
-            this.roomTexture = buildRoomTexture(wanted);
+            this.roomTexture = ERA === "present" ? buildModernRoom(wanted) : buildRoomTexture(wanted);
             this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
@@ -394,8 +395,10 @@ export class CanvasRenderer {
             }
         }
         for (const c of this.candles) {
-            if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
+            if (c.kind === "sconce" && ERA === "present") this.drawBulkhead(ctx, c);
+            else if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
             else if (c.kind === "worklight") this.drawWorkLight(ctx, c);
+            else if (c.kind === "floorcandles") this.drawFloorCandles(ctx, c);
             else this.drawCandle(ctx, c);
         }
     }
@@ -431,6 +434,63 @@ export class CanvasRenderer {
         ctx.beginPath();
         ctx.ellipse(x + sway * 0.3, top - 2 * s, 0.9 * s, 2.1 * s, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+    }
+
+    // Caged bulkhead lamp screwed to a column (the present day's sconces)
+    drawBulkhead(ctx, c) {
+        const s = (c.scale || 1) * 1.2, x = c.x, y = c.y - 16 * s;
+        ctx.save();
+        ctx.fillStyle = "#2a2c2f";
+        ctx.beginPath();
+        ctx.ellipse(x, y, 7 * s, 5 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const flick = this.frame % 520 < 6 ? 0.2 : 1;
+        ctx.fillStyle = `rgba(255, 236, 200, ${0.95 * flick})`;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 5 * s, 3.4 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#1a1b1d";
+        ctx.lineWidth = 1 * s;
+        for (const dx of [-2.5, 0, 2.5]) {
+            ctx.beginPath();
+            ctx.moveTo(x + dx * s, y - 4 * s);
+            ctx.lineTo(x + dx * s, y + 4 * s);
+            ctx.stroke();
+        }
+        ctx.globalCompositeOperation = "lighter";
+        const g = ctx.createRadialGradient(x, y, 0, x, y, 24 * s);
+        g.addColorStop(0, `rgba(255, 225, 180, ${0.45 * flick})`);
+        g.addColorStop(1, "rgba(255, 225, 180, 0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(x - 24 * s, y - 24 * s, 48 * s, 48 * s);
+        ctx.restore();
+    }
+
+    // Ritual candles someone has stood straight on the concrete, wax pooled round them
+    drawFloorCandles(ctx, c) {
+        const k = depthScale(c.y);
+        const cs = [[-9, 2, 16], [0, -3, 24], [8, 1, 12], [-3, 6, 8], [12, -4, 18]];
+        ctx.save();
+        ctx.fillStyle = "rgba(214, 202, 172, 0.85)";
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y + 1, 18 * k, 6 * k, 0, 0, Math.PI * 2);
+        ctx.fill();
+        for (const [dx, dy, h] of cs.sort((a, b) => a[1] - b[1])) {
+            const x = c.x + dx * k, y = c.y + dy * k * 0.5;
+            const g = ctx.createLinearGradient(x - 3 * k, 0, x + 3 * k, 0);
+            g.addColorStop(0, "#6f6250");
+            g.addColorStop(0.45, "#e4d8b6");
+            g.addColorStop(1, "#5c5142");
+            ctx.fillStyle = g;
+            ctx.fillRect(x - 3 * k, y - h * k, 6 * k, h * k);
+            ctx.strokeStyle = "rgba(6,4,4,0.6)";
+            ctx.lineWidth = 0.6;
+            ctx.strokeRect(x - 3 * k, y - h * k, 6 * k, h * k);
+            ctx.fillStyle = "#120a06";
+            ctx.fillRect(x - 0.4 * k, y - h * k - 2.5 * k, 0.8 * k, 2.5 * k);
+            this.drawFlame(ctx, x, y - h * k - 2.5 * k, k, c.x + dx);
+        }
         ctx.restore();
     }
 
@@ -848,6 +908,11 @@ export class CanvasRenderer {
         if (m.eyes) for (const e of m.eyes) glow(e.x, e.y, 3, [255, 90, 30], 0.4 + Math.random() * 0.2);
         if (m.mark) glow(m.mark.x, m.mark.y, 11, [190, 20, 14], 0.22 + Math.sin(t * 0.06) * 0.12);
         if (m.beacon && Math.floor(t / 20) % 3 === 0) glow(m.beacon.x, m.beacon.y, 8, [255, 40, 30], 0.9);
+        for (const gl of m.glows || []) glow(gl.x, gl.y, gl.r, gl.color, gl.a * (0.85 + Math.random() * 0.15));
+        for (const [i, l] of (m.leds || []).entries()) {
+            if ((Math.floor(t / (6 + (i % 5) * 3)) + i) % 3) glow(l.x, l.y, 2.5, l.c, 0.95);
+        }
+        if (m.rec && Math.floor(t / 25) % 2 === 0) glow(m.rec.x, m.rec.y, 3, [255, 30, 20], 1);
         // A dead phone's screen, still waking now and then
         if (m.phone) glow(m.phone.x, m.phone.y, 12, [150, 185, 255], (t + m.phone.x * 7) % 300 < 200 ? 0.45 + Math.random() * 0.08 : 0.08);
         ctx.restore();
@@ -1359,6 +1424,15 @@ export class CanvasRenderer {
                 lights.push({ x: c.x, y: c.y - 40, r: 300 * c.intensity, color: [225, 235, 255], a: 1.0 });
                 continue;
             }
+            if (c.kind === "sconce" && ERA === "present") {
+                const sc = c.scale || 1;
+                lights.push({ x: c.x, y: c.y - 16 * sc, r: 200 * c.intensity * sc, color: [255, 225, 185], a: this.frame % 520 < 6 ? 0.15 : 0.8 });
+                continue;
+            }
+            if (c.kind === "floorcandles") {
+                lights.push({ x: c.x, y: c.y - 20, r: 150 * c.intensity * f, color: [255, 170, 95], a: 0.85 * f });
+                continue;
+            }
             if (c.kind === "sconce") {
                 const sc = c.scale || 1;
                 lights.push({ x: c.x, y: c.y - 22 * sc, r: 230 * c.intensity * f * sc, color: [255, 165, 90], a: 0.8 * f });
@@ -1583,6 +1657,12 @@ export class CanvasRenderer {
         const par = 1.35;
         const cxw = this.camera.x + this.viewW / 2;
         ctx.save();
+        if (ERA === "present") {
+            this.drawForegroundCables(ctx, w, cxw, par);
+            ctx.restore();
+            return;
+        }
+        this.drawForegroundChandelier(ctx, w, cxw, par);
         for (const ch of FOREGROUND_CHAINS) {
             const sx = w / 2 + (ch.x - cxw) * this.zoom * par;
             if (sx < -60 || sx > w + 60) continue;
@@ -1613,6 +1693,92 @@ export class CanvasRenderer {
             }
         }
         ctx.restore();
+    }
+
+    // The present day: cables sagging from the ceiling, a caged lamp on a flex
+    drawForegroundCables(ctx, w, cxw, par) {
+        const z = this.zoom;
+        const X = x => w / 2 + (x - cxw) * z * par;
+        ctx.lineCap = "round";
+        // Loops of cable slung between ceiling points
+        for (const [a, b, sag] of [[40, 420, 70], [380, 700, 40], [1150, 1560, 90]]) {
+            const xa = X(a), xb = X(b);
+            if (xb < -40 || xa > w + 40) continue;
+            ctx.strokeStyle = "rgba(4, 4, 5, 0.95)";
+            ctx.lineWidth = 3 * z * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(xa, -6);
+            ctx.quadraticCurveTo((xa + xb) / 2, sag * z * 2, xb, -6);
+            ctx.stroke();
+        }
+        // Flex cords hanging straight down, two ending in caged work lamps
+        for (const ch of FOREGROUND_CHAINS) {
+            const sx = X(ch.x);
+            if (sx < -60 || sx > w + 60) continue;
+            const len = ch.len * z, sway = Math.sin(this.frame * 0.012 + ch.x) * 5;
+            ctx.strokeStyle = "rgba(4, 4, 5, 0.96)";
+            ctx.lineWidth = 2.2 * z * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(sx, -6);
+            ctx.quadraticCurveTo(sx, len * 0.6, sx + sway, len);
+            ctx.stroke();
+            if (ch.hook) {
+                const x = sx + sway, y = len;
+                ctx.fillStyle = "rgba(6, 6, 7, 0.97)";
+                ctx.beginPath();
+                ctx.moveTo(x - 9 * z, y + 20 * z);
+                ctx.lineTo(x - 4 * z, y);
+                ctx.lineTo(x + 4 * z, y);
+                ctx.lineTo(x + 9 * z, y + 20 * z);
+                ctx.closePath();
+                ctx.fill();
+                const on = (this.frame + ch.x) % 360 > 12;
+                if (on) {
+                    ctx.globalCompositeOperation = "lighter";
+                    const g = ctx.createRadialGradient(x, y + 22 * z, 0, x, y + 22 * z, 46 * z);
+                    g.addColorStop(0, "rgba(255, 220, 170, 0.5)");
+                    g.addColorStop(1, "rgba(255, 220, 170, 0)");
+                    ctx.fillStyle = g;
+                    ctx.fillRect(x - 46 * z, y - 24 * z, 92 * z, 92 * z);
+                    ctx.globalCompositeOperation = "source-over";
+                }
+            }
+        }
+    }
+
+    // The past: an iron chandelier of guttering candles hanging close to us
+    drawForegroundChandelier(ctx, w, cxw, par) {
+        const z = this.zoom, sx = w / 2 + (560 - cxw) * z * par;
+        if (sx < -160 || sx > w + 160) return;
+        const sway = Math.sin(this.frame * 0.01) * 4 * z, cy = 120 * z, x = sx + sway;
+        ctx.strokeStyle = "rgba(4, 3, 3, 0.97)";
+        ctx.lineWidth = 3 * z;
+        ctx.beginPath();
+        ctx.moveTo(sx, -6);
+        ctx.lineTo(x, cy - 30 * z);
+        ctx.stroke();
+        // The hoop, seen from just below, and its arms
+        ctx.lineWidth = 5 * z;
+        ctx.beginPath();
+        ctx.ellipse(x, cy, 70 * z, 16 * z, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = 2.4 * z;
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2;
+            ctx.beginPath();
+            ctx.moveTo(x, cy - 30 * z);
+            ctx.lineTo(x + Math.cos(a) * 70 * z, cy + Math.sin(a) * 16 * z);
+            ctx.stroke();
+        }
+        // Candles standing on the hoop, wax hanging off it in strings
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2 + 0.2;
+            const cx = x + Math.cos(a) * 70 * z, cyy = cy + Math.sin(a) * 16 * z;
+            ctx.fillStyle = "rgba(10, 8, 6, 0.95)";
+            ctx.fillRect(cx - 3 * z, cyy - 14 * z, 6 * z, 14 * z);
+            ctx.fillRect(cx - 1 * z, cyy, 2 * z, (6 + (i % 3) * 5) * z);
+            this.drawFlame(ctx, cx, cyy - 14 * z, z * 1.3, i * 7);
+        }
     }
 
     drawScreenVignette(ctx, w, h) {

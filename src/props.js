@@ -1541,6 +1541,560 @@ function paintCables(ctx, rand, u, w, out) {
     f.fillRect(ps.x + 7, ps.y - 1, 2, 2);
 }
 
+// ─── Present-day furniture (ERA === "present") ──────────────────────────
+// Each old piece has a modern counterpart in the same place and footprint.
+
+const LAMINATE = { top: [150, 146, 136], front: [92, 90, 86], side: [64, 62, 60] };
+const GREYSTEEL = { top: [128, 134, 140], front: [96, 102, 108], side: [66, 70, 76] };
+const BLACKPLASTIC = { top: [52, 54, 58], front: [34, 35, 38], side: [24, 25, 27] };
+const BEIGE = { top: [196, 190, 174], front: [168, 162, 146], side: [120, 116, 104] };
+
+function screen(ctx, rand, u, w, h, wd, ht, out, on = true, cracked = false) {
+    const a = P(u - wd / 2, w, h + ht), b = P(u + wd / 2, w, h);
+    ctx.fillStyle = "#121315";
+    ctx.fillRect(a.x - 1.5, a.y - 1.5, b.x - a.x + 3, b.y - a.y + 3);
+    ctx.fillStyle = on ? "#22324e" : "#08090b";
+    ctx.fillRect(a.x, a.y, b.x - a.x, b.y - a.y);
+    if (on) {
+        ctx.fillStyle = "rgba(190, 210, 240, 0.55)";
+        for (let i = 0; i < 6; i++) ctx.fillRect(a.x + 2, a.y + 2 + i * 2.6, (b.x - a.x - 4) * (0.3 + rand() * 0.6), 0.9);
+        ctx.fillStyle = "rgba(220, 40, 30, 0.8)";
+        ctx.fillRect(b.x - 7, a.y + 2, 4, 3);
+        const c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        out.glows = (out.glows || []).concat([{ x: c.x, y: c.y, r: 26, color: [140, 170, 255], a: 0.4 }]);
+        out.lights = (out.lights || []).concat([{ x: c.x, y: b.y + 6, r: 90, color: [150, 180, 255], a: 0.45 }]);
+    }
+    if (cracked) {
+        ctx.strokeStyle = "rgba(220, 230, 255, 0.6)";
+        ctx.lineWidth = 0.6;
+        const m = { x: a.x + (b.x - a.x) * 0.6, y: a.y + (b.y - a.y) * 0.4 };
+        for (let i = 0; i < 6; i++) {
+            const t = rand() * Math.PI * 2, l = 4 + rand() * 9;
+            ctx.beginPath();
+            ctx.moveTo(m.x, m.y);
+            ctx.lineTo(m.x + Math.cos(t) * l, m.y + Math.sin(t) * l);
+            ctx.stroke();
+        }
+    }
+    // Stand
+    const st = P(u, w + 2, h);
+    ctx.fillStyle = "#1a1b1e";
+    ctx.fillRect(st.x - 1.5, b.y, 3, st.y - b.y + 1);
+    ctx.beginPath();
+    ctx.ellipse(st.x, st.y, 7, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Office desk: steel frame, laminate top, two monitors (one smashed), clutter
+function paintDesk(ctx, rand, u, w, out) {
+    const L = 96, D = 30, H = 36;
+    floorShadow(out.floor, u - L, u + L, w - D, w + D, 0.6);
+    for (const [du, dw] of [[-L + 6, -D + 4], [L - 6, -D + 4], [-L + 6, D - 4], [L - 6, D - 4]]) {
+        box(ctx, rand, u + du - 2, u + du + 2, w + dw - 2, w + dw + 2, 0, H - 3, GREYSTEEL, { hatchFront: 0, ink: 0.8 });
+    }
+    // Modesty panel and a drawer pedestal
+    box(ctx, rand, u - L + 6, u + L - 6, w + D - 6, w + D - 4, 10, H - 3, GREYSTEEL, { hatchFront: 0.1 });
+    box(ctx, rand, u + 40, u + 82, w - D + 4, w + D - 6, 0, H - 4, GREYSTEEL, { hatchFront: 0.15 });
+    for (const h of [8, 18, 27]) {
+        const a = P(u + 46, w - D + 4, h), b = P(u + 76, w - D + 4, h);
+        inkLine(ctx, rand, a.x, a.y, b.x, b.y, 0.7, 0.6);
+        const hd = P(u + 61, w - D + 4, h + 4);
+        ctx.fillStyle = "#2a2c30";
+        ctx.fillRect(hd.x - 4, hd.y - 0.8, 8, 1.6);
+    }
+    box(ctx, rand, u - L - 3, u + L + 3, w - D - 2, w + D + 2, H - 3, H, LAMINATE, { hatchFront: 0.15 });
+    // Monitors
+    screen(ctx, rand, u - 34, w + 12, H + 4, 34, 22, out, true);
+    screen(ctx, rand, u + 8, w + 14, H + 4, 32, 21, out, false, true);
+    // Keyboard, mouse, papers, a mug, a desk lamp
+    const kb = [P(u - 50, w - 4, H + 0.8), P(u - 18, w - 4, H + 0.8), P(u - 18, w - 14, H + 0.8), P(u - 50, w - 14, H + 0.8)];
+    pathPoly(ctx, kb);
+    ctx.fillStyle = "#1e1f22";
+    ctx.fill();
+    ctx.fillStyle = "rgba(120, 125, 130, 0.5)";
+    for (let i = 0; i < 4; i++) {
+        const a = P(u - 48, w - 6 - i * 2.2, H + 1), b = P(u - 20, w - 6 - i * 2.2, H + 1);
+        ctx.fillRect(a.x, a.y - 0.4, b.x - a.x, 0.8);
+    }
+    for (let i = 0; i < 5; i++) flatPaper(ctx, rand, u + 2 + rand() * 50, w - 12 + rand() * 18, H + 0.5, 7, 9);
+    const mug = P(u + 60, w + 8, H);
+    ctx.fillStyle = "#e6e2da";
+    ctx.fillRect(mug.x - 3.5, mug.y - 8, 7, 8);
+    ctx.strokeStyle = "#e6e2da";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(mug.x + 4.5, mug.y - 4, 2.4, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+    ctx.fillStyle = "#3a2214";
+    ctx.beginPath();
+    ctx.ellipse(mug.x, mug.y - 8, 3.4, 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const lb = P(u + 78, w + 14, H), lh = P(u + 70, w + 6, H + 30);
+    ctx.strokeStyle = "#1b1c1f";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(lb.x, lb.y);
+    ctx.lineTo(lb.x + 2, lb.y - 20);
+    ctx.lineTo(lh.x, lh.y);
+    ctx.stroke();
+    ctx.fillStyle = "#1b1c1f";
+    ctx.beginPath();
+    ctx.moveTo(lh.x - 6, lh.y + 4);
+    ctx.lineTo(lh.x + 4, lh.y - 2);
+    ctx.lineTo(lh.x + 6, lh.y + 4);
+    ctx.closePath();
+    ctx.fill();
+    out.glows = (out.glows || []).concat([{ x: lh.x, y: lh.y + 6, r: 18, color: [255, 220, 160], a: 0.5 }]);
+    out.lights = (out.lights || []).concat([{ x: lh.x, y: lh.y + 30, r: 80, color: [255, 220, 170], a: 0.45 }]);
+    // A cable hanging off the back edge
+    const cb = P(u - 34, w + D + 2, H), cf = P(u - 30, w + D + 6, 0);
+    ctx.strokeStyle = "#151515";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cb.x, cb.y);
+    ctx.quadraticCurveTo(cb.x + 6, (cb.y + cf.y) / 2, cf.x, cf.y);
+    ctx.stroke();
+}
+
+// Swivel office chair: five-star base, gas lift, padded seat, mesh back
+function paintOfficeChair(mode) {
+    return (ctx, rand, u, w, out) => {
+        floorShadow(out.floor, u - 16, u + 16, w - 16, w + 16, 0.45, 5);
+        const hub = P(u, w, 4);
+        for (let i = 0; i < 5; i++) {
+            const a = (i / 5) * Math.PI * 2 + 0.3;
+            const f = P(u + Math.cos(a) * 15, w + Math.sin(a) * 15, 1.5);
+            ctx.strokeStyle = "#1c1d20";
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(hub.x, hub.y);
+            ctx.lineTo(f.x, f.y);
+            ctx.stroke();
+            ctx.fillStyle = "#0e0e10";
+            ctx.beginPath();
+            ctx.arc(f.x, f.y + 1, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        const lift = P(u, w, 18);
+        ctx.fillStyle = "#3a3c40";
+        ctx.fillRect(hub.x - 1.6, lift.y, 3.2, hub.y - lift.y);
+        box(ctx, rand, u - 13, u + 13, w - 13, w + 13, 18, 22, BLACKPLASTIC, { hatchFront: 0.1, ink: 0.9 });
+        const bw = mode === "facing" ? w + 12 : w - 13;
+        const b0 = P(u - 12, bw, 24), b1 = P(u + 12, bw, 58);
+        ctx.fillStyle = "#1c1d21";
+        ctx.beginPath();
+        ctx.roundRect(b0.x, b1.y, b1.x - b0.x, b0.y - b1.y, 4);
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        ctx.strokeStyle = "rgba(120, 125, 135, 0.25)";
+        ctx.lineWidth = 0.5;
+        for (let x = b0.x; x < b1.x; x += 2) {
+            ctx.beginPath();
+            ctx.moveTo(x, b1.y);
+            ctx.lineTo(x + 4, b0.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+        ctx.strokeStyle = "rgba(6,5,5,0.9)";
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+        // Armrests
+        for (const sd of [-1, 1]) {
+            const a = P(u + sd * 14, w - 6, 22), b = P(u + sd * 14, w - 6, 32), c = P(u + sd * 14, w + 6, 32);
+            ctx.strokeStyle = "#1c1d20";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.lineTo(c.x, c.y);
+            ctx.stroke();
+        }
+    };
+}
+
+// A row of linked waiting-room seats on a steel beam, one seat torn
+function paintBeamSeats(opts) {
+    return (ctx, rand, u, w, out) => {
+        const L = 58;
+        floorShadow(out.floor, u - L, u + L, w - 14, w + 14, 0.55);
+        for (const du of [-L + 8, L - 8]) {
+            box(ctx, rand, u + du - 2, u + du + 2, w - 10, w + 10, 0, 3, GREYSTEEL, { hatchFront: 0, ink: 0.8 });
+            box(ctx, rand, u + du - 1.5, u + du + 1.5, w - 1.5, w + 1.5, 3, 16, GREYSTEEL, { hatchFront: 0, ink: 0.8 });
+        }
+        box(ctx, rand, u - L + 2, u + L - 2, w - 2, w + 2, 15, 18, GREYSTEEL, { hatchFront: 0, ink: 0.8 });
+        const colours = [[46, 70, 110], [46, 70, 110], [46, 70, 110]];
+        for (let i = 0; i < 3; i++) {
+            const su = u - L + 6 + i * ((2 * L - 12) / 3), sw = (2 * L - 12) / 3 - 3;
+            if (opts.missing === i) continue;
+            const c = colours[i];
+            box(ctx, rand, su, su + sw, w - 12, w + 8, 18, 21, { top: c, front: shadeC(c, -20), side: shadeC(c, -35) }, { hatchFront: 0, ink: 0.8 });
+            // Backrest (we see its back: the pews faced the Monolith, so do these)
+            const bk = [P(su + 1, w - 13, 22), P(su + sw - 1, w - 13, 22), P(su + sw - 1, w - 13, 44), P(su + 1, w - 13, 44)];
+            pathPoly(ctx, bk);
+            ctx.fillStyle = rgb(shadeC(c, -14));
+            ctx.fill();
+            inkPoly(ctx, rand, bk, 0.9);
+            if (opts.torn === i) {
+                const t = P(su + sw * 0.5, w - 13, 34);
+                ctx.fillStyle = "#c9b98e";
+                ctx.beginPath();
+                ctx.moveTo(t.x - 4, t.y - 3);
+                ctx.lineTo(t.x + 5, t.y - 1);
+                ctx.lineTo(t.x + 2, t.y + 5);
+                ctx.lineTo(t.x - 3, t.y + 3);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        if (opts.bag) {
+            // Someone's bag left behind on a seat
+            const b = P(u + 30, w - 4, 21);
+            ctx.fillStyle = "#2a2622";
+            ctx.beginPath();
+            ctx.roundRect(b.x - 8, b.y - 10, 16, 10, 3);
+            ctx.fill();
+            ctx.strokeStyle = "#2a2622";
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y - 10, 5, Math.PI, 0);
+            ctx.stroke();
+        }
+    };
+}
+
+// Four-drawer steel filing cabinet, a drawer pulled with folders sticking up
+function paintFiling(opts) {
+    return (ctx, rand, u, w, out) => {
+        const W = 26, D = 18, H = 96;
+        floorShadow(out.floor, u - W, u + W, w - D, w + D, 0.65);
+        for (let i = 0; i < 8; i++) flatPaper(out.floor, rand, u + (rand() - 0.5) * 60, w - D - 6 - rand() * 22, 0.3, 6, 8);
+        box(ctx, rand, u - W, u + W, w - D, w + D, 0, H, GREYSTEEL, { hatchFront: 0.12 });
+        const dh = (H - 6) / 4;
+        for (let i = 0; i < 4; i++) {
+            const h0 = 3 + i * dh, h1 = h0 + dh - 2;
+            const q = [P(u - W + 3, w - D, h0), P(u + W - 3, w - D, h0), P(u + W - 3, w - D, h1), P(u - W + 3, w - D, h1)];
+            if (opts.open === i) {
+                pathPoly(ctx, q);
+                ctx.fillStyle = "#0a0b0c";
+                ctx.fill();
+                box(ctx, rand, u - W + 3, u + W - 3, w - D - 22, w - D, h0, h1 - 2, GREYSTEEL, { hatchFront: 0, ink: 0.8 });
+                for (let k = 0; k < 7; k++) {
+                    const fu = u - W + 6 + k * 6;
+                    const f0 = P(fu, w - D - 18, h1 - 2), f1 = P(fu + 5, w - D - 18, h1 + 5 + rand() * 4);
+                    ctx.fillStyle = ["#d8c47a", "#c8b264", "#e2d6a0"][k % 3];
+                    ctx.fillRect(f0.x, f1.y, f1.x - f0.x, f0.y - f1.y);
+                    ctx.strokeStyle = "rgba(6,5,5,0.6)";
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(f0.x, f1.y, f1.x - f0.x, f0.y - f1.y);
+                }
+                continue;
+            }
+            pathPoly(ctx, q);
+            ctx.strokeStyle = "rgba(6,5,5,0.75)";
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+            const hd = P(u, w - D, h1 - dh * 0.35), lb = P(u, w - D, h1 - dh * 0.65);
+            ctx.fillStyle = "#2a2c30";
+            ctx.fillRect(hd.x - 6, hd.y - 1, 12, 2.2);
+            ctx.fillStyle = "#e0dccf";
+            ctx.fillRect(lb.x - 5, lb.y - 2, 10, 4);
+        }
+        // Dents and a skull someone set on top
+        if (opts.skull) {
+            const t = P(u - 6, w, H);
+            drawSkull(ctx, t.x, t.y - 7 * t.s, 7 * t.s, rand);
+        }
+        if (opts.candle) out.flames.push(candle(ctx, rand, u + 12, w + 2, H, 9, 2.4));
+    };
+}
+
+// Big office photocopier, lid up, a jam of pages spilling out of it
+function paintCopier(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 34, u + 34, w - 22, w + 22, 0.65);
+    for (let i = 0; i < 14; i++) flatPaper(out.floor, rand, u + (rand() - 0.5) * 80, w - 24 - rand() * 30, 0.3, 7, 9);
+    box(ctx, rand, u - 32, u + 32, w - 20, w + 20, 0, 52, BEIGE, { hatchFront: 0.1 });
+    for (const h of [12, 24, 36]) {
+        const a = P(u - 30, w - 20, h), b = P(u + 30, w - 20, h);
+        inkLine(ctx, rand, a.x, a.y, b.x, b.y, 0.8, 0.6);
+        const hd = P(u, w - 20, h + 5);
+        ctx.fillStyle = "#6a665c";
+        ctx.fillRect(hd.x - 8, hd.y - 1, 16, 2);
+    }
+    // Glowing control panel
+    const cp = [P(u - 26, w - 22, 54), P(u - 4, w - 22, 54), P(u - 4, w - 10, 56), P(u - 26, w - 10, 56)];
+    pathPoly(ctx, cp);
+    ctx.fillStyle = "#2a2c30";
+    ctx.fill();
+    const sc = P(u - 15, w - 16, 55.5);
+    ctx.fillStyle = "#6ad08a";
+    ctx.fillRect(sc.x - 5, sc.y - 1.5, 10, 3);
+    out.glows = [{ x: sc.x, y: sc.y, r: 12, color: [90, 230, 140], a: 0.45 }];
+    // Lid raised, the glass glowing faintly
+    const l0 = P(u - 30, w + 18, 53), l1 = P(u + 30, w + 18, 53), l2 = P(u + 30, w + 14, 86), l3 = P(u - 30, w + 14, 86);
+    pathPoly(ctx, [l0, l1, l2, l3]);
+    ctx.fillStyle = rgb(BEIGE.side);
+    ctx.fill();
+    inkPoly(ctx, rand, [l0, l1, l2, l3], 1);
+    // Pages jammed out of the side tray
+    for (let i = 0; i < 4; i++) {
+        const p = P(u + 34 + i * 2, w - 4 + i * 3, 20 + i * 2);
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(0.3 + i * 0.2);
+        ctx.fillStyle = "#ecebe6";
+        ctx.fillRect(-2, -8, 12, 9);
+        ctx.strokeStyle = "rgba(6,5,5,0.5)";
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(-2, -8, 12, 9);
+        ctx.restore();
+    }
+}
+
+// Rolling whiteboard: photos, marker scrawl, red string to a circled face
+function paintWhiteboard(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 50, u + 50, w - 10, w + 14, 0.5);
+    for (const sd of [-1, 1]) {
+        const top = P(u + sd * 46, w, 112), bot = P(u + sd * 46, w, 6);
+        ctx.strokeStyle = "#8a9096";
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(bot.x, bot.y);
+        ctx.stroke();
+        const f0 = P(u + sd * 46, w - 10, 3), f1 = P(u + sd * 46, w + 12, 3);
+        ctx.beginPath();
+        ctx.moveTo(f0.x, f0.y);
+        ctx.lineTo(f1.x, f1.y);
+        ctx.stroke();
+        for (const f of [f0, f1]) {
+            ctx.fillStyle = "#111";
+            ctx.beginPath();
+            ctx.arc(f.x, f.y + 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    const b0 = P(u - 44, w, 40), b1 = P(u + 44, w, 108);
+    ctx.fillStyle = "#e9ebe8";
+    ctx.fillRect(b0.x, b1.y, b1.x - b0.x, b0.y - b1.y);
+    ctx.strokeStyle = "#9aa0a6";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(b0.x, b1.y, b1.x - b0.x, b0.y - b1.y);
+    // Ghosts of wiped writing
+    ctx.strokeStyle = "rgba(120, 130, 150, 0.2)";
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 6; i++) {
+        const y = b1.y + 6 + i * 9;
+        ctx.beginPath();
+        ctx.moveTo(b0.x + 4, y);
+        ctx.quadraticCurveTo((b0.x + b1.x) / 2, y + (rand() - 0.5) * 6, b1.x - 6, y + 2);
+        ctx.stroke();
+    }
+    // Printed photos and sticky notes, marker words
+    const pins = [];
+    for (let i = 0; i < 9; i++) {
+        const x = b0.x + 8 + (i % 3) * ((b1.x - b0.x - 16) / 3) + rand() * 8, y = b1.y + 6 + Math.floor(i / 3) * 20 + rand() * 4;
+        if (rand() < 0.55) {
+            ctx.fillStyle = "#f2f2ee";
+            ctx.fillRect(x, y, 13, 11);
+            ctx.fillStyle = "#3a3d44";
+            ctx.fillRect(x + 1.5, y + 1.5, 10, 7);
+            ctx.fillStyle = "#9a9a90";
+            ctx.beginPath();
+            ctx.arc(x + 6.5, y + 4.5, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.fillStyle = ["#f0dc5a", "#f2a0b8", "#a8d8f0"][i % 3];
+            ctx.fillRect(x, y, 10, 10);
+            ctx.fillStyle = "rgba(30, 30, 60, 0.6)";
+            for (let k = 0; k < 3; k++) ctx.fillRect(x + 1.5, y + 2 + k * 2.4, 6, 0.7);
+        }
+        pins.push({ x: x + 5, y: y + 1 });
+    }
+    ctx.strokeStyle = "rgba(190, 30, 24, 0.9)";
+    ctx.lineWidth = 0.9;
+    const hub = pins[4];
+    for (const p of pins) {
+        if (p === hub) continue;
+        ctx.beginPath();
+        ctx.moveTo(hub.x, hub.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(200, 20, 16, 0.9)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(hub.x + 1, hub.y + 5, 10, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(30, 40, 120, 0.8)";
+    ctx.font = "italic 7px Arial, sans-serif";
+    ctx.fillText("WHO IS WATCHING?", b0.x + 8, b0.y - 4);
+    // Marker tray
+    const tr0 = P(u - 44, w - 3, 40), tr1 = P(u + 44, w - 3, 40);
+    ctx.fillStyle = "#8a9096";
+    ctx.fillRect(tr0.x, tr0.y - 1, tr1.x - tr0.x, 3);
+}
+
+// The angel, crated as evidence: shrouded in plastic sheeting on a pallet,
+// one wingtip and a hand showing where the sheet has slipped
+function paintShrouded(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 30, u + 30, w - 30, w + 30, 0.7);
+    // Pallet
+    box(ctx, rand, u - 28, u + 28, w - 28, w + 28, 0, 3, CRATE, { hatchFront: 0, ink: 0.8 });
+    for (const du of [-22, 0, 22]) box(ctx, rand, u + du - 4, u + du + 4, w - 28, w + 28, 3, 7, CRATE, { hatchFront: 0, ink: 0.8 });
+    box(ctx, rand, u - 28, u + 28, w - 28, w + 28, 7, 10, CRATE, { hatchFront: 0.1, ink: 0.9 });
+    const base = P(u, w, 10), k = base.s, H = 150 * k;
+    const x = base.x, y = base.y;
+    // The sheet: a tall draped silhouette with wing shoulders under it
+    const sheet = () => {
+        ctx.beginPath();
+        ctx.moveTo(x - 30 * k, y);
+        ctx.quadraticCurveTo(x - 34 * k, y - H * 0.4, x - 30 * k, y - H * 0.72);
+        ctx.quadraticCurveTo(x - 24 * k, y - H * 0.98, x - 10 * k, y - H * 0.86);
+        ctx.quadraticCurveTo(x - 4 * k, y - H * 1.02, x + 6 * k, y - H * 0.95);
+        ctx.quadraticCurveTo(x + 22 * k, y - H * 1.04, x + 30 * k, y - H * 0.78);
+        ctx.quadraticCurveTo(x + 36 * k, y - H * 0.4, x + 31 * k, y);
+        ctx.closePath();
+    };
+    sheet();
+    const g = ctx.createLinearGradient(x - 34 * k, 0, x + 34 * k, 0);
+    g.addColorStop(0, "#c8ccd0");
+    g.addColorStop(0.45, "#a4aab0");
+    g.addColorStop(1, "#5c6268");
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.save();
+    sheet();
+    ctx.clip();
+    ctx.strokeStyle = "rgba(30, 34, 40, 0.4)";
+    ctx.lineWidth = 1.1;
+    for (let i = 0; i < 9; i++) {
+        const fx = x - 26 * k + i * 6.5 * k;
+        ctx.beginPath();
+        ctx.moveTo(fx + (rand() - 0.5) * 4, y - H * (0.7 + rand() * 0.2));
+        ctx.quadraticCurveTo(fx + (rand() - 0.5) * 10, y - H * 0.35, fx + (rand() - 0.5) * 6, y);
+        ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 6; i++) {
+        const fx = x - 24 * k + i * 8 * k;
+        ctx.beginPath();
+        ctx.moveTo(fx, y - H * 0.8);
+        ctx.quadraticCurveTo(fx - 3, y - H * 0.4, fx + 2, y - 4);
+        ctx.stroke();
+    }
+    hatch(ctx, rand, x + 6 * k, y - H * 1.05, 32 * k, H * 1.05, { angle: 1.2, gap: 2.6, alpha: 0.24 });
+    ctx.restore();
+    sheet();
+    ctx.strokeStyle = "rgba(6,5,5,0.9)";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // Stone wingtip and a stone hand where the sheet has slipped
+    ctx.fillStyle = "#8f8c86";
+    ctx.beginPath();
+    ctx.moveTo(x + 28 * k, y - H * 0.8);
+    ctx.quadraticCurveTo(x + 44 * k, y - H * 0.9, x + 40 * k, y - H * 1.06);
+    ctx.quadraticCurveTo(x + 34 * k, y - H * 0.92, x + 26 * k, y - H * 0.88);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(6,5,5,0.9)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#a9a6a0";
+    ctx.beginPath();
+    ctx.ellipse(x - 14 * k, y - H * 0.5, 3 * k, 5 * k, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Ratchet strap, and an evidence tag hanging off it
+    ctx.strokeStyle = "#d8a01a";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x - 32 * k, y - H * 0.3);
+    ctx.quadraticCurveTo(x, y - H * 0.26, x + 33 * k, y - H * 0.32);
+    ctx.stroke();
+    const tg = { x: x - 4 * k, y: y - H * 0.27 };
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(tg.x, tg.y);
+    ctx.lineTo(tg.x + 1, tg.y + 8);
+    ctx.stroke();
+    ctx.fillStyle = "#e8d98a";
+    ctx.fillRect(tg.x - 4, tg.y + 8, 9, 6);
+    ctx.fillStyle = "#222";
+    ctx.font = "bold 3.5px Arial, sans-serif";
+    ctx.fillText("ITEM 117", tg.x - 3.6, tg.y + 12);
+}
+
+// Hospital gurney with a zipped body bag, one wheel turned
+function paintGurney(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 44, u + 44, w - 16, w + 16, 0.6);
+    for (const [du, dw] of [[-36, -10], [36, -10], [-36, 10], [36, 10]]) {
+        const a = P(u + du, w + dw, 3), b = P(u + du, w + dw, 28);
+        ctx.strokeStyle = "#9aa2a8";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.fillStyle = "#151515";
+        ctx.beginPath();
+        ctx.arc(a.x, a.y + 1, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    box(ctx, rand, u - 40, u + 40, w - 12, w + 12, 26, 30, GREYSTEEL, { hatchFront: 0, ink: 0.9 });
+    // Body bag: a black shape swelling over the head, chest and feet
+    const bag = [P(u - 38, w, 31), P(u - 30, w - 10, 38), P(u - 6, w - 11, 40), P(u + 20, w - 10, 37), P(u + 36, w - 8, 35), P(u + 39, w, 31), P(u + 36, w + 9, 33), P(u - 30, w + 10, 34)];
+    ctx.beginPath();
+    ctx.moveTo((bag[0].x + bag[7].x) / 2, (bag[0].y + bag[7].y) / 2);
+    for (let i = 0; i < bag.length; i++) {
+        const a = bag[i], b = bag[(i + 1) % bag.length];
+        ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    }
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, bag[2].y - 4, 0, bag[0].y + 6);
+    g.addColorStop(0, "#3a3c42");
+    g.addColorStop(1, "#0d0e10");
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(4,4,4,0.95)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // Zip, half open at the head; a pale hand fallen out the side
+    const z0 = P(u - 34, w - 2, 39), z1 = P(u + 34, w - 2, 36);
+    ctx.strokeStyle = "#8a8e94";
+    ctx.lineWidth = 0.9;
+    ctx.setLineDash([1.5, 1]);
+    ctx.beginPath();
+    ctx.moveTo(z0.x + 12, z0.y);
+    ctx.lineTo(z1.x, z1.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#060606";
+    ctx.beginPath();
+    ctx.ellipse(z0.x + 6, z0.y, 7, 1.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const hand = P(u - 4, w - 13, 26);
+    ctx.strokeStyle = "#b8ac96";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(hand.x, hand.y - 6);
+    ctx.lineTo(hand.x + 1, hand.y + 6);
+    ctx.stroke();
+    ctx.lineWidth = 0.8;
+    for (let f = -1; f <= 2; f++) {
+        ctx.beginPath();
+        ctx.moveTo(hand.x + f * 0.8, hand.y + 6);
+        ctx.lineTo(hand.x + f * 1.2, hand.y + 10);
+        ctx.stroke();
+    }
+    // Toe tag
+    const tg = P(u + 40, w + 2, 30);
+    ctx.fillStyle = "#e6dfc4";
+    ctx.fillRect(tg.x, tg.y, 6, 4);
+}
+
 // ─── Placement ───────────────────────────────────────────────────────────
 // x, y: where the prop's footprint centre sits in the room (screen/world space).
 // du, dw: footprint half-extents in floor units (for colliders and shadows).
@@ -1550,19 +2104,21 @@ const nearTable = (du, dw) => {
     const p = P(TABLE.u + du, TABLE.w + dw);
     return { x: p.x, y: p.y };
 };
+// Each piece of furniture in the old archive and its present-day counterpart
+const era = (past, present) => (ERA === "present" ? present : past);
 export const PROP_DEFS = [
-    { id: "reading_table", x: 600, y: 470, du: 100, dw: 34, height: 70, paint: paintReadingTable },
+    { id: "reading_table", x: 600, y: 470, du: 100, dw: 34, height: 70, paint: era(paintReadingTable, paintDesk) },
     // Far chair facing us across the table; near chair pulled out, its back to us
-    { id: "chair_far", ...nearTable(-30, 56), du: 16, dw: 16, height: 90, paint: (c, r, u, w, o) => highChair(c, r, u, w, "facing", o) },
-    { id: "chair_near", ...nearTable(22, -50), du: 16, dw: 16, height: 90, paint: (c, r, u, w, o) => highChair(c, r, u, w, "away", o) },
-    { id: "pew_left", x: 642, y: 735, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { candle: -1 }) },
-    { id: "pew_right", x: 958, y: 735, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { broken: true }) },
-    { id: "catalog_a", x: 995, y: 440, du: 34, dw: 18, height: 112, paint: (c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [9, 22, 27], candle: true }), extent: { dw0: 40 } },
-    { id: "catalog_b", x: 1130, y: 440, du: 34, dw: 18, height: 112, paint: (c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [5, 14] }), extent: { dw0: 40 } },
-    { id: "lectern", x: 1268, y: 470, du: 36, dw: 20, height: 90, paint: paintLectern },
-    { id: "evidence_board", x: 333, y: 461, du: 46, dw: 14, height: 140, paint: paintEvidenceBoard },
-    { id: "statue", x: 1396, y: 428, du: 26, dw: 26, height: 180, paint: paintStatue, extent: { dw0: 40 } },
-    { id: "gibbet", x: 1268, y: 705, du: 40, dw: 18, height: 160, paint: paintGibbet },
+    { id: "chair_far", ...nearTable(-30, 56), du: 16, dw: 16, height: 90, paint: era((c, r, u, w, o) => highChair(c, r, u, w, "facing", o), paintOfficeChair("facing")) },
+    { id: "chair_near", ...nearTable(22, -50), du: 16, dw: 16, height: 90, paint: era((c, r, u, w, o) => highChair(c, r, u, w, "away", o), paintOfficeChair("away")) },
+    { id: "pew_left", x: 642, y: 735, du: 60, dw: 14, height: 62, paint: era((c, r, u, w, o) => paintPew(c, r, u, w, o, { candle: -1 }), paintBeamSeats({ torn: 1, bag: true })) },
+    { id: "pew_right", x: 958, y: 735, du: 60, dw: 14, height: 62, paint: era((c, r, u, w, o) => paintPew(c, r, u, w, o, { broken: true }), paintBeamSeats({ missing: 2 })) },
+    { id: "catalog_a", x: 995, y: 440, du: 34, dw: 18, height: 112, paint: era((c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [9, 22, 27], candle: true }), paintFiling({ open: 2, candle: true })), extent: { dw0: 40 } },
+    { id: "catalog_b", x: 1130, y: 440, du: 34, dw: 18, height: 112, paint: era((c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [5, 14] }), paintFiling({ open: 1, skull: true })), extent: { dw0: 40 } },
+    { id: "lectern", x: 1268, y: 470, du: 36, dw: 22, height: 90, paint: era(paintLectern, paintCopier) },
+    { id: "evidence_board", x: 333, y: 461, du: 46, dw: 14, height: 140, paint: era(paintEvidenceBoard, paintWhiteboard) },
+    { id: "statue", x: 1396, y: 428, du: 28, dw: 28, height: 180, paint: era(paintStatue, paintShrouded), extent: { dw0: 40 } },
+    { id: "gibbet", x: 1268, y: 705, du: 44, dw: 16, height: era(160, 60), paint: era(paintGibbet, paintGurney) },
     { id: "crates_left", x: 205, y: 912, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { skull: true }) },
     { id: "crates_right", x: 1440, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) },
     // The present day: things the living have brought in since
