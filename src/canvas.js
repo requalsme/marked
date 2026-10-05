@@ -83,6 +83,8 @@ const ENEMY_ART = {
     }
 };
 
+const PAINTED_ROOM_URL = "assets/room/room_painted.png";
+
 // Moonlight shafts falling from the darkness above the walls
 const MOON_SHAFTS = [
     { top: { x: 330, y: 0 }, w0: 34, floor: { x: 470, y: 560 }, w1: 150 },
@@ -140,10 +142,25 @@ export class CanvasRenderer {
         // Show roughly 640 world units vertically; never zoom out past the room
         this.zoom = Math.max(cssW / WORLD_WIDTH, cssH / WORLD_HEIGHT, Math.min(2.4, cssH / 640));
         const wanted = Math.min(2, Math.max(1, this.zoom * dpr));
-        if (!this.roomTexture || wanted > this.roomTextureScale + 0.25) {
+        if (!this.paintedRoom && (!this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
             this.roomTexture = buildRoomTexture(wanted);
         }
+        this.loadPaintedRoom();
+    }
+
+    // A hand-painted room plate (a repaint of docs/art/reference/room_shell_paintover_base.png
+    // with the same composition) replaces the procedural shell when present.
+    loadPaintedRoom() {
+        if (this.paintedRoomRequested) return;
+        this.paintedRoomRequested = true;
+        const img = new Image();
+        img.onload = () => {
+            this.paintedRoom = img;
+            this.roomTexture = img;
+        };
+        img.onerror = () => {}; // not provided: keep the procedural room
+        img.src = PAINTED_ROOM_URL;
     }
 
     get viewW() { return this.cssW / this.zoom; }
