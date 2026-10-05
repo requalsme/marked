@@ -9,6 +9,7 @@ import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
 import { ROOM } from "./world.js";
+import { installUiTextures } from "./uitextures.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
 
@@ -40,6 +41,7 @@ class GameOrchestrator {
     }
 
     init() {
+        installUiTextures();
         this.bindInputEvents();
         this.initArchiveUI();
         

@@ -16,7 +16,7 @@ export const ROOM = {
     bossSpawn: { x: 800, y: 470 },
     obstacles: [
         { x: 258, y: 420, w: 86, h: 42, label: "Evidence Board" },
-        { x: 1256, y: 424, w: 90, h: 46, label: "Nameplate Heap" },
+        { x: 1256, y: 424, w: 90, h: 46, label: "Ledger Altar" },
         { x: 800, y: 610, r: 40, label: "The Monolith" }
     ],
     interactables: [
@@ -96,6 +96,30 @@ function drawFloor(ctx, rand) {
         y += rowH;
     }
 
+    // Large-scale mottling so the grid dissolves into grime: damp patches,
+    // soot, and lighter worn stone
+    for (let i = 0; i < 160; i++) {
+        const mx = rand() * WORLD_WIDTH, my = top + rand() * h, mr = 40 + rand() * 160;
+        const dark = rand() < 0.7;
+        const g = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
+        g.addColorStop(0, dark ? `rgba(0,0,0,${0.12 + rand() * 0.22})` : `rgba(120,100,80,${0.04 + rand() * 0.06})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+    }
+
+    // Old blood smears and dragged trails
+    for (let i = 0; i < 14; i++) drawBloodSmear(ctx, rand, rand() * WORLD_WIDTH, top + 60 + rand() * (h - 80));
+
+    // Wax drips around where candles stand
+    for (let i = 0; i < 40; i++) {
+        const wx = rand() * WORLD_WIDTH, wy = top + rand() * h;
+        ctx.fillStyle = `rgba(${120 + rand() * 50}, ${10 + rand() * 15}, ${8 + rand() * 10}, ${0.35 + rand() * 0.35})`;
+        ctx.beginPath();
+        ctx.ellipse(wx, wy, 1.5 + rand() * 4, 1 + rand() * 2.5, rand() * 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
     // Worn walking path through the middle of the room
     const path = ctx.createRadialGradient(800, 650, 60, 800, 650, 520);
     path.addColorStop(0, "rgba(140, 110, 70, 0.10)");
@@ -124,8 +148,8 @@ function drawFloor(ctx, rand) {
 
 function drawFlagstone(ctx, rand, x, y, w, h) {
     // Base tone: cool grey-brown with per-stone variation
-    const v = 40 + Math.floor(rand() * 16);
-    const warm = Math.floor(rand() * 8);
+    const v = 30 + Math.floor(rand() * 14);
+    const warm = 2 + Math.floor(rand() * 6);
     const base = `rgb(${v + warm + 6}, ${v + warm}, ${v - 4})`;
 
     // Slightly irregular corners
@@ -181,7 +205,7 @@ function drawFlagstone(ctx, rand, x, y, w, h) {
     ctx.restore();
 
     // Bevel: lit top edge, shadowed bottom edge
-    ctx.strokeStyle = "rgba(255, 235, 200, 0.08)";
+    ctx.strokeStyle = "rgba(255, 235, 200, 0.05)";
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(x + 2, y + 1.5);
@@ -193,6 +217,21 @@ function drawFlagstone(ctx, rand, x, y, w, h) {
     ctx.moveTo(x + 2, y + h - 1);
     ctx.lineTo(x + w - 2, y + h - 1);
     ctx.stroke();
+}
+
+function drawBloodSmear(ctx, rand, x, y) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rand() * Math.PI * 2);
+    const len = 30 + rand() * 90;
+    for (let i = 0; i < 14; i++) {
+        const px = (i / 14) * len, w = (1 - i / 14) * (6 + rand() * 8);
+        ctx.fillStyle = `rgba(${60 + rand() * 30}, 6, 6, ${0.18 + rand() * 0.18})`;
+        ctx.beginPath();
+        ctx.ellipse(px, (rand() - 0.5) * 4, w, w * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
 }
 
 function drawPaperScrap(ctx, rand, x, y) {

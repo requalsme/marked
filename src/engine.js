@@ -57,6 +57,7 @@ export class GameEngine {
         this.projectiles = [];
         this.particles = [];
         this.floatingTexts = [];
+        this.deathFx = [];   // enemy death animations playing out
         this.loot = [];
         this.interactables = []; // Altars, Corpses
         
@@ -358,6 +359,7 @@ export class GameEngine {
         this.updateEnemies(onEvent);
         this.updateProjectiles(onEvent);
         this.updateParticles();
+        this.updateDeathFx();
         this.updateFloatingTexts();
         this.updateLoot();
         this.updateInteractables();
@@ -640,8 +642,9 @@ export class GameEngine {
                 // Roll loot
                 this.spawnLoot(e.x, e.y, e.lootRarity);
                 
-                // Explode particles
-                this.createParticleExplosion(e.x, e.y, "#721010", 20);
+                // Death animation + particles
+                this.deathFx.push({ type: e.type, x: e.x, y: e.y, t: 0, facing: this.player.x < e.x ? "left" : "right" });
+                this.createParticleExplosion(e.x, e.y, "#3a0808", 14);
                 audioManager.play("enemy_death", { pan: this.panFor(e.x) });
                 const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
                 this.player.profile.gold += goldDrop;
@@ -947,6 +950,12 @@ export class GameEngine {
                 }
             }
         }
+    }
+
+    updateDeathFx() {
+        for (const fx of this.deathFx) fx.t++;
+        // Death animations are at most ~1.4s plus a fade
+        this.deathFx = this.deathFx.filter(fx => fx.t < 140);
     }
 
     updateParticles() {

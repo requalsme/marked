@@ -118,8 +118,22 @@ export class GameUI {
         this.hideTooltip();
     }
 
+    // The eye opens as Observation rises; the pupil narrows to a slit
+    updateWatcherEye(obs) {
+        const open = 2 + Math.min(100, obs) / 100 * 17;
+        const d = `M-50 0 Q0 ${-open * 1.6} 50 0 Q0 ${open * 1.6} -50 0Z`;
+        const clip = document.getElementById("eye-clip-path");
+        const lid = document.getElementById("eye-lid-line");
+        if (clip && clip.getAttribute("d") !== d) {
+            clip.setAttribute("d", d);
+            lid.setAttribute("d", d);
+        }
+        const pupil = document.getElementById("eye-pupil");
+        if (pupil) pupil.setAttribute("rx", (4.5 - Math.min(100, obs) / 100 * 3).toFixed(2));
+    }
+
     flashObservation() {
-        const bar = document.querySelector(".obs-bg");
+        const bar = document.querySelector(".watcher-eye");
         if (!bar) return;
         bar.classList.remove("obs-flash");
         void bar.offsetWidth; // restart the animation
@@ -242,7 +256,7 @@ export class GameUI {
         const hpText = document.getElementById("hud-hp-text");
         if (hpBar) {
             const pct = Math.max(0, engine.player.health / engine.player.maxHealth) * 100;
-            hpBar.style.height = `${pct}%`;
+            hpBar.style.width = `${pct}%`;
         }
         if (hpText) {
             hpText.textContent = corruptText(`${Math.ceil(engine.player.health)} / ${engine.player.maxHealth}`, san);
@@ -252,7 +266,7 @@ export class GameUI {
         const sanBar = document.getElementById("hud-sanity-bar");
         const sanText = document.getElementById("hud-sanity-text");
         if (sanBar) {
-            sanBar.style.height = `${san}%`;
+            sanBar.style.width = `${san}%`;
         }
         if (sanText) {
             sanText.textContent = corruptText(`${san}%`, san);
@@ -266,8 +280,11 @@ export class GameUI {
             obsBar.style.width = `${profile.observation}%`;
         }
         if (obsText) {
-            obsText.textContent = corruptText(`Observation: ${profile.observation.toFixed(1)}%`, san);
+            const o = profile.observation;
+            const tier = o >= 100 ? "Known" : o >= 75 ? "Modeled" : o >= 50 ? "Studied" : o >= 25 ? "Noticed" : "Unseen";
+            obsText.textContent = corruptText(`${tier} · ${o.toFixed(0)}%`, san);
         }
+        this.updateWatcherEye(profile.observation);
         if (obsDiag) {
             obsDiag.textContent = corruptText(profile.activeDiagnosis, san);
         }

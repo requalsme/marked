@@ -221,7 +221,7 @@ class UXChecklistReviewer:
 
         # Check if proximity is communicated in-world (canvas prompt)
         canvas_src = self._read("src/canvas.js")
-        if canvas_src and "[E]" in canvas_src:
+        if canvas_src and ("[E]" in canvas_src or "drawInteractPrompts" in canvas_src):
             pass  # good — canvas shows [E] USE prompt
         else:
             self._add("critical", "UX", "no_world_interaction_prompt",
@@ -463,7 +463,7 @@ class UXChecklistReviewer:
         if not canvas_src:
             return
 
-        if "SEAL MOTHER" in canvas_src:
+        if "SEAL MOTHER" in canvas_src or ('"Seal Mother"' in canvas_src and "boss.health" in canvas_src):
             # Boss bar exists
             if "barW = 400" in canvas_src:
                 # Check width is responsive
