@@ -137,31 +137,26 @@ export function updateObservation(profile, engine, dt = 1 / 60) {
 
     profile.activeDiagnosis = `Diagnosis: ${style} / ${systemsReliance}`;
 
-    // Threshold Event check (Watcher signals)
+    // Threshold Event check (Watcher signals). Returns the tier crossed this tick, if any,
+    // so the orchestrator can show an alert.
     const prevObs = profile.observation - totalGain;
-    
-    if (prevObs < 25 && profile.observation >= 25) {
-        profile.signals.unshift("Watcher Signal: Observation grid stable. Target is NOTICED. Keep recording.");
-        triggerWatcherWhisper(profile);
+    for (const t of OBSERVATION_TIERS) {
+        if (prevObs < t.at && profile.observation >= t.at) {
+            profile.signals.unshift(`Watcher Signal: Observation ${t.at}%. Target is ${t.name.toUpperCase()}. ${t.detail}`);
+            triggerWatcherWhisper(profile);
+            return t;
+        }
     }
-    if (prevObs < 50 && profile.observation >= 50) {
-        profile.signals.unshift("Watcher Signal: Observation 50%. The Monolith actively counters your build.");
-        triggerWatcherWhisper(profile);
-    }
-    if (prevObs < 100 && profile.observation >= 100) {
-        profile.signals.unshift("Watcher Signal: Observation 100%. Maximum surveillance achieved.");
-        triggerWatcherWhisper(profile);
-    }
-    if (prevObs < 50 && profile.observation >= 50) {
-        profile.signals.unshift("Watcher Signal: Target is STUDIED. Environmental Reality Traits now active.");
-    }
-    if (prevObs < 75 && profile.observation >= 75) {
-        profile.signals.unshift("Watcher Signal: Target is MODELED. Behavior archives syncing to entities.");
-    }
-    if (prevObs < 100 && profile.observation >= 100) {
-        profile.signals.unshift("Watcher Signal: Shape replication COMPLETE. The Shape has been introduced to Keeping House.");
-    }
+    return null;
 }
+
+// Observation tiers: Noticed → Studied → Modeled → Known
+export const OBSERVATION_TIERS = [
+    { at: 25, tier: 1, name: "Noticed", detail: "The grid has your outline. Keep recording." },
+    { at: 50, tier: 2, name: "Studied", detail: "Environmental Reality Traits are now active." },
+    { at: 75, tier: 3, name: "Modeled", detail: "Behavior archives sync to entities. The Seal Mother stirs." },
+    { at: 100, tier: 4, name: "Known", detail: "Shape replication complete. Maximum surveillance." }
+];
 
 export function triggerWatcherWhisper(profile) {
     const rIdx = Math.floor(Math.random() * WATCHER_QUOTES.length);

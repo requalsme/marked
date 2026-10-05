@@ -8,6 +8,7 @@ import { calculateOfflineProgress } from "./idle.js";
 import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
+import { ROOM } from "./world.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
 
@@ -20,6 +21,7 @@ class GameOrchestrator {
         this.canvas = document.getElementById("game-canvas");
         this.canvasRenderer = new CanvasRenderer(this.canvas);
         this.engine.canvasRenderer = this.canvasRenderer; // cross ref
+        this.canvasRenderer.onDrawWorld = (ctx) => this.drawWaxTraps(ctx);
         
         this.ui = new GameUI(this);
 
@@ -73,6 +75,22 @@ class GameOrchestrator {
                 return;
             }
             if (this.gameState !== "active") return;
+            if (typing) return;
+
+            // Panel hotkeys
+            const panelKeys = { i: "inventory", r: "rituals", j: "signals", c: "corpses", u: "monolith" };
+            if (panelKeys[key] && !e.repeat) {
+                this.ui.toggleTab(panelKeys[key]);
+                return;
+            }
+            if (key === "escape") {
+                this.ui.closeDrawer();
+                return;
+            }
+            if (key === "t" && !e.repeat) {
+                this.ui.toggleAutoAttack();
+                return;
+            }
             // Keep Space/arrows from scrolling the page mid-fight
             if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
             this.engine.keys[key] = true;
@@ -89,18 +107,21 @@ class GameOrchestrator {
         });
 
         // Mouse inputs
+        // Mouse positions are converted from screen space to world space (camera)
         this.canvas.addEventListener("mousemove", (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            this.engine.mouse.x = e.clientX - rect.left;
-            this.engine.mouse.y = e.clientY - rect.top;
+            const w = this.canvasRenderer.screenToWorld(e.clientX, e.clientY);
+            this.engine.mouse.x = w.x;
+            this.engine.mouse.y = w.y;
         });
 
         this.canvas.addEventListener("mousedown", (e) => {
-            if (this.gameState !== "active") return;
-            const rect = this.canvas.getBoundingClientRect();
+            if (this.gameState !== "active" || e.button !== 0) return;
+            const w = this.canvasRenderer.screenToWorld(e.clientX, e.clientY);
+            this.engine.mouse.x = w.x;
+            this.engine.mouse.y = w.y;
             this.engine.mouse.click = true;
-            this.engine.mouse.clickX = e.clientX - rect.left;
-            this.engine.mouse.clickY = e.clientY - rect.top;
+            this.engine.mouse.clickX = w.x;
+            this.engine.mouse.clickY = w.y;
         });
     }
 
@@ -331,19 +352,20 @@ class GameOrchestrator {
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
+        this.canvasRenderer.resize();
+        this.canvasRenderer.snapCamera(this.engine);
+        this.ui.closeDrawer();
 
         // Spawn permanent interactables in Keeping House
-        this.engine.addInteractable("blood_ritual_altar", 205, 362, { radius: 28 });
-        this.engine.addInteractable("static_signal_pylon", 96, 314, { radius: 24 });
-        this.engine.addInteractable("corpse_lantern_shrine", 646, 356, { radius: 25 });
-        this.engine.addInteractable("wax_record_chest", 520, 382, { radius: 22, state: "closed" });
-        this.engine.addInteractable("sealed_zone_door", 375, 176, { radius: 34, state: "closed" });
+        for (const intr of ROOM.interactables) {
+            this.engine.addInteractable(intr.type, intr.x, intr.y, { ...intr.data });
+        }
         
-        // Spawn previous corpse if exists
+        // Place previous corpses where they fell
         this.activeProfile.corpses.forEach(corp => {
-            if (corp.active) {
-                this.engine.addInteractable("decaying_corpse", corp.x, corp.y, { radius: 18, data: corp });
-            }
+            const type = corp.state === "burned" ? "burned_corpse_remains"
+                : corp.state === "broadcasted" ? "broadcast_corpse" : "fresh_marked_corpse";
+            this.engine.addInteractable(type, this.engine.clampX(corp.x), this.engine.clampY(corp.y), { radius: 18, corpse: corp });
         });
 
         this.stepAccumulator = 0;
@@ -443,6 +465,8 @@ class GameOrchestrator {
         };
 
         this.activeProfile.corpses.push(corpseData);
+        // Keep the registry readable: only the five most recent remains persist
+        if (this.activeProfile.corpses.length > 5) this.activeProfile.corpses.shift();
         audioManager.play("corpse_spawn");
         audioManager.setMusicState("silent");
         this.activeProfile.stats.deaths++;
@@ -529,11 +553,8 @@ class GameOrchestrator {
                 this.ui.updateHUD(this.activeProfile, this.engine);
             }
 
-            // Draw game
+            // Draw game (wax traps are drawn through the renderer's world-space hook)
             this.canvasRenderer.draw(this.engine);
-            
-            // Draw wax trap warnings on top
-            this.drawWaxTraps();
         }
 
         requestAnimationFrame(this.loop);
@@ -576,7 +597,13 @@ class GameOrchestrator {
 
         // Run systems update (Observation, Sanity decay)
         const dt = STEP_MS / 1000;
-        updateObservation(this.activeProfile, this.engine, dt);
+        const crossed = updateObservation(this.activeProfile, this.engine, dt);
+        if (crossed) {
+            audioManager.play("observation_threshold", { tier: crossed.tier });
+            this.canvasRenderer.triggerShake(6 + crossed.tier * 3);
+            this.canvasRenderer.showBanner(`YOU ARE ${crossed.name.toUpperCase()}`, `Observation ${crossed.at}% — ${crossed.detail}`, "#c4231b", 200);
+            this.ui.flashObservation();
+        }
         handleSanityDecay(this.activeProfile, this.engine, dt);
         const p = this.engine.player;
         audioManager.update({
@@ -588,6 +615,17 @@ class GameOrchestrator {
 
         // Update traps
         this.updateWaxTraps();
+
+        // Location-dependent panels refresh when the player walks in/out of range
+        if (this.simTick % 15 === 0 && this.ui.isDrawerOpen() && (this.ui.activeTab === "rituals" || this.ui.activeTab === "corpses")) {
+            const near = this.engine.interactables
+                .filter(i => this.engine.distance(p.x, p.y, i.x, i.y) < i.radius + p.radius + 15)
+                .map(i => i.type).join(",");
+            if (near !== this.lastNearKey) {
+                this.lastNearKey = near;
+                this.ui.renderActiveTab();
+            }
+        }
 
         // Save automatically every 3 seconds to keep offline dates accurate
         if (this.simTick % 180 === 0) {
@@ -621,8 +659,7 @@ class GameOrchestrator {
         }
     }
 
-    drawWaxTraps() {
-        const ctx = this.canvasRenderer.ctx;
+    drawWaxTraps(ctx) {
         ctx.save();
         for (const trap of this.waxTraps) {
             const pct = 1.0 - trap.timer / 60;

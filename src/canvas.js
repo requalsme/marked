@@ -1,6 +1,18 @@
 // Canvas Graphics Renderer with sprite-led room dressing, VFX, lighting, and HUD prompts.
 import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
+import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture } from "./world.js";
+import { RARITY_MULTIPLIERS } from "./state.js";
+
+// Pickup glow colours and labels; gear uses its rarity colour
+const LOOT_STYLE = {
+    loot_satchel: { color: "#ffcf4a", label: (l) => `+${l.gold} DG` },
+    sanity_shard: { color: "#5fe3ff", label: () => "Sanity Shard" },
+    blood_vial: { color: "#ff3b3b", label: () => "Blood Vial", tint: "rgba(200, 20, 20, 0.55)" },
+    signal_fragment: { color: "#f4e8c8", label: () => "Signal Fragment" },
+    cursed_gear_drop: { color: "#9a4ab8", label: (l) => l.item ? l.item.name : "Gear", beam: true },
+    memory_fragment: { color: "#b77cff", label: () => "Memory Fragment", beam: true }
+};
 
 const NEW_PICKUP_SPRITES = {
     loot_satchel: "debt_coin.idle",
@@ -16,7 +28,10 @@ const INTERACTABLE_SPRITES = {
     static_signal_pylon: { anim: "many_handed_clock.idle", scale: 0.42, glow: "rgba(88, 151, 112, 0.36)", label: "TUNE" },
     corpse_lantern_shrine: { anim: "paper_root_growth.idle", scale: 0.46, glow: "rgba(207, 184, 101, 0.34)", label: "FILE" },
     wax_record_chest: { anim: "tiny_chained_book.idle", scale: 0.44, glow: "rgba(184, 31, 31, 0.28)", label: "OPEN" },
-    sealed_zone_door: { anim: "wax_sealed_door.idle", scale: 0.58, glow: "rgba(189, 41, 34, 0.32)", label: "EXIT" }
+    sealed_zone_door: { anim: "wax_sealed_door.idle", scale: 0.58, glow: "rgba(189, 41, 34, 0.32)", label: "EXIT" },
+    fresh_marked_corpse: { label: "SEARCH" },
+    burned_corpse_remains: { label: "REMAINS" },
+    broadcast_corpse: { label: "REMAINS" }
 };
 
 export class CanvasRenderer {
@@ -28,13 +43,68 @@ export class CanvasRenderer {
         this.sanityBreakFlash = 0;
         this.wasSanityBroken = false;
         this.frame = 0;
-        this.candles = [
-            { x: 96, y: 150, intensity: 0.9 },
-            { x: 660, y: 154, intensity: 0.9 },
-            { x: 372, y: 246, intensity: 1.15 },
-            { x: 206, y: 334, intensity: 0.75 },
-            { x: 630, y: 324, intensity: 0.75 }
-        ];
+        this.candles = ROOM.candles;
+
+        // Camera: world units → CSS pixels via zoom, CSS → device pixels via dpr
+        this.camera = { x: 0, y: 0 };
+        this.zoom = 1;
+        this.dpr = 1;
+        this.cssW = 0;
+        this.cssH = 0;
+        this.roomTexture = null;
+        this.roomTextureScale = 0;
+        this.onDrawWorld = null; // hook for world-space overlays (wax traps)
+        this.resize();
+        window.addEventListener("resize", () => this.resize());
+    }
+
+    resize() {
+        const rect = this.canvas.getBoundingClientRect();
+        const cssW = Math.max(320, Math.round(rect.width || window.innerWidth));
+        const cssH = Math.max(240, Math.round(rect.height || window.innerHeight));
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        if (cssW === this.cssW && cssH === this.cssH && dpr === this.dpr) return;
+        this.cssW = cssW;
+        this.cssH = cssH;
+        this.dpr = dpr;
+        this.canvas.width = Math.round(cssW * dpr);
+        this.canvas.height = Math.round(cssH * dpr);
+        // Show roughly 640 world units vertically; never zoom out past the room
+        this.zoom = Math.max(cssW / WORLD_WIDTH, cssH / WORLD_HEIGHT, Math.min(2.4, cssH / 640));
+        const wanted = Math.min(2, Math.max(1, this.zoom * dpr));
+        if (!this.roomTexture || wanted > this.roomTextureScale + 0.25) {
+            this.roomTextureScale = wanted;
+            this.roomTexture = buildRoomTexture(wanted);
+        }
+    }
+
+    get viewW() { return this.cssW / this.zoom; }
+    get viewH() { return this.cssH / this.zoom; }
+
+    updateCamera(engine) {
+        const p = engine.player;
+        if (!p) return;
+        const tx = p.x - this.viewW / 2;
+        const ty = p.y - this.viewH / 2;
+        // Smooth follow
+        this.camera.x += (tx - this.camera.x) * 0.14;
+        this.camera.y += (ty - this.camera.y) * 0.14;
+        this.camera.x = Math.max(0, Math.min(WORLD_WIDTH - this.viewW, this.camera.x));
+        this.camera.y = Math.max(0, Math.min(WORLD_HEIGHT - this.viewH, this.camera.y));
+    }
+
+    snapCamera(engine) {
+        this.camera.x = engine.player.x - this.viewW / 2;
+        this.camera.y = engine.player.y - this.viewH / 2;
+        this.updateCamera(engine);
+    }
+
+    screenToWorld(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left) / this.zoom + this.camera.x,
+            y: (clientY - rect.top) / this.zoom + this.camera.y
+        };
     }
 
     triggerShake(amount) {
@@ -82,7 +152,7 @@ export class CanvasRenderer {
 
         ctx.save();
         ctx.globalAlpha = alpha;
-        const y = 92;
+        const y = Math.round(this.cssH * 0.24);
         const band = ctx.createLinearGradient(0, 0, w, 0);
         band.addColorStop(0, "rgba(5,4,4,0)");
         band.addColorStop(0.2, "rgba(5,4,4,0.82)");
@@ -118,20 +188,26 @@ export class CanvasRenderer {
 
     draw(engine) {
         this.frame++;
+        this.resize();
+        this.updateCamera(engine);
         const ctx = this.ctx;
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        const w = this.cssW;
+        const h = this.cssH;
 
-        ctx.save();
+        let sx = 0, sy = 0;
         if (this.screenShake > 0) {
-            const dx = (Math.random() - 0.5) * this.screenShake;
-            const dy = (Math.random() - 0.5) * this.screenShake;
-            ctx.translate(dx, dy);
+            sx = (Math.random() - 0.5) * this.screenShake;
+            sy = (Math.random() - 0.5) * this.screenShake;
             this.screenShake *= 0.9;
             if (this.screenShake < 0.2) this.screenShake = 0;
         }
 
-        this.drawRoomBackdrop(ctx, w, h);
+        // ── World pass (world units) ──
+        const k = this.dpr * this.zoom;
+        ctx.setTransform(k, 0, 0, k, (-this.camera.x * this.zoom + sx) * this.dpr, (-this.camera.y * this.zoom + sy) * this.dpr);
+        ctx.imageSmoothingEnabled = true;
+
+        this.drawRoomBackdrop(ctx);
         this.drawObstacles(ctx, engine);
         this.drawInteractables(ctx, engine);
         this.drawLoot(ctx, engine);
@@ -152,56 +228,56 @@ export class CanvasRenderer {
 
         this.drawProjectiles(ctx, engine);
         this.drawParticles(ctx, engine);
-        this.drawFloatingTexts(ctx, engine);
         this.drawMonolithRunes(ctx, engine);
-        this.drawLightingPass(ctx, w, h, engine);
+        if (this.onDrawWorld) this.onDrawWorld(ctx);
+        this.drawLightingPass(ctx, engine);
+        // Drawn after lighting so they read clearly in the dark
+        this.drawLootHighlights(ctx, engine);
+        this.drawFloatingTexts(ctx, engine);
+        this.drawInteractPrompts(ctx, engine);
+        this.drawEnemyHealthBars(ctx, engine);
+
+        // ── Screen pass (CSS pixels) ──
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        this.drawScreenVignette(ctx, w, h);
         this.drawSanityEffects(ctx, w, h, engine);
         this.drawCanvasUI(ctx, w, h, engine);
         this.applyGlitchShader(ctx, w, h, engine);
         this.drawDeathOverlay(ctx, w, h, engine);
-
-        ctx.restore();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
     }
 
-    drawRoomBackdrop(ctx, w, h) {
-        const wallGrad = ctx.createLinearGradient(0, 0, 0, h);
-        wallGrad.addColorStop(0, "#050405");
-        wallGrad.addColorStop(0.42, "#11100d");
-        wallGrad.addColorStop(0.43, "#15110e");
-        wallGrad.addColorStop(1, "#090806");
-        ctx.fillStyle = wallGrad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = "rgba(115, 77, 45, 0.12)";
-        for (let y = 34; y < 180; y += 28) {
-            ctx.fillRect(0, y, w, 1);
+    drawRoomBackdrop(ctx) {
+        if (this.roomTexture) {
+            ctx.drawImage(this.roomTexture, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+        } else {
+            ctx.fillStyle = "#0d0b09";
+            ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
         }
+        // Living details on top of the static room
+        this.drawSprite(ctx, "red_string_evidence_board.idle", 560, 214, 0.42, 0.9);
+        this.drawSprite(ctx, "ink_wall_stain.idle", 1040, 190, 0.4, 0.55);
+        this.drawSprite(ctx, "paper_root_growth.idle", 110, 960, 0.42, 0.55, "right", 9);
+        this.drawSprite(ctx, "wax_seal_growth.idle", 1500, 950, 0.38, 0.55, "right", 31);
+        this.drawSprite(ctx, "wax_seal_growth.idle", 1000, 980, 0.3, 0.4, "right", 12);
+        for (const c of this.candles) this.drawCandle(ctx, c);
+    }
 
-        for (let x = -10; x < w + 100; x += 126) {
-            this.drawSprite(ctx, "record_shelf_wall.idle", x + 70, 194, 0.54, 0.98, "right", x);
-        }
-
-        this.drawSprite(ctx, "ink_wall_stain.idle", 384, 190, 0.44, 0.82);
-        this.drawSprite(ctx, "red_string_evidence_board.idle", 152, 203, 0.39, 0.92);
-        this.drawSprite(ctx, "brass_nameplate_cluster.idle", 594, 205, 0.39, 0.94);
-
-        const floorGrad = ctx.createLinearGradient(0, 170, 0, h);
-        floorGrad.addColorStop(0, "rgba(45, 35, 24, 0.42)");
-        floorGrad.addColorStop(0.45, "rgba(31, 26, 19, 0.92)");
-        floorGrad.addColorStop(1, "rgba(9, 8, 6, 1)");
-        ctx.fillStyle = floorGrad;
-        ctx.fillRect(0, 170, w, h - 170);
-
-        for (let y = 285; y < h + 120; y += 92) {
-            for (let x = -42; x < w + 140; x += 112) {
-                this.drawSprite(ctx, "cracked_archive_floor.idle", x, y, 0.58, 0.88, "right", x + y);
-            }
-        }
-
-        ctx.fillStyle = "rgba(0, 0, 0, 0.26)";
-        ctx.fillRect(0, 170, w, 18);
-        this.drawSprite(ctx, "paper_root_growth.idle", 78, 422, 0.42, 0.5, "right", 9);
-        this.drawSprite(ctx, "wax_seal_growth.idle", 694, 418, 0.38, 0.5, "right", 31);
+    drawCandle(ctx, c) {
+        // Small candle cluster with an animated flame
+        const flick = Math.sin(this.frame * 0.3 + c.x) * 0.6 + (Math.random() - 0.5) * 0.6;
+        ctx.save();
+        ctx.fillStyle = "#d9c9a0";
+        ctx.fillRect(c.x - 4, c.y - 12, 5, 12);
+        ctx.fillRect(c.x + 3, c.y - 8, 4, 8);
+        ctx.fillStyle = "rgba(0,0,0,0.35)";
+        ctx.fillRect(c.x - 6, c.y, 15, 3);
+        ctx.fillStyle = "#ffcf73";
+        ctx.beginPath();
+        ctx.ellipse(c.x - 1.5, c.y - 15 + flick * 0.3, 2.2, 4 + flick * 0.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(c.x + 5, c.y - 11 + flick * 0.3, 1.8, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 
     drawGroundShadow(ctx, x, y, rx, ry, alpha = 0.45) {
@@ -281,15 +357,99 @@ export class CanvasRenderer {
         }
     }
 
+    lootStyle(l) {
+        const style = LOOT_STYLE[l.id] || { color: "#eadfbd", label: () => "" };
+        let color = style.color;
+        if (l.id === "cursed_gear_drop" && l.item) {
+            color = (RARITY_MULTIPLIERS[l.item.rarity] || {}).color || l.item.color || color;
+            if (color === "#888888") color = "#c9c2b0"; // Worn grey is too dim to read
+        }
+        return { ...style, color };
+    }
+
     drawLoot(ctx, engine) {
         for (const l of engine.loot) {
-            ctx.save();
-            const hoverY = Math.sin(this.frame * 0.08 + l.x) * 3;
+            const style = this.lootStyle(l);
+            const pulse = 0.75 + Math.sin(this.frame * 0.12 + l.x) * 0.25;
+            const hoverY = Math.sin(this.frame * 0.08 + l.x) * 3 - 6;
             const anim = NEW_PICKUP_SPRITES[l.id] || `${l.id}.idle`;
-            this.drawGroundShadow(ctx, l.x, l.y + 9, 12, 5, 0.28);
-            this.drawSprite(ctx, anim, l.x, l.y + hoverY, 0.28, 1, "right", l.x);
+            ctx.save();
+
+            // Ground ring in the pickup's colour
+            ctx.globalAlpha = 0.55 * pulse;
+            ctx.strokeStyle = style.color;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(l.x, l.y + 9, 15 + pulse * 3, 6 + pulse, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            this.drawGroundShadow(ctx, l.x, l.y + 9, 12, 5, 0.4);
+
+            // Dark outline + colour rim so the sprite separates from the floor
+            ctx.shadowColor = style.color;
+            ctx.shadowBlur = 10 * pulse;
+            if (style.tint) ctx.filter = "sepia(1) saturate(6) hue-rotate(-50deg) brightness(0.9)";
+            this.drawSprite(ctx, anim, l.x, l.y + hoverY, 0.3, 1, "right", l.x);
+            ctx.filter = "none";
             ctx.restore();
         }
+    }
+
+    // Light beams, glows and name labels, drawn above the darkness
+    drawLootHighlights(ctx, engine) {
+        ctx.save();
+        ctx.textAlign = "center";
+        for (const l of engine.loot) {
+            const style = this.lootStyle(l);
+            const pulse = 0.75 + Math.sin(this.frame * 0.12 + l.x) * 0.25;
+
+            ctx.globalCompositeOperation = "lighter";
+            const glow = ctx.createRadialGradient(l.x, l.y, 1, l.x, l.y, 30);
+            glow.addColorStop(0, hexA(style.color, 0.35 * pulse));
+            glow.addColorStop(1, hexA(style.color, 0));
+            ctx.fillStyle = glow;
+            ctx.fillRect(l.x - 30, l.y - 30, 60, 60);
+
+            const rare = style.beam || (l.item && ["Relic", "Abyssal", "Impossible"].includes(l.item.rarity));
+            if (rare) {
+                const beam = ctx.createLinearGradient(0, l.y - 140, 0, l.y + 6);
+                beam.addColorStop(0, hexA(style.color, 0));
+                beam.addColorStop(1, hexA(style.color, 0.38 * pulse));
+                ctx.fillStyle = beam;
+                ctx.fillRect(l.x - 7, l.y - 140, 14, 146);
+            }
+
+            // Label
+            ctx.globalCompositeOperation = "source-over";
+            const text = style.label(l);
+            if (text) {
+                ctx.font = "600 11px Outfit, Courier New";
+                const tw = ctx.measureText(text).width + 10;
+                const ly = l.y - 34;
+                ctx.fillStyle = "rgba(6, 5, 4, 0.78)";
+                ctx.fillRect(l.x - tw / 2, ly - 10, tw, 14);
+                ctx.strokeStyle = hexA(style.color, 0.6);
+                ctx.lineWidth = 1;
+                ctx.strokeRect(l.x - tw / 2 + 0.5, ly - 9.5, tw - 1, 13);
+                ctx.fillStyle = style.color;
+                ctx.fillText(text, l.x, ly + 1);
+            }
+        }
+        ctx.restore();
+    }
+
+    drawEnemyHealthBars(ctx, engine) {
+        ctx.save();
+        for (const e of engine.enemies) {
+            if (e.type === "Seal Mother" || e.health >= e.maxHealth || e.health <= 0) continue;
+            const w = 34, y = e.y - e.radius - 46;
+            ctx.fillStyle = "rgba(0,0,0,0.75)";
+            ctx.fillRect(e.x - w / 2 - 1, y - 1, w + 2, 5);
+            ctx.fillStyle = e.type === "The Shape" ? "#9a4ab8" : "#b51f1c";
+            ctx.fillRect(e.x - w / 2, y, w * Math.max(0, e.health / e.maxHealth), 3);
+        }
+        ctx.restore();
     }
 
     drawPlayer(ctx, p) {
@@ -326,7 +486,7 @@ export class CanvasRenderer {
         let idx = 0;
         if (config) {
             const loop = key !== "the_marked.death_collapse" && key !== "the_marked.hit_react" && key !== "the_marked.basic_attack";
-            idx = loop ? Math.floor(this.frame * (config.fps / 60)) % config.frames : Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60)));
+            idx = loop ? Math.floor(this.frame * (config.fps / 60)) % config.frames : Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60))));
         }
 
         const alpha = p.invulnTimer > 0 && Math.floor(this.frame / 4) % 2 === 0 ? 0.48 : 1;
@@ -390,7 +550,7 @@ export class CanvasRenderer {
         let idx = 0;
         if (config) {
             const oneShot = key.endsWith(".attack") || key === "seal_mother.summon" || key === "the_marked.basic_attack";
-            idx = oneShot ? Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60))) : Math.floor(this.frame * (config.fps / 60)) % config.frames;
+            idx = oneShot ? Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60)))) : Math.floor(this.frame * (config.fps / 60)) % config.frames;
         }
 
         const scale = e.type === "Seal Mother" ? 0.7 : e.type === "Witness Chair" ? 0.45 : e.type === "Paper Wraith" ? 0.43 : 0.4;
@@ -499,14 +659,15 @@ export class CanvasRenderer {
         ctx.restore();
     }
 
-    drawLightingPass(ctx, w, h, engine) {
+    drawLightingPass(ctx, engine) {
         ctx.save();
+        const vx = this.camera.x - 40, vy = this.camera.y - 40, vw = this.viewW + 80, vh = this.viewH + 80;
         const sanityFactor = engine.player.sanity / 100;
         const darkness = 0.62 - sanityFactor * 0.18;
 
         ctx.globalCompositeOperation = "multiply";
         ctx.fillStyle = `rgba(13, 10, 10, ${darkness})`;
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillRect(vx, vy, vw, vh);
 
         ctx.globalCompositeOperation = "screen";
         const lanternSize = 118 + sanityFactor * 72;
@@ -534,21 +695,24 @@ export class CanvasRenderer {
 
         ctx.globalCompositeOperation = "source-over";
 
-        const vignette = ctx.createRadialGradient(w / 2, h / 2, 120, w / 2, h / 2, 420);
-        vignette.addColorStop(0, "rgba(0,0,0,0)");
-        vignette.addColorStop(1, "rgba(0,0,0,0.42)");
-        ctx.fillStyle = vignette;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.globalAlpha = 0.07;
+        // Dust motes drifting through the lamplight
+        ctx.globalAlpha = 0.09;
         ctx.fillStyle = "#f1e2b7";
-        for (let i = 0; i < 34; i++) {
-            const x = (i * 97 + this.frame * 0.4) % w;
-            const y = (i * 53 + this.frame * 0.13) % h;
-            ctx.fillRect(x, y, 1, 1);
+        for (let i = 0; i < 90; i++) {
+            const x = (i * 197 + this.frame * 0.4) % WORLD_WIDTH;
+            const y = (i * 113 + this.frame * 0.13) % WORLD_HEIGHT;
+            ctx.fillRect(x, y, 1.4, 1.4);
         }
 
         ctx.restore();
+    }
+
+    drawScreenVignette(ctx, w, h) {
+        const vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7);
+        vignette.addColorStop(0, "rgba(0,0,0,0)");
+        vignette.addColorStop(1, "rgba(0,0,0,0.55)");
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, w, h);
     }
 
     // Graduated sanity VFX: Strained (<70) faint red edges, Fractured (<40) pulsing
@@ -585,8 +749,8 @@ export class CanvasRenderer {
             ctx.save();
             ctx.globalAlpha = 0.16;
             ctx.globalCompositeOperation = "lighter";
-            ctx.drawImage(this.canvas, sway, 0);
-            ctx.drawImage(this.canvas, -sway, 2);
+            ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height, sway, 0, w, h);
+            ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height, -sway, 2, w, h);
             ctx.restore();
         }
 
@@ -637,7 +801,7 @@ export class CanvasRenderer {
         ctx.restore();
     }
 
-    drawCanvasUI(ctx, w, h, engine) {
+    drawInteractPrompts(ctx, engine) {
         ctx.save();
         for (const intr of engine.interactables) {
             const dist = engine.distance(engine.player.x, engine.player.y, intr.x, intr.y);
@@ -658,13 +822,18 @@ export class CanvasRenderer {
                 ctx.fillText(`[E] ${label}`, intr.x, intr.y - 33);
             }
         }
+        ctx.restore();
+    }
+
+    drawCanvasUI(ctx, w, h, engine) {
+        ctx.save();
 
         const boss = engine.enemies.find(e => e.type === "Seal Mother");
         if (boss) {
-            const barW = 400;
-            const barH = 13;
+            const barW = Math.min(520, w - 80);
+            const barH = 14;
             const bx = (w - barW) / 2;
-            const by = 34;
+            const by = 96;
 
             ctx.fillStyle = "rgba(7, 6, 5, 0.88)";
             ctx.fillRect(bx, by, barW, barH);
@@ -714,14 +883,20 @@ export class CanvasRenderer {
         // Red Shift
         ctx.globalCompositeOperation = "screen";
         ctx.fillStyle = "rgba(255, 0, 0, 0.08)";
-        ctx.drawImage(this.canvas, 0, yOffset, w, sliceHeight, xOffset + 5 * intensity, yOffset, w, sliceHeight);
+        const d = this.dpr;
+        ctx.drawImage(this.canvas, 0, yOffset * d, w * d, sliceHeight * d, xOffset + 5 * intensity, yOffset, w, sliceHeight);
         ctx.fillRect(xOffset + 5 * intensity, yOffset, w, sliceHeight);
         
         // Cyan Shift
         ctx.fillStyle = "rgba(0, 255, 255, 0.08)";
-        ctx.drawImage(this.canvas, 0, yOffset, w, sliceHeight, xOffset - 5 * intensity, yOffset, w, sliceHeight);
+        ctx.drawImage(this.canvas, 0, yOffset * d, w * d, sliceHeight * d, xOffset - 5 * intensity, yOffset, w, sliceHeight);
         ctx.fillRect(xOffset - 5 * intensity, yOffset, w, sliceHeight);
         
         ctx.restore();
     }
+}
+
+function hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }

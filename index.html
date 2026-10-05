@@ -122,8 +122,11 @@
     </div>
 
     <div id="game-layout">
-        <header id="game-hud">
-            <div class="hud-left">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Top-left: identity, tarot and active reality trait -->
+        <div id="game-hud" class="hud-top-left">
+            <div class="hud-identity">
                 <div class="character-avatar-container">
                     <img src="assets/avatar.png" alt="Marked Shape" class="avatar-img">
                 </div>
@@ -132,102 +135,102 @@
                     <div id="hud-obs-diag" class="hud-txt obs-diag">Diagnosis: Unread / Fresh</div>
                 </div>
             </div>
+            <div id="tarot-box" class="tarot-card-visual">
+                <div class="tarot-title">No active Tarot draw</div>
+                <div class="tarot-desc">Modifiers roll during descent initialization.</div>
+            </div>
+            <div id="trait-box" class="trait-badge-hud">
+                <div class="trait-title">Trait Active</div>
+                <div class="trait-desc">Trait Description</div>
+            </div>
+        </div>
 
-            <div class="hud-center">
-                <div class="hud-bar-container">
-                    <div class="hud-bar-label font-cinzel">FLESH</div>
-                    <div class="bar-bg">
-                        <div id="hud-hp-bar" class="bar-fill hp-fill"></div>
-                        <div id="hud-hp-text" class="bar-text">150 / 150</div>
-                    </div>
-                </div>
+        <!-- Top-centre: the Monolith's gaze -->
+        <div class="hud-top-center">
+            <div class="hud-bar-label font-cinzel">OBSERVED</div>
+            <div class="bar-bg obs-bg">
+                <div id="hud-obs-bar" class="bar-fill obs-fill"></div>
+                <div class="obs-ticks"><span></span><span></span><span></span></div>
+                <div id="hud-obs-text" class="bar-text">Observation: 0%</div>
+            </div>
+        </div>
 
-                <div class="hud-bar-container">
-                    <div class="hud-bar-label font-cinzel">SANITY</div>
-                    <div class="bar-bg">
-                        <div id="hud-sanity-bar" class="bar-fill sanity-fill"></div>
-                        <div id="hud-sanity-text" class="bar-text">100% Sanity</div>
-                    </div>
-                </div>
+        <!-- Top-right: currencies -->
+        <div class="hud-top-right">
+            <div class="currency-row">
+                <div class="currency-item" title="Debt Gold: spent on rituals and erasures"><span class="currency-label">DG</span><span id="hud-gold">0</span></div>
+                <div class="currency-item" title="Parchment: Strengthen Body upgrades"><span class="currency-label">PAR</span><span id="hud-parchment">0</span></div>
+                <div class="currency-item" title="Ink: Reinforce Mind upgrades"><span class="currency-label">INK</span><span id="hud-ink">0</span></div>
+                <div class="currency-item" title="Wax Seals: Structure Obfuscation upgrades"><span class="currency-label">WAX</span><span id="hud-seal">0</span></div>
+            </div>
+        </div>
 
-                <div class="hud-bar-container">
-                    <div class="hud-bar-label font-cinzel">OBSERVED</div>
-                    <div class="bar-bg">
-                        <div id="hud-obs-bar" class="bar-fill obs-fill"></div>
-                        <div id="hud-obs-text" class="bar-text">Observation: 0%</div>
-                    </div>
+        <!-- Bottom: vitals around the action bar -->
+        <div class="hud-bottom">
+            <div class="vital vital-flesh">
+                <div class="hud-bar-label font-cinzel">FLESH</div>
+                <div class="bar-bg">
+                    <div id="hud-hp-bar" class="bar-fill hp-fill"></div>
+                    <div id="hud-hp-text" class="bar-text">150 / 150</div>
                 </div>
             </div>
 
-            <div class="hud-right">
-                <div class="currency-row">
-                    <div class="currency-item"><span class="currency-label">DG</span><span id="hud-gold">0</span></div>
-                    <div class="currency-item"><span class="currency-label">PAR</span><span id="hud-parchment">0</span></div>
-                    <div class="currency-item"><span class="currency-label">INK</span><span id="hud-ink">0</span></div>
-                    <div class="currency-item"><span class="currency-label">WAX</span><span id="hud-seal">0</span></div>
+            <nav class="action-bar" aria-label="Panels">
+                <button class="tab-btn action-btn" data-tab="inventory" title="Inventory [I]"><span class="action-glyph">⚔</span><span class="action-name">Gear</span><kbd>I</kbd></button>
+                <button class="tab-btn action-btn" data-tab="rituals" title="Rituals [R]"><span class="action-glyph">✠</span><span class="action-name">Rituals</span><kbd>R</kbd></button>
+                <button class="tab-btn action-btn" data-tab="signals" title="Signals [J]"><span class="action-glyph">≋</span><span class="action-name">Signals</span><kbd>J</kbd></button>
+                <button class="tab-btn action-btn" data-tab="corpses" title="Corpses [C]"><span class="action-glyph">☠</span><span class="action-name">Corpses</span><kbd>C</kbd></button>
+                <button class="tab-btn action-btn" data-tab="monolith" title="Monolith [U]"><span class="action-glyph">◈</span><span class="action-name">Monolith</span><kbd>U</kbd></button>
+                <span class="action-sep"></span>
+                <button id="auto-attack-btn" class="action-btn toggle-btn btn-active" title="Auto-combat [T]"><span class="action-glyph">⟳</span><span class="action-name">Auto: ON</span><kbd>T</kbd></button>
+            </nav>
+
+            <div class="vital vital-sanity">
+                <div class="hud-bar-label font-cinzel">SANITY</div>
+                <div class="bar-bg">
+                    <div id="hud-sanity-bar" class="bar-fill sanity-fill"></div>
+                    <div id="hud-sanity-text" class="bar-text">100% Sanity</div>
                 </div>
             </div>
-        </header>
+        </div>
+        <div class="controls-hint">WASD move · Click / Space attack · Shift dash · E interact · M mute · Esc close</div>
 
-        <main id="game-body">
-            <div id="canvas-panel">
-                <canvas id="game-canvas" width="750" height="450"></canvas>
+        <!-- Slide-in panel drawer -->
+        <aside id="sidebar-panel" class="drawer" aria-hidden="true">
+            <header class="drawer-header">
+                <h2 id="drawer-title" class="font-cinzel">Inventory</h2>
+                <button id="drawer-close" class="drawer-close" title="Close [Esc]">✕</button>
+            </header>
+            <div class="sidebar-content">
+                <div id="panel-inventory" class="tab-content active-panel">
+                    <h3>Wanderer Equipment</h3>
 
-                <div class="canvas-controls">
-                    <button id="auto-attack-btn" class="game-btn btn-active">Auto-Combat: ON</button>
-                    <div class="controls-hint">Move: [WASD / Arrows] | Attack: [Click Canvas / Space] | Interact: [E]</div>
-                </div>
-
-                <div id="trait-box" class="trait-badge-hud">
-                    <div class="trait-title">Trait Active</div>
-                    <div class="trait-desc">Trait Description</div>
-                </div>
-            </div>
-            <div id="tutorial-overlay" class="tutorial-overlay hidden">
-                <div class="tutorial-box">
-                    <h3 class="tutorial-title font-cinzel">SYSTEM DIRECTIVE</h3>
-                    <p id="tutorial-text" class="tutorial-text">Welcome.</p>
-                    <button id="tutorial-skip-btn" class="game-btn">Skip Tutorial</button>
-                </div>
-            </div>
-
-            <div id="sidebar-panel">
-                <nav class="sidebar-tabs">
-                    <button class="tab-btn tab-btn-active" data-tab="inventory">Inventory</button>
-                    <button class="tab-btn" data-tab="rituals">Rituals</button>
-                    <button class="tab-btn" data-tab="signals">Signals</button>
-                    <button class="tab-btn" data-tab="corpses">Corpses</button>
-                    <button class="tab-btn" data-tab="monolith">Monolith</button>
-                </nav>
-
-                <div class="sidebar-content">
-                    <div id="panel-inventory" class="tab-content active-panel">
-                        <h3>Wanderer Equipment</h3>
-
-                        <div class="equipped-grid">
-                            <div id="equip-weapon" class="equip-slot slot-empty"><div class="equip-label">WEAPON</div>Empty</div>
-                            <div id="equip-armor" class="equip-slot slot-empty"><div class="equip-label">ARMOR</div>Empty</div>
-                            <div id="equip-amulet" class="equip-slot slot-empty"><div class="equip-label">AMULET</div>Empty</div>
-                        </div>
-
-                        <div id="stats-summary" class="stats-box"></div>
-
-                        <h4>Backpack Storage (15 slots)</h4>
-                        <div id="inventory-grid" class="inventory-grid"></div>
+                    <div class="equipped-grid">
+                        <div id="equip-weapon" class="equip-slot slot-empty"><div class="equip-label">WEAPON</div>Empty</div>
+                        <div id="equip-armor" class="equip-slot slot-empty"><div class="equip-label">ARMOR</div>Empty</div>
+                        <div id="equip-amulet" class="equip-slot slot-empty"><div class="equip-label">AMULET</div>Empty</div>
                     </div>
 
-                    <div id="panel-rituals" class="tab-content"></div>
-                    <div id="panel-signals" class="tab-content"></div>
-                    <div id="panel-corpses" class="tab-content"></div>
-                    <div id="panel-monolith" class="tab-content"></div>
+                    <div id="stats-summary" class="stats-box"></div>
+
+                    <h4>Backpack Storage (15 slots)</h4>
+                    <div id="inventory-grid" class="inventory-grid"></div>
                 </div>
 
-                <div id="tarot-box" class="tarot-card-visual">
-                    <div class="tarot-title">No active Tarot draw</div>
-                    <div class="tarot-desc">Modifiers roll during descent initialization.</div>
-                </div>
+                <div id="panel-rituals" class="tab-content"></div>
+                <div id="panel-signals" class="tab-content"></div>
+                <div id="panel-corpses" class="tab-content"></div>
+                <div id="panel-monolith" class="tab-content"></div>
             </div>
-        </main>
+        </aside>
+
+        <div id="tutorial-overlay" class="tutorial-overlay hidden">
+            <div class="tutorial-box">
+                <h3 class="tutorial-title font-cinzel">SYSTEM DIRECTIVE</h3>
+                <p id="tutorial-text" class="tutorial-text">Welcome.</p>
+                <button id="tutorial-skip-btn" class="game-btn">Skip Tutorial</button>
+            </div>
+        </div>
     </div>
 
     <div id="game-over-screen" class="screen-overlay">

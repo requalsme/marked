@@ -54,30 +54,76 @@ export class GameUI {
                 if (btn.classList.contains("tab-locked")) {
                     return; // Prevent switching to locked tabs
                 }
-                const tab = btn.getAttribute("data-tab");
-                audioManager.play("tab_switch");
-                this.switchTab(tab);
-                
-                // Tutorial Step 2 -> 3 (Open Inventory)
-                if (tab === "inventory" && this.orch.activeProfile && this.orch.activeProfile.tutorialStep === 2) {
-                    this.orch.activeProfile.tutorialStep = 3;
-                    this.orch.saveActiveProfile();
-                    this.renderTutorial(this.orch.activeProfile);
-                }
+                this.toggleTab(btn.getAttribute("data-tab"));
             });
         });
 
         // Toggle Auto-Attack
         const autoToggle = document.getElementById("auto-attack-btn");
         if (autoToggle) {
-            autoToggle.addEventListener("click", () => {
-                if (this.orch.engine) {
-                    this.orch.engine.autoAttack = !this.orch.engine.autoAttack;
-                    autoToggle.textContent = this.orch.engine.autoAttack ? "Auto-Combat: ON" : "Auto-Combat: OFF";
-                    autoToggle.classList.toggle("btn-active", this.orch.engine.autoAttack);
-                }
-            });
+            autoToggle.addEventListener("click", () => this.toggleAutoAttack());
         }
+
+        const closeBtn = document.getElementById("drawer-close");
+        if (closeBtn) closeBtn.addEventListener("click", () => this.closeDrawer());
+    }
+
+    toggleAutoAttack() {
+        const engine = this.orch.engine;
+        if (!engine) return;
+        engine.autoAttack = !engine.autoAttack;
+        const btn = document.getElementById("auto-attack-btn");
+        if (btn) {
+            btn.querySelector(".action-name").textContent = engine.autoAttack ? "Auto: ON" : "Auto: OFF";
+            btn.classList.toggle("btn-active", engine.autoAttack);
+        }
+        this.showToast(engine.autoAttack ? "Auto-combat ON [T]" : "Auto-combat OFF [T]");
+    }
+
+    isDrawerOpen() {
+        const d = document.getElementById("sidebar-panel");
+        return Boolean(d && d.classList.contains("open"));
+    }
+
+    // Open a panel in the drawer; pressing the same panel's key again closes it
+    toggleTab(tabId) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (btn && btn.classList.contains("tab-locked")) return;
+        if (this.isDrawerOpen() && this.activeTab === tabId) {
+            this.closeDrawer();
+            return;
+        }
+        audioManager.play("tab_switch");
+        this.switchTab(tabId);
+        this.afterTabOpened(tabId);
+    }
+
+    afterTabOpened(tab) {
+        // Tutorial Step 2 -> 3 (Open Inventory)
+        const p = this.orch.activeProfile;
+        if (tab === "inventory" && p && p.tutorialStep === 2) {
+            p.tutorialStep = 3;
+            this.orch.saveActiveProfile();
+            this.renderTutorial(p);
+        }
+    }
+
+    closeDrawer() {
+        const d = document.getElementById("sidebar-panel");
+        if (!d || !d.classList.contains("open")) return;
+        d.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+        d.setAttribute("aria-hidden", "true");
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("tab-btn-active"));
+        this.hideTooltip();
+    }
+
+    flashObservation() {
+        const bar = document.querySelector(".obs-bg");
+        if (!bar) return;
+        bar.classList.remove("obs-flash");
+        void bar.offsetWidth; // restart the animation
+        bar.classList.add("obs-flash");
     }
 
     showToast(message, duration = 1800) {
@@ -107,6 +153,16 @@ export class GameUI {
         const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         if (panel) panel.classList.add("active-panel");
         if (btn) btn.classList.add("tab-btn-active");
+
+        const drawer = document.getElementById("sidebar-panel");
+        if (drawer) {
+            document.body.classList.add("drawer-open");
+            drawer.classList.add("open");
+            drawer.setAttribute("aria-hidden", "false");
+        }
+        const title = document.getElementById("drawer-title");
+        const names = { inventory: "Inventory", rituals: "Rituals", signals: "Signals", corpses: "Corpse Registry", monolith: "Monolith" };
+        if (title) title.textContent = names[tabId] || tabId;
 
         this.renderActiveTab();
     }
@@ -377,11 +433,23 @@ export class GameUI {
 
         this.tooltip.innerHTML = `
             <div class="tooltip-title" style="color: ${item.color}">${item.name}</div>
-            <div class="tooltip-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()} <span style="font-size:10px; color:#aaa;">[Click to Equip]</span></div>
+            <div class="tooltip-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()} <span style="font-size:11px; color:#aaa;">[Click to Equip]</span></div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 6px 0;">
             <div class="tooltip-stats">${statDesc}</div>
             <div class="tooltip-desc">"${item.desc}"</div>
         `;
+        this.positionTooltip(e);
+    }
+
+    positionTooltip(e) {
+        const pad = 12;
+        const rect = this.tooltip.getBoundingClientRect();
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        if (x + rect.width > window.innerWidth - pad) x = e.clientX - rect.width - 15;
+        if (y + rect.height > window.innerHeight - pad) y = window.innerHeight - rect.height - pad;
+        this.tooltip.style.left = `${Math.max(pad, x)}px`;
+        this.tooltip.style.top = `${Math.max(pad, y)}px`;
     }
 
     hideTooltip() {
@@ -579,21 +647,9 @@ export class GameUI {
             return;
         }
 
-        // Check if player is near a corpse in engine
-        let nearCorpseIdx = -1;
-        if (this.orch.engine) {
-            const corpseIntr = this.orch.engine.interactables.find(i => 
-                i.type === "fresh_marked_corpse" || 
-                i.type === "burned_corpse_remains" || 
-                i.type === "broadcast_corpse"
-            );
-            if (corpseIntr) {
-                const dist = this.orch.engine.distance(this.orch.engine.player.x, this.orch.engine.player.y, corpseIntr.x, corpseIntr.y);
-                if (dist < corpseIntr.radius + this.orch.engine.player.radius + 15) {
-                    nearCorpseIdx = profile.corpses.length - 1;
-                }
-            }
-        }
+        // Which corpse (if any) is the player standing next to?
+        const nearIntr = this.nearCorpseInteractable();
+        const nearCorpseIdx = nearIntr ? profile.corpses.indexOf(nearIntr.data.corpse) : -1;
 
         profile.corpses.forEach((corp, idx) => {
             const isBurned = corp.state === "burned";
@@ -606,7 +662,7 @@ export class GameUI {
                 <div>Status: <strong style="color: ${isBurned ? '#d4a343' : isBroadcasted ? '#3b82f6' : '#b01212'}">${isBurned ? 'BURNED' : isBroadcasted ? 'BROADCASTED' : 'FRESH'}</strong></div>
                 <div>Death Cause: <span style="color:#b51919">${corp.cause || "Sanity collapse"}</span></div>
                 <div class="corpse-actions" style="margin-top: 10px;">
-                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Recover (Fight Echo)</button>
+                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Recover (Gold + Echo)</button>
                     <button class="game-btn corpse-btn" data-action="burn" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Burn (Sanity)</button>
                     <button class="game-btn corpse-btn" data-action="broadcast" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Broadcast (Clarity)</button>
                     <button class="game-btn corpse-btn" data-action="devour" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Devour (Damage)</button>
@@ -628,15 +684,25 @@ export class GameUI {
         });
     }
 
+    nearCorpseInteractable() {
+        const eng = this.orch.engine;
+        if (!eng || !eng.player) return null;
+        return eng.interactables.find(i => i.data && i.data.corpse &&
+            eng.distance(eng.player.x, eng.player.y, i.x, i.y) < i.radius + eng.player.radius + 15) || null;
+    }
+
     executeCorpseAction(profile, idx, action) {
         const corp = profile.corpses[idx];
         if (!corp) return;
+        const intr = this.orch.engine ? this.orch.engine.interactables.find(i => i.data && i.data.corpse === corp) : null;
 
         let removeCorpse = false;
         audioManager.play("corpse_interact", { kind: action });
 
         if (action === "recover") {
-            profile.signals.unshift(`Corpse Recovered: A hostile memory echo manifests!`);
+            const gold = (corp.level || 1) * 20 * (profile.activeTarot === "Death" ? 2 : 1);
+            profile.gold += gold;
+            profile.signals.unshift(`Corpse Recovered: +${gold} Debt Gold. A hostile memory echo manifests!`);
             if (this.orch.engine) {
                 this.orch.engine.spawnCorpseEcho(corp);
             }
@@ -648,21 +714,13 @@ export class GameUI {
             profile.signals.unshift("Corpse Burned: evidence destroyed. Sanity restored, Observation reduced.");
             corp.state = "burned";
             
-            // Mutate in-world model
-            if (this.orch.engine) {
-                const intr = this.orch.engine.interactables.find(i => i.type === "fresh_marked_corpse");
-                if (intr) intr.type = "burned_corpse_remains";
-            }
+            if (intr) intr.type = "burned_corpse_remains";
         } else if (action === "broadcast") {
             profile.waxSeals += 2;
             profile.signals.unshift("Corpse Broadcasted: transmitted telemetry details. Earned +2 Wax Seals.");
             corp.state = "broadcasted";
 
-            // Mutate in-world model
-            if (this.orch.engine) {
-                const intr = this.orch.engine.interactables.find(i => i.type === "fresh_marked_corpse");
-                if (intr) intr.type = "broadcast_corpse";
-            }
+            if (intr) intr.type = "broadcast_corpse";
         } else if (action === "devour") {
             profile.devourMult = (profile.devourMult || 1) * 1.15;
             this.orch.recalculateStats();
@@ -674,11 +732,7 @@ export class GameUI {
         if (removeCorpse) {
             profile.corpses.splice(idx, 1);
             if (this.orch.engine) {
-                this.orch.engine.interactables = this.orch.engine.interactables.filter(i => 
-                    i.type !== "fresh_marked_corpse" && 
-                    i.type !== "burned_corpse_remains" && 
-                    i.type !== "broadcast_corpse"
-                );
+                this.orch.engine.interactables = this.orch.engine.interactables.filter(i => i !== intr);
             }
         }
 

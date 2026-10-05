@@ -149,7 +149,7 @@ export class AssetPreloader {
             ctx.fillStyle = "#a61515";
             ctx.fillRect(x - 12, y - 24, 24, 24);
             ctx.fillStyle = "#fff";
-            ctx.font = "9px monospace";
+            ctx.font = "11px monospace";
             ctx.fillText("?", x - 3, y - 10);
             return;
         }

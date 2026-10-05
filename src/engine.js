@@ -1,5 +1,6 @@
 // Physics, Collision, and Entity Management
 import { audioManager } from "./audio.js";
+import { WORLD_WIDTH, WORLD_HEIGHT, ROOM } from "./world.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -41,16 +42,11 @@ export function basePlayerCrit(classType) {
 
 export class GameEngine {
     constructor() {
-        this.width = 750;
-        this.height = 450;
+        this.width = WORLD_WIDTH;
+        this.height = WORLD_HEIGHT;
         
-        // Define Walkable boundaries (Keeping House floor plane)
-        this.bounds = {
-            minX: 40,
-            maxX: 710,
-            minY: 100,
-            maxY: 420
-        };
+        // Walkable boundaries (Keeping House floor plane)
+        this.bounds = { ...ROOM.bounds };
 
         this.reset();
     }
@@ -77,19 +73,15 @@ export class GameEngine {
         this.bossAnnounced = false;
         
         // Static Obstacles in Keeping House. These are collision shapes for sprite props.
-        this.obstacles = [
-            { x: 118, y: 202, w: 86, h: 42, label: "Evidence Board" },
-            { x: 522, y: 204, w: 90, h: 46, label: "Nameplate Heap" },
-            { x: 375, y: 258, r: 38, label: "The Monolith" }
-        ];
+        this.obstacles = ROOM.obstacles.map(o => ({ ...o }));
     }
 
     setPlayer(profile, extraStats) {
         this.player = {
             profile: profile,
             stats: extraStats,
-            x: 100,
-            y: 300,
+            x: ROOM.playerStart.x,
+            y: ROOM.playerStart.y,
             vx: 0,
             vy: 0,
             kbVx: 0,
@@ -167,8 +159,10 @@ export class GameEngine {
                 healPct: healPct,
                 vx: (Math.random() - 0.5) * 4,
                 vy: (Math.random() - 0.5) * 4 - 3,
+                groundY: y + 8 + Math.random() * 14,
                 bounce: 0,
-                grav: 0.25
+                grav: 0.25,
+                age: 0
             });
         });
     }
@@ -370,7 +364,7 @@ export class GameEngine {
 
         // Boss: the Seal Mother manifests once the Monolith has modeled the player
         if (!this.bossSpawned && !this.bossDefeated && this.player.profile.observation >= BOSS_OBSERVATION_THRESHOLD) {
-            this.spawnEnemy("Seal Mother", 375, 200);
+            this.spawnEnemy("Seal Mother", ROOM.bossSpawn.x, ROOM.bossSpawn.y);
             audioManager.play("boss_spawn");
             onEvent("boss_spawned", {});
         }
@@ -670,6 +664,7 @@ export class GameEngine {
                         y: e.y,
                         vx: (Math.random() - 0.5) * 4,
                         vy: -4,
+                        groundY: e.y + 12,
                         bounce: 0,
                         grav: 0.25
                     });
@@ -680,6 +675,7 @@ export class GameEngine {
                         y: e.y,
                         vx: (Math.random() - 0.5) * 4,
                         vy: -4,
+                        groundY: e.y + 12,
                         bounce: 0,
                         grav: 0.25
                     });
@@ -967,6 +963,7 @@ export class GameEngine {
 
     updateLoot() {
         for (const l of this.loot) {
+            l.age = (l.age || 0) + 1;
             if (l.bounce < 1) {
                 // Fall physics
                 l.vy += l.grav;
@@ -975,8 +972,9 @@ export class GameEngine {
                 
                 // Friction
                 l.vx *= 0.95;
-                if (l.vy > 0 && l.y >= 350 + (l.x % 30)) { // rough floor bounds
-                    l.y = 350 + (l.x % 30);
+                const ground = l.groundY ?? l.y;
+                if (l.vy > 0 && l.y >= ground) {
+                    l.y = ground;
                     l.vy = -l.vy * 0.4;
                     l.vx *= 0.5;
                     l.bounce++;
@@ -985,8 +983,10 @@ export class GameEngine {
 
             // Magnetic attraction to player
             let dist = this.distance(this.player.x, this.player.y, l.x, l.y);
-            let magnetRange = 100;
-            if (dist < magnetRange && this.player.health > 0) {
+            // Let drops land and be seen before they're pulled in
+            const landed = l.bounce >= 1 || l.age > 45;
+            let magnetRange = 90;
+            if (landed && dist < magnetRange && this.player.health > 0) {
                 let dx = this.player.x - l.x;
                 let dy = this.player.y - l.y;
                 l.x += (dx / dist) * 6;
