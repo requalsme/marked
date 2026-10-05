@@ -3,6 +3,7 @@ import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
 import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES } from "./world.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
+import { buildPropSprites, propCovers } from "./props.js";
 
 // Pickup glow colours and labels; gear uses its rarity colour
 const LOOT_STYLE = {
@@ -123,6 +124,8 @@ export class CanvasRenderer {
         this.cssH = 0;
         this.roomTexture = null;
         this.roomTextureScale = 0;
+        this.props = [];
+        this.propScale = 0;
         this.onDrawWorld = null; // hook for world-space overlays (wax traps)
         this.resize();
         window.addEventListener("resize", () => this.resize());
@@ -142,11 +145,28 @@ export class CanvasRenderer {
         // Show roughly 640 world units vertically; never zoom out past the room
         this.zoom = Math.max(cssW / WORLD_WIDTH, cssH / WORLD_HEIGHT, Math.min(2.4, cssH / 640));
         const wanted = Math.min(2, Math.max(1, this.zoom * dpr));
-        if (!this.paintedRoom && (!this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
+        // Furniture is painted procedurally even over a hand-painted room plate
+        const newProps = !this.props.length || wanted > this.propScale + 0.25;
+        if (newProps) {
+            this.propScale = wanted;
+            this.props = buildPropSprites(wanted);
+        }
+        if (!this.paintedRoom && (newProps || !this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
             this.roomTexture = buildRoomTexture(wanted);
+            this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
+    }
+
+    // Prop shadows and spilled paper never move, so bake them into the floor
+    bakePropFloors(texture, scale) {
+        const g = texture.getContext("2d");
+        g.save();
+        g.setTransform(scale, 0, 0, scale, 0, 0);
+        for (const pr of this.props) g.drawImage(pr.floorCanvas, pr.floorRect.x, pr.floorRect.y, pr.floorRect.w, pr.floorRect.h);
+        g.restore();
+        this.bakedTexture = texture;
     }
 
     // A hand-painted room plate (a repaint of docs/art/reference/room_shell_paintover_base.png
@@ -164,6 +184,10 @@ export class CanvasRenderer {
     }
 
     get viewW() { return this.cssW / this.zoom; }
+    // Does a world-space rectangle intersect what the camera shows?
+    inView(x, y, w, h) {
+        return x + w > this.camera.x && x < this.camera.x + this.viewW && y + h > this.camera.y && y < this.camera.y + this.viewH;
+    }
     get viewH() { return this.cssH / this.zoom; }
 
     updateCamera(engine) {
@@ -308,7 +332,11 @@ export class CanvasRenderer {
             entities.push({ type: "intr", y: intr.y, ref: intr });
         }
         for (const obs of engine.obstacles) {
+            if (obs.label === "prop") continue; // drawn from the prop sprites below
             entities.push({ type: "obstacle", y: obs.r ? obs.y + 10 : obs.y + obs.h, ref: obs });
+        }
+        for (const pr of this.props) {
+            if (this.inView(pr.x, pr.y, pr.w, pr.h)) entities.push({ type: "prop", y: pr.sortY, ref: pr });
         }
         for (const fx of engine.deathFx || []) {
             entities.push({ type: "deathfx", y: fx.y - 1, ref: fx });
@@ -319,6 +347,7 @@ export class CanvasRenderer {
             else if (ent.type === "deathfx") this.drawDeathFx(ctx, ent.ref);
             else if (ent.type === "intr") this.drawInteractable(ctx, ent.ref);
             else if (ent.type === "obstacle") this.drawObstacle(ctx, ent.ref, engine);
+            else if (ent.type === "prop") this.drawProp(ctx, ent.ref, engine);
             else this.drawEnemy(ctx, ent.ref);
         }
 
@@ -350,6 +379,12 @@ export class CanvasRenderer {
         } else {
             ctx.fillStyle = "#0d0b09";
             ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+        }
+        if (this.roomTexture !== this.bakedTexture) {
+            for (const pr of this.props) {
+                const f = pr.floorRect;
+                if (this.inView(f.x, f.y, f.w, f.h)) ctx.drawImage(pr.floorCanvas, f.x, f.y, f.w, f.h);
+            }
         }
         for (const c of this.candles) {
             if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
@@ -469,17 +504,25 @@ export class CanvasRenderer {
     }
 
     drawObstacle(ctx, obs, engine) {
-        if (obs.label === "The Monolith") {
-            this.drawMonolith(ctx, obs, engine);
-            return;
+        if (obs.label === "The Monolith") this.drawMonolith(ctx, obs, engine);
+    }
+
+    // A painted furniture sprite; it thins to a ghost when the player walks
+    // behind it so they are never lost, and its candles burn on top.
+    drawProp(ctx, pr, engine) {
+        const p = engine.player;
+        let behind = false;
+        if (p && p.y < pr.sortY && p.y > pr.y) {
+            const k = depthScale(p.y);
+            behind = propCovers(pr, [[p.x, p.y - 6 * k], [p.x, p.y - 30 * k], [p.x - 9 * k, p.y - 44 * k], [p.x + 9 * k, p.y - 44 * k], [p.x, p.y - 62 * k]]);
         }
-        const cx = obs.x + (obs.w || 0) / 2;
-        const cy = obs.y + (obs.h || 0);
-        this.drawGroundShadow(ctx, cx, cy + 4, 56, 15, 0.55);
-        if (obs.label === "Evidence Board") {
-            this.drawSprite(ctx, "red_string_evidence_board.idle", cx, cy + 14, 0.46 * depthScale(cy), 1);
-        } else if (obs.label === "Ledger Altar") {
-            this.drawSprite(ctx, "chained_ledger_altar.idle", cx, cy + 14, 0.46 * depthScale(cy), 1);
+        pr.alpha = (pr.alpha ?? 1) + ((behind ? 0.5 : 1) - (pr.alpha ?? 1)) * 0.15;
+        ctx.save();
+        ctx.globalAlpha = pr.alpha;
+        ctx.drawImage(pr.canvas, pr.x, pr.y, pr.w, pr.h);
+        ctx.restore();
+        for (const f of pr.flames) {
+            this.drawFlame(ctx, f.x, f.y, f.s * 0.8, f.x * 0.31 + f.y);
         }
     }
 
@@ -890,6 +933,13 @@ export class CanvasRenderer {
                 lights.push({ x: c.x, y: c.y - 22 * sc, r: 230 * c.intensity * f * sc, color: [255, 165, 90], a: 0.8 * f });
             } else {
                 lights.push({ x: c.x, y: c.y - 50 * depthScale(c.y), r: 165 * c.intensity * f, color: [255, 170, 95], a: 0.85 * f });
+            }
+        }
+        for (const pr of this.props) {
+            for (const fl of pr.flames) {
+                if (!this.inView(fl.x - 110, fl.y - 110, 220, 220)) continue;
+                const f = 1 + Math.sin(t * 0.23 + fl.x) * 0.06 + (Math.random() - 0.5) * 0.08;
+                lights.push({ x: fl.x, y: fl.y - 4, r: 105 * f, color: [255, 172, 96], a: 0.62 * f });
             }
         }
         for (const sh of MOON_SHAFTS) {

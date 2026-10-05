@@ -1,6 +1,7 @@
 // Physics, Collision, and Entity Management
 import { audioManager } from "./audio.js";
 import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
+import { PROP_COLLIDERS } from "./props.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -74,7 +75,7 @@ export class GameEngine {
         this.bossAnnounced = false;
         
         // Static Obstacles in Keeping House. These are collision shapes for sprite props.
-        this.obstacles = ROOM.obstacles.map(o => ({ ...o }));
+        this.obstacles = ROOM.obstacles.map(o => ({ ...o })).concat(PROP_COLLIDERS.map(c => ({ ...c })));
     }
 
     setPlayer(profile, extraStats) {
@@ -517,32 +518,72 @@ export class GameEngine {
         if (this.player.x + this.player.radius > span.max) this.player.x = span.max - this.player.radius;
 
         // Obstacle collisions
+        this.pushOutOfObstacles(this.player, this.player.radius);
+    }
+
+    // Push a circle (entity centre + radius) out of the Monolith and furniture.
+    // Returns the last rectangle hit and the push normal, so walkers can slide around it.
+    pushOutOfObstacles(ent, radius) {
+        let hit = null;
         for (const obs of this.obstacles) {
             if (obs.r) {
-                // Circle Monolith
-                let distVecX = this.player.x - obs.x;
-                let distVecY = this.player.y - obs.y;
-                let dist = Math.sqrt(distVecX * distVecX + distVecY * distVecY);
-                let minDist = obs.r + this.player.radius;
+                const dx = ent.x - obs.x, dy = ent.y - obs.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = obs.r + radius;
                 if (dist < minDist) {
-                    let angle = Math.atan2(distVecY, distVecX);
-                    this.player.x = obs.x + Math.cos(angle) * minDist;
-                    this.player.y = obs.y + Math.sin(angle) * minDist;
+                    const angle = dist > 0.001 ? Math.atan2(dy, dx) : Math.PI / 2;
+                    ent.x = obs.x + Math.cos(angle) * minDist;
+                    ent.y = obs.y + Math.sin(angle) * minDist;
                 }
-            } else {
-                // Rectangle box
-                let closestX = Math.max(obs.x, Math.min(this.player.x, obs.x + obs.w));
-                let closestY = Math.max(obs.y, Math.min(this.player.y, obs.y + obs.h));
-                let dx = this.player.x - closestX;
-                let dy = this.player.y - closestY;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < this.player.radius) {
-                    let angle = Math.atan2(dy, dx);
-                    let push = this.player.radius - dist;
-                    this.player.x += Math.cos(angle) * push;
-                    this.player.y += Math.sin(angle) * push;
-                }
+                continue;
             }
+            const cx = Math.max(obs.x, Math.min(ent.x, obs.x + obs.w));
+            const cy = Math.max(obs.y, Math.min(ent.y, obs.y + obs.h));
+            const dx = ent.x - cx, dy = ent.y - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0.001) {
+                if (dist < radius) {
+                    ent.x += (dx / dist) * (radius - dist);
+                    ent.y += (dy / dist) * (radius - dist);
+                    hit = { obs, nx: dx / dist, ny: dy / dist };
+                }
+                continue;
+            }
+            // Centre is inside the rectangle: leave by the nearest side
+            const exits = [
+                [ent.x - obs.x, -1, 0], [obs.x + obs.w - ent.x, 1, 0],
+                [ent.y - obs.y, 0, -1], [obs.y + obs.h - ent.y, 0, 1]
+            ].sort((a, b) => a[0] - b[0]);
+            const [d, ex, ey] = exits[0];
+            ent.x += ex * (d + radius);
+            ent.y += ey * (d + radius);
+            hit = { obs, nx: ex, ny: ey };
+        }
+        return hit;
+    }
+
+    // An enemy blocked head-on by furniture commits to walking along it to
+    // whichever clear end is the shorter way round, then resumes the chase
+    startDetour(e, hit) {
+        const { obs, nx, ny } = hit;
+        const r = Math.min(e.radius || 16, 22) + 6;
+        const sp = Math.max(0.5, e.speed || 1.5);
+        if (Math.abs(ny) > Math.abs(nx)) {
+            const span = walkableX(e.y, 30);
+            const ends = [
+                { dir: -1, x: obs.x - r, cost: Math.abs(e.x - obs.x) + Math.abs(this.player.x - obs.x) },
+                { dir: 1, x: obs.x + obs.w + r, cost: Math.abs(obs.x + obs.w - e.x) + Math.abs(obs.x + obs.w - this.player.x) }
+            ].filter(end => end.x > span.min && end.x < span.max).sort((a, b) => a.cost - b.cost);
+            if (!ends.length) return;
+            // Went round this way recently and are back against it: try the other end
+            const last = e.lastDetour;
+            const pick = last && last.obs === obs && e.behaviorTimer - last.at < 240 && ends.length > 1 && ends[0].dir === last.dir ? ends[1] : ends[0];
+            e.detour = { axis: "x", dir: pick.dir, t: Math.ceil(Math.abs(pick.x - e.x) / sp) + 4 };
+            e.lastDetour = { obs, dir: pick.dir, at: e.behaviorTimer };
+        } else {
+            const dir = this.player.y > obs.y + obs.h / 2 ? 1 : -1;
+            const ty = dir > 0 ? obs.y + obs.h + r : obs.y - r;
+            e.detour = { axis: "y", dir, t: Math.ceil(Math.abs(ty - e.y) / sp) + 4 };
         }
     }
 
@@ -846,6 +887,12 @@ export class GameEngine {
                 }
             }
 
+            if (e.detour) {
+                if (--e.detour.t <= 0) e.detour = null;
+                else if (e.detour.axis === "x") { e.vx = e.detour.dir * e.speed; e.vy = 0; }
+                else { e.vy = e.detour.dir * e.speed; e.vx = 0; }
+            }
+
             e.x += e.vx + e.kbVx;
             e.y += e.vy + e.kbVy;
             e.kbVx *= KNOCKBACK_DAMPING;
@@ -857,6 +904,9 @@ export class GameEngine {
             const espan = walkableX(e.y, 30);
             if (e.x < espan.min) e.x = espan.min;
             if (e.x > espan.max) e.x = espan.max;
+            const hit = this.pushOutOfObstacles(e, Math.min(e.radius || 16, 22));
+            // Steer round only when pressing into the furniture, not when brushing past it
+            if (hit && !e.detour && e.vx * hit.nx + e.vy * hit.ny < 0 && Math.abs(e.vx * hit.ny - e.vy * hit.nx) < (e.speed || 1.5) * 0.7) this.startDetour(e, hit);
         }
     }
 

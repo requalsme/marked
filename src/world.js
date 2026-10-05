@@ -72,9 +72,8 @@ export const ROOM = {
     bounds: { minX: 70, maxX: 1530, minY: 335, maxY: 965 },
     playerStart: { x: 560, y: 520 },
     bossSpawn: { x: 800, y: 470 },
+    // Furniture and props live in props.js (painted, with their own colliders)
     obstacles: [
-        { x: 290, y: 440, w: 86, h: 42, label: "Evidence Board" },
-        { x: 1224, y: 444, w: 90, h: 46, label: "Ledger Altar" },
         { x: 800, y: 620, r: 40, label: "The Monolith" }
     ],
     interactables: [
@@ -105,7 +104,7 @@ export const ROOM = {
 // ─── Utilities ───────────────────────────────────────────────────────────
 
 // Deterministic PRNG so the room looks the same every visit
-function mulberry32(seed) {
+export function mulberry32(seed) {
     return function () {
         seed |= 0;
         seed = (seed + 0x6D2B79F5) | 0;
@@ -115,7 +114,7 @@ function mulberry32(seed) {
     };
 }
 
-function rgb(c, a = 1) {
+export function rgb(c, a = 1) {
     return `rgba(${Math.round(c[0])}, ${Math.round(c[1])}, ${Math.round(c[2])}, ${a})`;
 }
 
@@ -123,11 +122,11 @@ function lerpC(a, b, t) {
     return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 }
 
-function shadeC(c, amt) {
+export function shadeC(c, amt) {
     return [c[0] + amt, c[1] + amt, c[2] + amt];
 }
 
-function pathPoly(ctx, pts) {
+export function pathPoly(ctx, pts) {
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
     for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
@@ -135,7 +134,7 @@ function pathPoly(ctx, pts) {
 }
 
 // A hand-inked line: slightly wobbly, slightly varying weight
-function inkLine(ctx, rand, x1, y1, x2, y2, width = 1.3, alpha = 0.9) {
+export function inkLine(ctx, rand, x1, y1, x2, y2, width = 1.3, alpha = 0.9) {
     const len = Math.hypot(x2 - x1, y2 - y1);
     const steps = Math.max(1, Math.floor(len / 14));
     ctx.strokeStyle = `rgba(6, 4, 4, ${alpha})`;
@@ -151,7 +150,7 @@ function inkLine(ctx, rand, x1, y1, x2, y2, width = 1.3, alpha = 0.9) {
     ctx.stroke();
 }
 
-function inkPoly(ctx, rand, pts, width = 1.3, alpha = 0.9) {
+export function inkPoly(ctx, rand, pts, width = 1.3, alpha = 0.9) {
     for (let i = 0; i < pts.length; i++) {
         const a = pts[i], b = pts[(i + 1) % pts.length];
         inkLine(ctx, rand, a.x, a.y, b.x, b.y, width, alpha);
@@ -159,7 +158,7 @@ function inkPoly(ctx, rand, pts, width = 1.3, alpha = 0.9) {
 }
 
 // Cross-hatching inside the current clip: the ink illustrator's shadow
-function hatch(ctx, rand, x, y, w, h, { angle = 0.8, gap = 4, alpha = 0.22, width = 0.7, cross = false } = {}) {
+export function hatch(ctx, rand, x, y, w, h, { angle = 0.8, gap = 4, alpha = 0.22, width = 0.7, cross = false } = {}) {
     ctx.save();
     ctx.strokeStyle = `rgba(5, 3, 3, ${alpha})`;
     ctx.lineWidth = width;
@@ -767,7 +766,7 @@ function drawFloorSkull(ctx, rand, u, w) {
     drawSkull(ctx, p.x, p.y - 6 * p.s, 9 * p.s, rand);
 }
 
-function drawSkull(ctx, x, y, r, rand) {
+export function drawSkull(ctx, x, y, r, rand) {
     ctx.save();
     ctx.fillStyle = "#d6cbae";
     ctx.beginPath();
@@ -902,7 +901,7 @@ function archPath(ctx, x0, x1, spring, apex, bottom) {
     ctx.closePath();
 }
 
-const BOOK_COLORS = [
+export const BOOK_COLORS = [
     [92, 26, 20], [70, 44, 24], [36, 54, 40], [34, 42, 60], [92, 72, 38],
     [52, 34, 52], [104, 62, 30], [30, 28, 26], [120, 104, 70], [62, 20, 18], [48, 40, 34]
 ];
