@@ -734,7 +734,7 @@ export class CanvasRenderer {
             const w = CORPSE_ART_LENGTH, h = w * art.height / art.width;
             ctx.drawImage(art, spr.ax - w / 2, spr.ay + 8 - h, w, h);
             ctx.globalAlpha = 1;
-            this.drawFixtureLife(ctx, intr, { ...spr, flames: [], meta: { mark: null, beacon: null, embers: spr.meta.embers } });
+            this.drawFixtureLife(ctx, intr, { ...spr, flames: [], meta: { embers: spr.meta.embers } });
         } else {
             ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
             ctx.globalAlpha = 1;
@@ -776,6 +776,8 @@ export class CanvasRenderer {
         if (m.eyes) for (const e of m.eyes) glow(e.x, e.y, 3, [255, 90, 30], 0.4 + Math.random() * 0.2);
         if (m.mark) glow(m.mark.x, m.mark.y, 11, [190, 20, 14], 0.22 + Math.sin(t * 0.06) * 0.12);
         if (m.beacon && Math.floor(t / 20) % 3 === 0) glow(m.beacon.x, m.beacon.y, 8, [255, 40, 30], 0.9);
+        // A dead phone's screen, still waking now and then
+        if (m.phone) glow(m.phone.x, m.phone.y, 12, [150, 185, 255], (t + m.phone.x * 7) % 300 < 200 ? 0.45 + Math.random() * 0.08 : 0.08);
         ctx.restore();
     }
 
@@ -1315,6 +1317,10 @@ export class CanvasRenderer {
                 // The seal smoulders while the door is shut; the stair beyond floods red once open
                 if (intr.data.state === "open") lights.push({ x: intr.x, y: intr.y - 60, r: 220, color: [220, 40, 24], a: 0.9 });
                 else lights.push({ x: intr.x, y: 190, r: 125, color: [210, 60, 34], a: 0.5 + Math.sin(t * 0.06) * 0.1 });
+            }
+            const cs = CORPSE_TYPES.has(intr.type) && this.fixtureSprite(intr);
+            if (cs && cs.meta.phone && (t + cs.meta.phone.x * 7) % 300 < 200) {
+                lights.push({ ...this.fixturePoint(intr, cs, cs.meta.phone), r: 55, color: [150, 185, 255], a: 0.5 });
             }
             if (intr.type === "wax_record_chest" && intr.data.state !== "closed") {
                 const spr = this.fixtureSprite(intr);

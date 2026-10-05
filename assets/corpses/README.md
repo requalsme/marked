@@ -19,19 +19,21 @@ Use **Text to 3D** with the art style set to **Realistic**. Paste one prompt per
 
 Add this **negative prompt** to all three:
 
-> cartoon, chibi, toy, stylized, low poly, clean, bright colors, standing, T-pose, base, pedestal, floor, ground plane, text
+> cartoon, chibi, toy, stylized, low poly, clean, bright colors, standing, T-pose, medieval, fantasy armour, cloak, sword, base, pedestal, floor, ground plane, text
+
+The game is set in the present day (2026). Every prompt describes ordinary modern people, not fantasy characters.
 
 **fresh_marked_corpse**
 
-> A dead medieval wanderer lying face down on the ground. Long ragged black hooded cloak, torn and wet at the hem. One arm stretched out ahead, the pale bony hand open on the floor. The other arm folded under the body, legs slightly bent, scuffed leather boots. Hood fallen over the head so the face is hidden. A strip of cloth wrapped around one forearm marked with a dark red sigil. Gaunt, emaciated proportions. Dark fantasy, gothic horror, grim and muted colors: charcoal, ash grey, dried-blood brown. Realistic cloth folds, lifeless weight sinking into the floor.
+> A dead young adult lying face down on a stone floor, present day. Dark charcoal hoodie with the hood pulled up over the head so the face is hidden, faded blue jeans, dirty white trainers, one leg bent at the knee. One arm stretched out ahead, pale hand open on the floor, a cracked smartphone lying just beyond the fingers. The other arm trapped under the body. A red work lanyard with a plastic ID card spilled out from the collar. Thin, lifeless, heavy. Realistic, contemporary clothing, muted colors: charcoal, washed denim, grey, dried-blood brown. Gritty, horror, forensic realism.
 
 **burned_corpse_remains**
 
-> Charred human skeletal remains lying on their back, arms raised and curled as if shielding the face (pugilistic pose). Blackened, cracked bones with pale grey calcined patches. Scraps of burnt cloth fused to the ribs. Skull turned toward the viewer, jaw slack. Ash and cinders clinging to the bones. Dark fantasy horror, realistic, muted black, grey and bone colors.
+> Charred human remains lying on their back on a stone floor, present day, arms raised and curled as if shielding the face (pugilistic pose). Blackened, cracked bones with pale grey calcined patches. Melted scraps of synthetic jacket fused to the ribs, the rubber soles of trainers half-melted around the foot bones, a scorched smartphone fused to one hand. Skull turned toward the viewer, jaw slack. Ash clinging to everything. Realistic, horror, muted black, grey and bone colors.
 
 **broadcast_corpse**
 
-> A dead body lying on its side, wrapped tightly in long strips of old paper ticker tape and loops of copper wire. A thin antique radio aerial with three crossbars pushed into its back. A small brass horn speaker tangled in the wire near the head. The hooded cloak is stained with black ink. Pale bony hands bound at the wrists with wire. Dark fantasy, gothic horror, realistic, muted colors: black, parchment cream, tarnished copper.
+> A dead body lying on its side on a stone floor, present day, wrapped tightly in long strips of white printer paper and black electrical cable. Wears a grey hoodie and jeans, hood up. Wrists bound with cable. A handheld two-way radio with its aerial up stands on the floor beside the chest, its red LED on. Black ink soaked into the paper strips. Realistic, contemporary, horror, muted colors: grey, black, off-white paper.
 
 ### 2. Polish in Meshy
 
