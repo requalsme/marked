@@ -7,6 +7,20 @@
 // outlines, cross-hatched shadows, desaturated stone with wax-red accents)
 // and the sprites and props are layered on top.
 
+// Which era the Keeping House is dressed for: "past" (the old archive, lit by
+// candle) or "present" (the same building in 2026: work lights, fluorescent
+// tubes, CCTV, crime-scene clutter). Choose with ?era=present or ?era=past;
+// the choice is remembered.
+export const ERA = (() => {
+    try {
+        const q = new URLSearchParams(location.search).get("era");
+        if (q === "present" || q === "past") localStorage.setItem("marked_era", q);
+        return localStorage.getItem("marked_era") === "present" ? "present" : "past";
+    } catch (e) {
+        return "past";
+    }
+})();
+
 export const WORLD_WIDTH = 1600;
 export const WORLD_HEIGHT = 1000;
 export const WALL_BASE_Y = 300;   // where the back wall meets the floor
@@ -84,9 +98,9 @@ export const ROOM = {
         { type: "sealed_zone_door", x: 800, y: 302, data: { radius: 34, state: "closed" } }
     ],
     candles: [
-        // Floor candelabras
-        { x: 292, y: 356, intensity: 0.85 },
-        { x: 1308, y: 356, intensity: 0.85 },
+        // Floor candelabras (in 2026 the two at the back are tripod work lights)
+        { x: 292, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
+        { x: 1308, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
         { x: 205, y: 730, intensity: 0.75 },
         { x: 1405, y: 650, intensity: 0.75 },
         { x: 800, y: 952, intensity: 0.7 },

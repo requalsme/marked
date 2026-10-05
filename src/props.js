@@ -8,7 +8,7 @@
 
 import {
     project, depthS, depthOfY, mulberry32, rgb, shadeC, pathPoly,
-    inkLine, inkPoly, hatch, drawSkull, BOOK_COLORS
+    inkLine, inkPoly, hatch, drawSkull, BOOK_COLORS, ERA
 } from "./world.js";
 
 const VPX = 800;
@@ -187,59 +187,64 @@ function paintReadingTable(ctx, rand, u, w, out) {
     // Top
     box(ctx, rand, u - L - 4, u + L + 4, w - D - 3, w + D + 3, H - 5, H, WOOD, { hatchFront: 0.25 });
 
-    // Open ledger
-    const lu = u - 28, lw = w;
-    for (const side of [-1, 1]) {
-        const page = [P(lu + side * 2, lw + 14, H + 2), P(lu + side * 30, lw + 13, H + 1), P(lu + side * 30, lw - 13, H + 1), P(lu + side * 2, lw - 14, H + 2)];
-        pathPoly(ctx, page);
-        const g = ctx.createLinearGradient(page[0].x, 0, page[1].x, 0);
-        g.addColorStop(0, "#b9a986");
-        g.addColorStop(0.3, "#e3d7b6");
-        g.addColorStop(1, "#d6c8a2");
-        ctx.fillStyle = g;
+    if (ERA === "present") {
+        for (let i = 0; i < 4; i++) flatPaper(ctx, rand, u + 20 + rand() * 40, w - 10 + rand() * 20, H + 0.5);
+        paintLaptop(ctx, rand, u, w, H, out);
+    } else {
+        // Open ledger
+        const lu = u - 28, lw = w;
+        for (const side of [-1, 1]) {
+            const page = [P(lu + side * 2, lw + 14, H + 2), P(lu + side * 30, lw + 13, H + 1), P(lu + side * 30, lw - 13, H + 1), P(lu + side * 2, lw - 14, H + 2)];
+            pathPoly(ctx, page);
+            const g = ctx.createLinearGradient(page[0].x, 0, page[1].x, 0);
+            g.addColorStop(0, "#b9a986");
+            g.addColorStop(0.3, "#e3d7b6");
+            g.addColorStop(1, "#d6c8a2");
+            ctx.fillStyle = g;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(40, 24, 12, 0.5)";
+            ctx.lineWidth = 0.6;
+            for (let k = -10; k <= 10; k += 2.5) {
+                const a = P(lu + side * 6, lw + k, H + 1.6), b = P(lu + side * (24 - rand() * 8), lw + k, H + 1.4);
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.stroke();
+            }
+            inkPoly(ctx, rand, page, 0.9);
+        }
+        // Ledger cover edge and red ribbon over the front of the table
+        const rb = P(lu + 2, lw - 14, H + 2), rb2 = P(lu + 5, w - D - 3, H - 8);
+        ctx.strokeStyle = "#8f1a12";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(rb.x, rb.y);
+        ctx.quadraticCurveTo(rb.x + 2, (rb.y + rb2.y) / 2, rb2.x, rb2.y + 6);
+        ctx.stroke();
+
+        // Loose pages, inkwell and quill
+        for (let i = 0; i < 4; i++) flatPaper(ctx, rand, u + 20 + rand() * 40, w - 10 + rand() * 20, H + 0.5);
+        const ink = P(u + 12, w - 12, H);
+        ctx.fillStyle = "#0d0b10";
+        ctx.beginPath();
+        ctx.ellipse(ink.x, ink.y - 3, 4, 3.5, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "rgba(40, 24, 12, 0.5)";
+        ctx.fillStyle = "rgba(160, 170, 200, 0.4)";
+        ctx.fillRect(ink.x - 2, ink.y - 5.5, 1.2, 2);
+        ctx.strokeStyle = "#e8e0cc";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(ink.x, ink.y - 5);
+        ctx.quadraticCurveTo(ink.x + 6, ink.y - 18, ink.x + 13, ink.y - 26);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(232, 224, 204, 0.6)";
         ctx.lineWidth = 0.6;
-        for (let k = -10; k <= 10; k += 2.5) {
-            const a = P(lu + side * 6, lw + k, H + 1.6), b = P(lu + side * (24 - rand() * 8), lw + k, H + 1.4);
+        for (let i = 0; i < 6; i++) {
             ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
+            ctx.moveTo(ink.x + 3 + i * 1.6, ink.y - 10 - i * 2.4);
+            ctx.lineTo(ink.x + 7 + i * 1.6, ink.y - 12 - i * 2.4);
             ctx.stroke();
         }
-        inkPoly(ctx, rand, page, 0.9);
-    }
-    // Ledger cover edge and red ribbon over the front of the table
-    const rb = P(lu + 2, lw - 14, H + 2), rb2 = P(lu + 5, w - D - 3, H - 8);
-    ctx.strokeStyle = "#8f1a12";
-    ctx.lineWidth = 1.8;
-    ctx.beginPath();
-    ctx.moveTo(rb.x, rb.y);
-    ctx.quadraticCurveTo(rb.x + 2, (rb.y + rb2.y) / 2, rb2.x, rb2.y + 6);
-    ctx.stroke();
-
-    // Loose pages, inkwell and quill
-    for (let i = 0; i < 4; i++) flatPaper(ctx, rand, u + 20 + rand() * 40, w - 10 + rand() * 20, H + 0.5);
-    const ink = P(u + 12, w - 12, H);
-    ctx.fillStyle = "#0d0b10";
-    ctx.beginPath();
-    ctx.ellipse(ink.x, ink.y - 3, 4, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(160, 170, 200, 0.4)";
-    ctx.fillRect(ink.x - 2, ink.y - 5.5, 1.2, 2);
-    ctx.strokeStyle = "#e8e0cc";
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(ink.x, ink.y - 5);
-    ctx.quadraticCurveTo(ink.x + 6, ink.y - 18, ink.x + 13, ink.y - 26);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(232, 224, 204, 0.6)";
-    ctx.lineWidth = 0.6;
-    for (let i = 0; i < 6; i++) {
-        ctx.beginPath();
-        ctx.moveTo(ink.x + 3 + i * 1.6, ink.y - 10 - i * 2.4);
-        ctx.lineTo(ink.x + 7 + i * 1.6, ink.y - 12 - i * 2.4);
-        ctx.stroke();
     }
 
     // Book stack at the right end
@@ -1163,9 +1168,10 @@ function paintCrates(ctx, rand, u, w, out, opts) {
         return f;
     };
     const flip = opts.flip ? -1 : 1;
-    crate(u - 50, u - 6, w - 24, w + 16, 0, 36, CRATE, opts.flip ? "No. 13" : "ARCHIVE");
-    crate(u - 2, u + 46, w - 20, w + 22, 0, 32, CRATE, opts.flip ? "" : "KEEP");
-    crate(u - 44 + (flip > 0 ? 6 : 0), u - 10, w - 18, w + 12, 36, 62, CRATE);
+    const now = ERA === "present", M = now ? CARDBOARD : CRATE;
+    crate(u - 50, u - 6, w - 24, w + 16, 0, 36, M, now ? "EVIDENCE" : opts.flip ? "No. 13" : "ARCHIVE");
+    crate(u - 2, u + 46, w - 20, w + 22, 0, 32, M, now ? "CASE 2026-0413" : opts.flip ? "" : "KEEP");
+    crate(u - 44 + (flip > 0 ? 6 : 0), u - 10, w - 18, w + 12, 36, 62, M);
     // Parchment document boxes on top of the right crate
     box(ctx, rand, u + 4, u + 30, w - 14, w + 10, 32, 46, PARCHBOX, { hatchFront: 0.1 });
     box(ctx, rand, u + 8, u + 34, w - 12, w + 12, 46, 58, PARCHBOX, { hatchFront: 0.1 });
@@ -1294,6 +1300,247 @@ export function propCovers(pr, points) {
     return false;
 }
 
+// ─── The present day (ERA === "present") ────────────────────────────────
+// The same archive in 2026: fluorescent tubes on chains, an exit sign, a
+// CCTV camera, crime-scene markers and tape, cables run to the work lights.
+// Live parts (tube flicker, screens, the camera's head) are left on `out`.
+
+const CARDBOARD = { top: [150, 122, 84], front: [128, 100, 66], side: [92, 70, 46] };
+const STEEL = { top: [120, 124, 130], front: [84, 88, 94], side: [58, 60, 66] };
+
+// A twin-tube fluorescent fitting hung on chains in front of a shelf bay
+function paintTube(ctx, rand, u, w, out) {
+    const h = 176;
+    for (const sd of [-1, 1]) {
+        const a = P(u + sd * 34, w, h + 2), b = P(u + sd * 30, w, 300);
+        ctx.strokeStyle = "#1a1918";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 1.5]);
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    box(ctx, rand, u - 46, u + 46, w - 5, w + 5, h, h + 5, STEEL, { hatchFront: 0, ink: 0.9 });
+    const t0 = P(u - 42, w - 5, h - 1.5), t1 = P(u + 42, w - 5, h - 1.5);
+    ctx.strokeStyle = "#cfd4d8";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(t0.x, t0.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.stroke();
+    // A blackened end where the tube is failing
+    ctx.strokeStyle = "#3a3634";
+    ctx.beginPath();
+    ctx.moveTo(t1.x - 7, t1.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+    out.tube = { x0: t0.x, x1: t1.x, y: t0.y };
+}
+
+// Green emergency exit sign bolted to the door pillar
+function paintExitSign(ctx, rand, u, w, out) {
+    const c = P(u, w, 150);
+    const W = 26, H = 11;
+    ctx.fillStyle = "#e8ece6";
+    ctx.fillRect(c.x - W / 2 - 1.5, c.y - H / 2 - 1.5, W + 3, H + 3);
+    ctx.fillStyle = "#1f8a4a";
+    ctx.fillRect(c.x - W / 2, c.y - H / 2, W, H);
+    ctx.fillStyle = "#f2f7f2";
+    // Running figure and an arrow, simplified to the pictogram's bones
+    ctx.beginPath();
+    ctx.arc(c.x - 8, c.y - 3, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#f2f7f2";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(c.x - 8.5, c.y - 1.5);
+    ctx.lineTo(c.x - 9.5, c.y + 1.5);
+    ctx.lineTo(c.x - 11.5, c.y + 4);
+    ctx.moveTo(c.x - 9.5, c.y + 1.5);
+    ctx.lineTo(c.x - 7, c.y + 4);
+    ctx.moveTo(c.x - 11, c.y - 0.5);
+    ctx.lineTo(c.x - 6, c.y);
+    ctx.moveTo(c.x - 3, c.y);
+    ctx.lineTo(c.x + 8, c.y);
+    ctx.moveTo(c.x + 5, c.y - 3);
+    ctx.lineTo(c.x + 8.5, c.y);
+    ctx.lineTo(c.x + 5, c.y + 3);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(6,4,4,0.85)";
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(c.x - W / 2 - 1.5, c.y - H / 2 - 1.5, W + 3, H + 3);
+    out.glows = [{ x: c.x, y: c.y, r: 26, color: [60, 230, 120], a: 0.5 }];
+    out.lights = [{ x: c.x, y: c.y + 10, r: 110, color: [80, 220, 130], a: 0.45 }];
+}
+
+// CCTV camera on a wall bracket; the head is drawn live so it can follow you
+function paintCctv(ctx, rand, u, w, out) {
+    const m = P(u, w, 160);
+    ctx.fillStyle = "#2a2b2e";
+    ctx.fillRect(m.x - 4, m.y - 5, 8, 10);
+    ctx.strokeStyle = "rgba(6,4,4,0.9)";
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(m.x - 4, m.y - 5, 8, 10);
+    ctx.strokeStyle = "#3a3b3f";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(m.x, m.y);
+    ctx.lineTo(m.x, m.y + 9);
+    ctx.stroke();
+    ctx.strokeStyle = "#141414";
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(m.x + 3, m.y + 4);
+    ctx.quadraticCurveTo(m.x + 10, m.y + 30, m.x + 6, m.y + 80);
+    ctx.stroke();
+    out.cctv = { x: m.x, y: m.y + 10 };
+}
+
+// A laptop left open on the reading table with a paper cup beside it
+function paintLaptop(ctx, rand, u, w, H, out) {
+    const lu = u - 28, lw = w;
+    box(ctx, rand, lu - 16, lu + 16, lw - 11, lw + 9, H, H + 1.6, STEEL, { hatchFront: 0, ink: 0.8 });
+    // Lid tilted back: a dark bezel with the screen inside it
+    const s0 = P(lu - 16, lw + 9, H + 1.6), s1 = P(lu + 16, lw + 9, H + 1.6), s2 = P(lu + 15, lw + 15, H + 22), s3 = P(lu - 15, lw + 15, H + 22);
+    pathPoly(ctx, [s0, s1, s2, s3]);
+    ctx.fillStyle = "#1a1b1f";
+    ctx.fill();
+    inkPoly(ctx, rand, [s0, s1, s2, s3], 0.9);
+    const k = 1.6;
+    const scr = [{ x: s0.x + k, y: s0.y - k }, { x: s1.x - k, y: s1.y - k }, { x: s2.x - k, y: s2.y + k }, { x: s3.x + k, y: s3.y + k }];
+    pathPoly(ctx, scr);
+    ctx.fillStyle = "#26324a";
+    ctx.fill();
+    ctx.fillStyle = "rgba(200, 215, 240, 0.5)";
+    for (let i = 0; i < 5; i++) {
+        const y = scr[3].y + 3 + i * 2.6;
+        ctx.fillRect(scr[3].x + 3, y, (scr[2].x - scr[3].x) * (0.3 + rand() * 0.5), 0.8);
+    }
+    out.glows = (out.glows || []).concat([{ x: (scr[0].x + scr[2].x) / 2, y: (scr[0].y + scr[2].y) / 2, r: 24, color: [150, 180, 255], a: 0.45 }]);
+    out.lights = (out.lights || []).concat([{ x: (scr[0].x + scr[2].x) / 2, y: scr[0].y, r: 80, color: [150, 180, 255], a: 0.45 }]);
+    // Keys
+    const kb = P(lu, lw - 3, H + 1.7);
+    ctx.fillStyle = "rgba(10, 10, 12, 0.6)";
+    ctx.fillRect(kb.x - 11, kb.y - 2, 22, 4);
+    // Paper coffee cup with a lid
+    const cp = P(u + 12, w - 10, H);
+    ctx.fillStyle = "#e4dfd2";
+    ctx.beginPath();
+    ctx.moveTo(cp.x - 3, cp.y - 9);
+    ctx.lineTo(cp.x + 3, cp.y - 9);
+    ctx.lineTo(cp.x + 2.3, cp.y);
+    ctx.lineTo(cp.x - 2.3, cp.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#7a5634";
+    ctx.fillRect(cp.x - 3, cp.y - 6, 6, 3);
+    ctx.fillStyle = "#2a2828";
+    ctx.fillRect(cp.x - 3.4, cp.y - 10.5, 6.8, 1.8);
+    ctx.strokeStyle = "rgba(6,4,4,0.7)";
+    ctx.lineWidth = 0.6;
+    ctx.strokeRect(cp.x - 3, cp.y - 9, 6, 9);
+}
+
+// A yellow numbered evidence marker tent
+function paintMarker(n) {
+    return (ctx, rand, u, w, out) => {
+        const b0 = P(u - 6.5, w - 3, 0), b1 = P(u + 6.5, w - 3, 0), t0 = P(u - 5.5, w, 13), t1 = P(u + 5.5, w, 13);
+        pathPoly(ctx, [b0, b1, t1, t0]);
+        ctx.fillStyle = "#e5b51e";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(6,4,4,0.85)";
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+        ctx.fillStyle = "#141210";
+        ctx.font = "bold 9px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(n), (b0.x + t1.x) / 2, (b0.y + t1.y) / 2 + 0.5);
+    };
+}
+
+// Barrier posts with sagging caution tape between them
+function paintTape(ctx, rand, u, w, out) {
+    const posts = [-74, 74];
+    const tops = [];
+    for (const pu of posts) {
+        const base = P(u + pu, w, 0), top = P(u + pu, w, 34);
+        ctx.fillStyle = "#1c1c1e";
+        ctx.beginPath();
+        ctx.ellipse(base.x, base.y, 6, 2.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#2e2f33";
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(base.x, base.y);
+        ctx.lineTo(top.x, top.y);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(200, 205, 210, 0.3)";
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(base.x - 0.7, base.y);
+        ctx.lineTo(top.x - 0.7, top.y);
+        ctx.stroke();
+        tops.push(top);
+    }
+    const [a, b] = tops;
+    const mid = { x: (a.x + b.x) / 2, y: Math.max(a.y, b.y) + 9 };
+    ctx.strokeStyle = "#e3b51c";
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(mid.x, mid.y, b.x, b.y);
+    ctx.stroke();
+    ctx.strokeStyle = "#141210";
+    ctx.lineWidth = 3.4;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(mid.x, mid.y, b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // A torn end hanging from one post
+    ctx.strokeStyle = "#e3b51c";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(b.x, b.y + 2);
+    ctx.quadraticCurveTo(b.x + 5, b.y + 12, b.x + 2, b.y + 22);
+    ctx.stroke();
+}
+
+// Extension cables taped across the floor to the two work lights
+function paintCables(ctx, rand, u, w, out) {
+    const f = out.floor;
+    const runs = [[[800, 318], [560, 340], [380, 352], [300, 358]], [[800, 318], [1040, 342], [1220, 350], [1300, 358]]];
+    for (const run of runs) {
+        const pts = run.map(([x, y]) => {
+            const q = placeAt(x, y);
+            return P(q.u + (rand() - 0.5) * 10, q.w, 0.3);
+        });
+        f.strokeStyle = "#141416";
+        f.lineWidth = 1.6;
+        f.beginPath();
+        f.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) f.quadraticCurveTo(pts[i - 1].x + 10, (pts[i - 1].y + pts[i].y) / 2 + 4, pts[i].x, pts[i].y);
+        f.stroke();
+        // Gaffer tape holding it down
+        for (let i = 1; i < pts.length - 1; i++) {
+            f.fillStyle = "rgba(60, 60, 64, 0.95)";
+            f.fillRect(pts[i].x - 5, pts[i].y - 1.6, 10, 3.2);
+        }
+    }
+    // Power strip by the door
+    const ps = P(u, w, 0);
+    f.fillStyle = "#e0dcd4";
+    f.fillRect(ps.x - 10, ps.y - 2, 20, 4);
+    f.fillStyle = "#c22";
+    f.fillRect(ps.x + 7, ps.y - 1, 2, 2);
+}
+
 // ─── Placement ───────────────────────────────────────────────────────────
 // x, y: where the prop's footprint centre sits in the room (screen/world space).
 // du, dw: footprint half-extents in floor units (for colliders and shadows).
@@ -1317,11 +1564,21 @@ export const PROP_DEFS = [
     { id: "statue", x: 1396, y: 428, du: 26, dw: 26, height: 180, paint: paintStatue, extent: { dw0: 40 } },
     { id: "gibbet", x: 1268, y: 705, du: 40, dw: 18, height: 160, paint: paintGibbet },
     { id: "crates_left", x: 205, y: 912, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { skull: true }) },
-    { id: "crates_right", x: 1440, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) }
-];
+    { id: "crates_right", x: 1440, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) },
+    // The present day: things the living have brought in since
+    { id: "tube_left", era: "present", solid: false, x: 438, y: 306, du: 46, dw: 5, height: 300, paint: paintTube, extent: { dw0: 6, dw1: 6 } },
+    { id: "tube_right", era: "present", solid: false, x: 1162, y: 306, du: 46, dw: 5, height: 300, paint: paintTube, extent: { dw0: 6, dw1: 6 } },
+    { id: "exit_sign", era: "present", solid: false, x: 700, y: 306, du: 16, dw: 2, height: 170, paint: paintExitSign, extent: { dw0: 4, dw1: 4 } },
+    { id: "cctv", era: "present", solid: false, x: 1074, y: 306, du: 10, dw: 2, height: 180, paint: paintCctv, extent: { dw0: 4, dw1: 4 } },
+    { id: "cables", era: "present", solid: false, x: 800, y: 318, du: 520, dw: 4, height: 4, paint: paintCables, extent: { dw0: 60, dw1: 10 } },
+    { id: "tape", era: "present", solid: false, x: 1268, y: 752, du: 80, dw: 3, height: 50, paint: paintTape },
+    ...[[560, 600, 1], [700, 640, 2], [470, 760, 3], [905, 580, 4], [1160, 640, 5], [380, 560, 6]].map(([x, y, n]) => (
+        { id: `marker_${n}`, era: "present", solid: false, x, y, du: 7, dw: 3, height: 16, paint: paintMarker(n), extent: { du: 4, dw0: 4, dw1: 4 } }
+    ))
+].filter(d => !d.era || d.era === ERA);
 
 // Colliders as screen-space rectangles over each footprint (engine obstacle format)
-export const PROP_COLLIDERS = PROP_DEFS.map(d => {
+export const PROP_COLLIDERS = PROP_DEFS.filter(d => d.solid !== false).map(d => {
     const { u, w } = placeAt(d.x, d.y);
     const a = P(u - d.du, w + d.dw), b = P(u + d.du, w + d.dw), c = P(u + d.du, w - d.dw), e = P(u - d.du, w - d.dw);
     const x0 = Math.min(a.x, e.x), x1 = Math.max(b.x, c.x);

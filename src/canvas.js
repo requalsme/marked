@@ -88,14 +88,6 @@ const ENEMY_ART = {
 };
 
 const PAINTED_ROOM_URL = "assets/room/room_painted.png";
-// Optional rendered corpse art (see assets/corpses/README.md). When a file is
-// present it replaces the painted body; the blood pool and glows stay.
-const CORPSE_ART = {
-    fresh_marked_corpse: "assets/corpses/fresh_marked_corpse.png",
-    burned_corpse_remains: "assets/corpses/burned_corpse_remains.png",
-    broadcast_corpse: "assets/corpses/broadcast_corpse.png"
-};
-const CORPSE_ART_LENGTH = 92; // world units the body spans, head to feet, at y = 650
 
 // Moonlight shafts falling from the darkness above the walls
 const MOON_SHAFTS = [
@@ -169,18 +161,6 @@ export class CanvasRenderer {
             this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
-        this.loadCorpseArt();
-    }
-
-    loadCorpseArt() {
-        if (this.corpseArt) return;
-        this.corpseArt = {};
-        for (const [type, url] of Object.entries(CORPSE_ART)) {
-            const img = new Image();
-            img.onload = () => { this.corpseArt[type] = img; };
-            img.onerror = () => {};
-            img.src = url;
-        }
     }
 
     // Prop shadows and spilled paper never move, so bake them into the floor
@@ -415,6 +395,7 @@ export class CanvasRenderer {
         }
         for (const c of this.candles) {
             if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
+            else if (c.kind === "worklight") this.drawWorkLight(ctx, c);
             else this.drawCandle(ctx, c);
         }
     }
@@ -450,6 +431,45 @@ export class CanvasRenderer {
         ctx.beginPath();
         ctx.ellipse(x + sway * 0.3, top - 2 * s, 0.9 * s, 2.1 * s, 0, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+    }
+
+    // A portable LED work light on a tripod, turned on the room (the present day)
+    drawWorkLight(ctx, c) {
+        const k = depthScale(c.y), x = c.x, y = c.y, H = 62 * k;
+        ctx.save();
+        this.drawGroundShadow(ctx, x, y + 1, 18 * k, 5 * k, 0.6);
+        ctx.strokeStyle = "#1b1c1f";
+        ctx.lineCap = "round";
+        ctx.lineWidth = 2 * k;
+        for (const dx of [-12, 0, 12]) {
+            ctx.beginPath();
+            ctx.moveTo(x, y - 22 * k);
+            ctx.lineTo(x + dx * k, y + (dx === 0 ? 3 : 0) * k);
+            ctx.stroke();
+        }
+        ctx.lineWidth = 2.4 * k;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 22 * k);
+        ctx.lineTo(x, y - H);
+        ctx.stroke();
+        ctx.lineCap = "butt";
+        // Yellow housing tilted down toward the floor, its face blazing
+        ctx.translate(x, y - H);
+        ctx.rotate(0.25);
+        ctx.fillStyle = "#c99a1c";
+        ctx.fillRect(-11 * k, -9 * k, 22 * k, 14 * k);
+        ctx.strokeStyle = "rgba(6,4,4,0.9)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-11 * k, -9 * k, 22 * k, 14 * k);
+        ctx.fillStyle = "#f4f6ff";
+        ctx.fillRect(-9 * k, -3 * k, 18 * k, 7 * k);
+        ctx.globalCompositeOperation = "lighter";
+        const g = ctx.createRadialGradient(0, 2 * k, 0, 0, 2 * k, 30 * k);
+        g.addColorStop(0, "rgba(220, 230, 255, 0.55)");
+        g.addColorStop(1, "rgba(220, 230, 255, 0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(-30 * k, -28 * k, 60 * k, 60 * k);
         ctx.restore();
     }
 
@@ -534,6 +554,38 @@ export class CanvasRenderer {
         if (obs.label === "The Monolith") this.drawMonolith(ctx, obs, engine);
     }
 
+    // Fluorescent tubes: the left one steady, the right one failing in stutters
+    tubeOn(pr) {
+        if (pr.id !== "tube_right") return true;
+        const t = this.frame % 400;
+        return !(t > 300 && t < 340 && Math.random() < 0.7) && !(t > 120 && t < 126);
+    }
+
+    // The camera turns to keep the player in frame; its red light blinks
+    drawCctvHead(ctx, at, engine) {
+        const p = engine.player;
+        const a = p ? Math.max(0.2, Math.min(Math.PI - 0.2, Math.atan2(p.y - at.y, p.x - at.x))) : Math.PI / 2;
+        ctx.save();
+        ctx.translate(at.x, at.y);
+        ctx.rotate(a);
+        ctx.fillStyle = "#d8d9dc";
+        ctx.fillRect(-2, -4, 16, 8);
+        ctx.fillStyle = "#1a1b1e";
+        ctx.fillRect(14, -3.4, 3, 6.8);
+        ctx.strokeStyle = "rgba(6,4,4,0.9)";
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(-2, -4, 16, 8);
+        ctx.fillStyle = "#9aa0a8";
+        ctx.fillRect(-2, -5.5, 17, 1.6);
+        if (Math.floor(this.frame / 30) % 2 === 0) {
+            ctx.fillStyle = "#ff2a1a";
+            ctx.beginPath();
+            ctx.arc(2, 2, 1.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
     // A painted furniture sprite; it thins to a ghost when the player walks
     // behind it so they are never lost, and its candles burn on top.
     drawProp(ctx, pr, engine) {
@@ -550,6 +602,35 @@ export class CanvasRenderer {
         ctx.restore();
         for (const f of pr.flames) {
             this.drawFlame(ctx, f.x, f.y, f.s * 0.8, f.x * 0.31 + f.y);
+        }
+        const m = pr.meta || {};
+        if (m.glows || m.tube || m.cctv) {
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            for (const gl of m.glows || []) {
+                const g = ctx.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, gl.r);
+                g.addColorStop(0, `rgba(${gl.color.join(",")}, ${gl.a})`);
+                g.addColorStop(1, `rgba(${gl.color.join(",")}, 0)`);
+                ctx.fillStyle = g;
+                ctx.fillRect(gl.x - gl.r, gl.y - gl.r, gl.r * 2, gl.r * 2);
+            }
+            if (m.tube && this.tubeOn(pr)) {
+                ctx.strokeStyle = "rgba(235, 245, 255, 0.95)";
+                ctx.lineWidth = 2.4;
+                ctx.lineCap = "round";
+                ctx.beginPath();
+                ctx.moveTo(m.tube.x0, m.tube.y);
+                ctx.lineTo(m.tube.x1 - 8, m.tube.y);
+                ctx.stroke();
+                const g = ctx.createLinearGradient(0, m.tube.y - 14, 0, m.tube.y + 30);
+                g.addColorStop(0, "rgba(200, 220, 255, 0)");
+                g.addColorStop(0.3, "rgba(200, 220, 255, 0.28)");
+                g.addColorStop(1, "rgba(200, 220, 255, 0)");
+                ctx.fillStyle = g;
+                ctx.fillRect(m.tube.x0 - 10, m.tube.y - 14, m.tube.x1 - m.tube.x0 + 20, 44);
+            }
+            ctx.restore();
+            if (m.cctv) this.drawCctvHead(ctx, m.cctv, engine);
         }
     }
 
@@ -728,18 +809,9 @@ export class CanvasRenderer {
         ctx.scale(k, k);
         ctx.translate(-spr.ax, -spr.ay);
         ctx.globalAlpha = alpha;
-        const art = this.corpseArt && this.corpseArt[intr.type];
-        if (art) {
-            // Rendered body: centred on the corpse, its lowest pixels resting on the floor
-            const w = CORPSE_ART_LENGTH, h = w * art.height / art.width;
-            ctx.drawImage(art, spr.ax - w / 2, spr.ay + 8 - h, w, h);
-            ctx.globalAlpha = 1;
-            this.drawFixtureLife(ctx, intr, { ...spr, flames: [], meta: { embers: spr.meta.embers } });
-        } else {
-            ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
-            ctx.globalAlpha = 1;
-            this.drawFixtureLife(ctx, intr, spr);
-        }
+        ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
+        ctx.globalAlpha = 1;
+        this.drawFixtureLife(ctx, intr, spr);
         ctx.restore();
     }
 
@@ -1283,6 +1355,10 @@ export class CanvasRenderer {
         lights.push({ x: p.x, y: p.y - 24, r: 70, color: [255, 240, 215], a: 0.5 });
         for (const c of this.candles) {
             const f = 1 + Math.sin(t * 0.21 + c.x) * 0.05 + (Math.random() - 0.5) * 0.08;
+            if (c.kind === "worklight") {
+                lights.push({ x: c.x, y: c.y - 40, r: 300 * c.intensity, color: [225, 235, 255], a: 1.0 });
+                continue;
+            }
             if (c.kind === "sconce") {
                 const sc = c.scale || 1;
                 lights.push({ x: c.x, y: c.y - 22 * sc, r: 230 * c.intensity * f * sc, color: [255, 165, 90], a: 0.8 * f });
@@ -1296,6 +1372,12 @@ export class CanvasRenderer {
                 const f = 1 + Math.sin(t * 0.23 + fl.x) * 0.06 + (Math.random() - 0.5) * 0.08;
                 lights.push({ x: fl.x, y: fl.y - 4, r: 105 * f, color: [255, 172, 96], a: 0.62 * f });
             }
+        }
+        for (const pr of this.props) {
+            const m = pr.meta;
+            if (!m) continue;
+            for (const l of m.lights || []) lights.push(l);
+            if (m.tube && this.tubeOn(pr)) lights.push({ x: (m.tube.x0 + m.tube.x1) / 2, y: m.tube.y + 40, r: 230, color: [210, 225, 255], a: 0.75 });
         }
         for (const sh of MOON_SHAFTS) {
             lights.push({ x: sh.floor.x, y: sh.floor.y, r: sh.w1 * 1.1, color: [140, 160, 205], a: 0.55 });
