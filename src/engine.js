@@ -2,6 +2,7 @@
 import { audioManager } from "./audio.js";
 import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
 import { PROP_COLLIDERS } from "./props.js";
+import { FIXTURE_COLLIDERS } from "./fixtures.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -75,7 +76,7 @@ export class GameEngine {
         this.bossAnnounced = false;
         
         // Static Obstacles in Keeping House. These are collision shapes for sprite props.
-        this.obstacles = ROOM.obstacles.map(o => ({ ...o })).concat(PROP_COLLIDERS.map(c => ({ ...c })));
+        this.obstacles = ROOM.obstacles.map(o => ({ ...o })).concat([...PROP_COLLIDERS, ...FIXTURE_COLLIDERS].map(c => ({ ...c })));
     }
 
     setPlayer(profile, extraStats) {

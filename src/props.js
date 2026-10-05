@@ -21,16 +21,16 @@ export function placeAt(x, y) {
 }
 
 // ─── Materials ───────────────────────────────────────────────────────────
-const WOOD = { top: [104, 72, 46], front: [70, 46, 28], side: [44, 29, 18], grain: true };
-const DARKWOOD = { top: [78, 54, 36], front: [52, 34, 22], side: [32, 22, 14], grain: true };
-const STONE = { top: [138, 135, 130], front: [104, 103, 102], side: [70, 70, 72] };
-const IRON = { top: [70, 66, 62], front: [38, 35, 33], side: [24, 22, 21] };
+export const WOOD = { top: [104, 72, 46], front: [70, 46, 28], side: [44, 29, 18], grain: true };
+export const DARKWOOD = { top: [78, 54, 36], front: [52, 34, 22], side: [32, 22, 14], grain: true };
+export const STONE = { top: [138, 135, 130], front: [104, 103, 102], side: [70, 70, 72] };
+export const IRON = { top: [70, 66, 62], front: [38, 35, 33], side: [24, 22, 21] };
 const CRATE = { top: [114, 92, 66], front: [84, 65, 46], side: [54, 41, 29], grain: true };
 const PARCHBOX = { top: [178, 166, 138], front: [146, 134, 108], side: [102, 92, 72] };
 
 // ─── Primitives ──────────────────────────────────────────────────────────
 
-function faces(u0, u1, w0, w1, h0, h1) {
+export function faces(u0, u1, w0, w1, h0, h1) {
     const sMid = P(0, (w0 + w1) / 2).s;
     const sideU = VPX + ((u0 + u1) / 2) * sMid < VPX ? u1 : u0; // face turned toward the centre is visible
     return {
@@ -40,7 +40,7 @@ function faces(u0, u1, w0, w1, h0, h1) {
     };
 }
 
-function fillFace(ctx, poly, color, light = 10, dark = -14) {
+export function fillFace(ctx, poly, color, light = 10, dark = -14) {
     pathPoly(ctx, poly);
     const ys = poly.map(p => p.y);
     const g = ctx.createLinearGradient(0, Math.min(...ys), 0, Math.max(...ys));
@@ -51,7 +51,7 @@ function fillFace(ctx, poly, color, light = 10, dark = -14) {
 }
 
 // A solid box in perspective with grain, hatching on the shaded faces and ink edges
-function box(ctx, rand, u0, u1, w0, w1, h0, h1, mat, { ink = 1.2, hatchFront = 0.12, top = true } = {}) {
+export function box(ctx, rand, u0, u1, w0, w1, h0, h1, mat, { ink = 1.2, hatchFront = 0.12, top = true } = {}) {
     const f = faces(u0, u1, w0, w1, h0, h1);
     fillFace(ctx, f.side, mat.side, 4, -8);
     ctx.save();
@@ -117,7 +117,7 @@ function grainTop(ctx, rand, u0, u1, w0, w1, h) {
 }
 
 // Soft contact shadow on the floor under a footprint
-function floorShadow(ctx, u0, u1, w0, w1, alpha = 0.6, blur = 8) {
+export function floorShadow(ctx, u0, u1, w0, w1, alpha = 0.6, blur = 8) {
     ctx.save();
     ctx.filter = `blur(${blur}px)`;
     pathPoly(ctx, [P(u0 - 6, w1 + 4), P(u1 + 6, w1 + 4), P(u1 + 10, w0 - 8), P(u0 - 10, w0 - 8)]);
@@ -127,7 +127,7 @@ function floorShadow(ctx, u0, u1, w0, w1, alpha = 0.6, blur = 8) {
 }
 
 // A tallow candle standing on a surface; returns where its flame burns
-function candle(ctx, rand, u, w, h, height, radius = 2.6) {
+export function candle(ctx, rand, u, w, h, height, radius = 2.6) {
     const base = P(u, w, h), top = P(u, w, h + height);
     const r = radius * base.s;
     // Wax pool at the foot
@@ -158,7 +158,7 @@ function candle(ctx, rand, u, w, h, height, radius = 2.6) {
     return { x: top.x, y: top.y - 2.4 * base.s, s: base.s };
 }
 
-function flatPaper(ctx, rand, u, w, h, L = 8, D = 6) {
+export function flatPaper(ctx, rand, u, w, h, L = 8, D = 6) {
     const a = rand() * Math.PI;
     const pts = [[-L, -D], [L, -D], [L, D], [-L, D]].map(([x, y]) =>
         P(u + x * Math.cos(a) - y * Math.sin(a), w + x * Math.sin(a) + y * Math.cos(a), h));
@@ -728,121 +728,326 @@ function paintEvidenceBoard(ctx, rand, u, w, out) {
     out.flames.push(candle(ctx, rand, u + bw - 10, w - 2, h0, 8, 2.3));
 }
 
-// Weeping winged statue on a plinth, its face a hollow under the veil
+// Weeping angel on a memorial pedestal: veiled head bowed into both hands,
+// wide sleeves hanging from the raised arms, wings folded high behind.
+// Lit from the upper left; the right side falls into hatched shadow.
+const MARBLE = { top: [150, 147, 140], front: [112, 110, 106], side: [76, 75, 74] };
 function paintStatue(ctx, rand, u, w, out) {
-    floorShadow(out.floor, u - 24, u + 24, w - 24, w + 24, 0.7);
-    box(ctx, rand, u - 22, u + 22, w - 22, w + 22, 0, 8, STONE, { hatchFront: 0.3 });
-    box(ctx, rand, u - 18, u + 18, w - 18, w + 18, 8, 30, STONE, { hatchFront: 0.25 });
-    box(ctx, rand, u - 21, u + 21, w - 21, w + 21, 30, 34, STONE, { hatchFront: 0 });
-    // Moss and weathering streaks on the plinth
-    const pf = P(u, w - 18, 30);
-    for (let i = 0; i < 6; i++) {
-        ctx.fillStyle = "rgba(20, 30, 20, 0.35)";
-        ctx.fillRect(pf.x - 15 + rand() * 30, pf.y, 1.2, 6 + rand() * 14);
-    }
-    // Figure (drawn upright in screen space, standing on the plinth top)
-    const base = P(u, w, 34);
-    const k = base.s;
-    const H = 118 * k;
-    const x = base.x, y = base.y;
-    // Folded wings rising behind the shoulders
-    const wingPath = sd => {
-        ctx.beginPath();
-        ctx.moveTo(x + sd * 7 * k, y - H * 0.72);
-        ctx.quadraticCurveTo(x + sd * 14 * k, y - H * 1.04, x + sd * 30 * k, y - H * 1.07);
-        ctx.quadraticCurveTo(x + sd * 36 * k, y - H * 0.86, x + sd * 31 * k, y - H * 0.55);
-        // Scalloped trailing edge of the primaries
-        for (let i = 1; i <= 5; i++) {
-            const t = i / 5;
-            const ex = x + sd * (30 - t * 14) * k, ey = y - H * (0.55 - t * 0.33);
-            ctx.quadraticCurveTo(ex + sd * 3 * k, ey - 2 * k, ex, ey);
-        }
-        ctx.quadraticCurveTo(x + sd * 12 * k, y - H * 0.4, x + sd * 8 * k, y - H * 0.5);
-        ctx.closePath();
-    };
+    floorShadow(out.floor, u - 30, u + 30, w - 30, w + 30, 0.75);
+
+    // ── Pedestal: base, inscribed die, moulded cap ──
+    box(ctx, rand, u - 26, u + 26, w - 26, w + 26, 0, 7, MARBLE, { hatchFront: 0.3 });
+    const die = box(ctx, rand, u - 20, u + 20, w - 20, w + 20, 7, 46, MARBLE, { hatchFront: 0.18 });
+    // Inscription panel with carved lines and a skull-and-wings relief
+    const pa = P(u - 14, w - 20, 12), pb = P(u + 14, w - 20, 40);
+    ctx.fillStyle = "rgba(20, 18, 16, 0.28)";
+    ctx.fillRect(pa.x, pb.y, pb.x - pa.x, pa.y - pb.y);
+    ctx.strokeStyle = "rgba(6,4,4,0.75)";
+    ctx.lineWidth = 0.9;
+    ctx.strokeRect(pa.x, pb.y, pb.x - pa.x, pa.y - pb.y);
+    ctx.strokeStyle = "rgba(220, 214, 200, 0.22)";
+    ctx.beginPath();
+    ctx.moveTo(pa.x + 0.8, pa.y - 0.8);
+    ctx.lineTo(pb.x - 0.8, pa.y - 0.8);
+    ctx.lineTo(pb.x - 0.8, pb.y + 0.8);
+    ctx.stroke();
+    const rel = P(u, w - 20, 33);
+    drawSkull(ctx, rel.x, rel.y, 3.6 * rel.s, rand);
     for (const sd of [-1, 1]) {
-        wingPath(sd);
-        ctx.fillStyle = sd < 0 ? "#9a9894" : "#5c5b59";
-        ctx.fill();
-        ctx.save();
-        ctx.clip();
-        ctx.strokeStyle = "rgba(20, 18, 18, 0.4)";
+        ctx.strokeStyle = "rgba(30, 26, 24, 0.7)";
         ctx.lineWidth = 0.8;
-        for (let i = 0; i < 6; i++) {
-            const fy = y - H * (1.02 - i * 0.1);
+        for (let i = 0; i < 4; i++) {
             ctx.beginPath();
-            ctx.moveTo(x + sd * 10 * k, fy);
-            ctx.quadraticCurveTo(x + sd * 22 * k, fy + 6 * k, x + sd * 30 * k, fy + 14 * k);
+            ctx.moveTo(rel.x + sd * 4 * rel.s, rel.y - 1);
+            ctx.quadraticCurveTo(rel.x + sd * (7 + i * 1.5) * rel.s, rel.y - (4 - i) * rel.s, rel.x + sd * (9 + i * 1.4) * rel.s, rel.y + (i - 1) * 1.6 * rel.s);
             ctx.stroke();
         }
-        if (sd > 0) hatch(ctx, rand, x, y - H * 1.2, 34 * k, H, { angle: 1.2, gap: 2.4, alpha: 0.3 });
-        ctx.restore();
-        wingPath(sd); // the hatching replaced the current path
-        ctx.strokeStyle = "rgba(6,4,4,0.9)";
-        ctx.lineWidth = 1.3;
-        ctx.stroke();
     }
-    const robePath = () => {
+    ctx.fillStyle = "rgba(25, 20, 18, 0.6)";
+    for (let i = 0; i < 3; i++) {
+        const l0 = P(u - 10 + i * 1.5, w - 20, 23 - i * 4.5), l1 = P(u + 10 - i * 1.5, w - 20, 23 - i * 4.5);
+        for (let x = l0.x; x < l1.x - 1; x += 2.2 + rand() * 1.6) ctx.fillRect(x, l0.y, 1.4 + rand(), 1);
+    }
+    // A crack through the die and lichen along its top edge
+    const c0 = P(u + 9, w - 20, 46), c1 = P(u + 13, w - 20, 7);
+    inkLine(ctx, rand, c0.x, c0.y, (c0.x + c1.x) / 2 - 2, (c0.y + c1.y) / 2, 0.8, 0.7);
+    inkLine(ctx, rand, (c0.x + c1.x) / 2 - 2, (c0.y + c1.y) / 2, c1.x, c1.y, 0.7, 0.6);
+    for (let i = 0; i < 26; i++) {
+        const lp = P(u - 20 + rand() * 40, w - 20, 44 - rand() * rand() * 14);
+        ctx.fillStyle = `rgba(${60 + rand() * 30}, ${78 + rand() * 30}, ${50 + rand() * 16}, ${0.25 + rand() * 0.3})`;
         ctx.beginPath();
-        // Robed silhouette: wide hem, narrow waist, veiled head bowed
-        ctx.moveTo(x - 20 * k, y);
-        ctx.quadraticCurveTo(x - 22 * k, y - H * 0.35, x - 12 * k, y - H * 0.62);
-        ctx.quadraticCurveTo(x - 16 * k, y - H * 0.78, x - 9 * k, y - H * 0.9);
-        ctx.quadraticCurveTo(x - 2 * k, y - H * 1.02, x + 7 * k, y - H * 0.94);
-        ctx.quadraticCurveTo(x + 14 * k, y - H * 0.84, x + 12 * k, y - H * 0.7);
-        ctx.quadraticCurveTo(x + 16 * k, y - H * 0.5, x + 19 * k, y - H * 0.28);
-        ctx.quadraticCurveTo(x + 22 * k, y - H * 0.1, x + 21 * k, y);
+        ctx.arc(lp.x, lp.y, 0.6 + rand() * 1.6, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    box(ctx, rand, u - 23, u + 23, w - 23, w + 23, 46, 50, MARBLE, { hatchFront: 0 });
+    box(ctx, rand, u - 25, u + 25, w - 25, w + 25, 50, 54, MARBLE, { hatchFront: 0.15 });
+    void die;
+
+    // ── Figure, built in its own units: feet at 0, crown of the head at -100 ──
+    const base = P(u, w + 2, 54);
+    const F = base.s * 0.98;
+    const X = fx => base.x + fx * F, Y = fy => base.y + fy * F;
+    const path = pts => {
+        ctx.beginPath();
+        ctx.moveTo(X(pts[0][0]), Y(pts[0][1]));
+        for (let i = 1; i < pts.length; i++) {
+            const p = pts[i];
+            if (p.length === 4) ctx.quadraticCurveTo(X(p[0]), Y(p[1]), X(p[2]), Y(p[3]));
+            else ctx.lineTo(X(p[0]), Y(p[1]));
+        }
         ctx.closePath();
     };
-    ctx.save();
-    robePath();
-    const g = ctx.createLinearGradient(x - 22 * k, 0, x + 22 * k, 0);
-    g.addColorStop(0, "#8d8b88");
-    g.addColorStop(0.35, "#b4b1ab");
-    g.addColorStop(0.7, "#7a7875");
-    g.addColorStop(1, "#4a4948");
-    ctx.fillStyle = g;
+    const lightGrad = (x0, x1, a = "#cdc9bf", b = "#9c988f", c = "#56534f") => {
+        const g = ctx.createLinearGradient(X(x0), 0, X(x1), 0);
+        g.addColorStop(0, a);
+        g.addColorStop(0.45, b);
+        g.addColorStop(1, c);
+        return g;
+    };
+    const ink = (wd = 1.3, a = 0.92) => {
+        ctx.strokeStyle = `rgba(6,4,4,${a})`;
+        ctx.lineWidth = wd;
+        ctx.stroke();
+    };
+    const clipped = (pathFn, fn) => {
+        ctx.save();
+        pathFn();
+        ctx.clip();
+        fn();
+        ctx.restore();
+    };
+
+    // Wings: leading edge rises to a wrist above the head, primaries sweep
+    // down nearly to the feet, the trailing edge is scalloped feather tips.
+    const wing = sd => [
+        [sd * 5, -72],
+        [sd * 8, -100, sd * 20, -110],
+        [sd * 30, -113, sd * 35, -101],
+        [sd * 39, -84, sd * 35, -62],
+        [sd * 33, -34, sd * 26, -8],
+        [sd * 23, -12, sd * 21, -9],
+        [sd * 19, -17, sd * 16, -15],
+        [sd * 15, -25, sd * 12, -24],
+        [sd * 11, -34, sd * 9, -36],
+        [sd * 8, -50, sd * 7, -52]
+    ];
+    for (const sd of [1, -1]) {
+        const pts = wing(sd);
+        path(pts);
+        ctx.fillStyle = sd < 0 ? lightGrad(-38, -4, "#bdb9af", "#a29e95", "#77746e") : lightGrad(4, 38, "#8a8780", "#6c6964", "#45433f");
+        ctx.fill();
+        clipped(() => path(pts), () => {
+            // Coverts: rows of small scalloped feathers under the leading edge
+            for (let row = 0; row < 3; row++) {
+                ctx.strokeStyle = `rgba(20, 18, 16, ${0.42 - row * 0.06})`;
+                ctx.lineWidth = 0.8;
+                const n = 6 + row;
+                for (let i = 0; i < n; i++) {
+                    const t = i / (n - 1);
+                    const fx = sd * (8 + t * 26 - row * 1.5), fy = -98 + Math.sin(t * Math.PI) * -8 + t * 8 + row * 7;
+                    ctx.beginPath();
+                    ctx.arc(X(fx), Y(fy), 2.6 * F, 0.15 * Math.PI, 0.85 * Math.PI);
+                    ctx.stroke();
+                }
+            }
+            // Long flight feathers fanning down to the scalloped tips
+            const tips = [[26, -8], [21, -9], [16, -15], [12, -24], [9, -36], [7, -52]];
+            for (let i = 0; i < 9; i++) {
+                const t = i / 8;
+                const start = [sd * (10 + t * 26), -82 + t * 6];
+                const tip = tips[Math.min(tips.length - 1, Math.floor((1 - t) * tips.length))];
+                const end = [sd * (tip[0] + (rand() - 0.5) * 2), tip[1] - 2];
+                ctx.strokeStyle = "rgba(18, 16, 14, 0.5)";
+                ctx.lineWidth = 0.9;
+                ctx.beginPath();
+                ctx.moveTo(X(start[0]), Y(start[1]));
+                ctx.quadraticCurveTo(X(sd * (start[0] * sd + 6)), Y((start[1] + end[1]) / 2), X(end[0]), Y(end[1]));
+                ctx.stroke();
+                // Pale rachis beside each line on the lit wing
+                if (sd < 0) {
+                    ctx.strokeStyle = "rgba(230, 226, 214, 0.22)";
+                    ctx.lineWidth = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(X(start[0]) + 1, Y(start[1]));
+                    ctx.quadraticCurveTo(X(sd * (start[0] * sd + 6)) + 1, Y((start[1] + end[1]) / 2), X(end[0]) + 1, Y(end[1]));
+                    ctx.stroke();
+                }
+            }
+            if (sd > 0) hatch(ctx, rand, X(0), Y(-116), 42 * F, 112 * F, { angle: 1.15, gap: 2.4, alpha: 0.34 });
+            else hatch(ctx, rand, X(-40), Y(-60), 40 * F, 54 * F, { angle: 1.15, gap: 3, alpha: 0.16 });
+            // Lichen speckling and a dark weathering seam
+            for (let i = 0; i < 40; i++) {
+                ctx.fillStyle = rand() < 0.6 ? "rgba(40, 52, 34, 0.3)" : "rgba(15, 14, 12, 0.3)";
+                ctx.fillRect(X(sd * (6 + rand() * 32)), Y(-10 - rand() * 100), 1.1, 1.1);
+            }
+        });
+        path(pts);
+        ink(1.3);
+        // Lit leading edge
+        if (sd < 0) {
+            ctx.strokeStyle = "rgba(236, 232, 220, 0.4)";
+            ctx.lineWidth = 0.9;
+            ctx.beginPath();
+            ctx.moveTo(X(-6), Y(-76));
+            ctx.quadraticCurveTo(X(-9), Y(-99), X(-20), Y(-108));
+            ctx.quadraticCurveTo(X(-29), Y(-111), X(-34), Y(-101));
+            ctx.stroke();
+        }
+    }
+    // A chip broken from the far wing's tip
+    ctx.fillStyle = "#3a3835";
+    path([[24, -11], [27, -14], [26, -8]]);
     ctx.fill();
-    ctx.save();
-    ctx.clip();
-    // Drapery folds
-    ctx.strokeStyle = "rgba(20, 18, 18, 0.45)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 7; i++) {
-        const fx = x - 14 * k + i * 5 * k;
+
+    // Robe: narrow at the shoulders and waist, flaring to a folded hem
+    const robe = [
+        [-11, -77], [-10.5, -66, -9.5, -52], [-15, -30, -17.5, -2],
+        [-15.5, 1, -13.5, -1], [-11, 1.5, -8, -0.5], [-5, 1.5, -2, -0.5], [1, 1.5, 4, -0.5],
+        [7, 1.5, 10, -0.5], [13, 1.5, 15, -1], [17, 1, 17.5, -2],
+        [15, -30, 9.5, -52], [10.5, -66, 11, -77], [4, -80, 0, -80], [-4, -80, -11, -77]
+    ];
+    path(robe);
+    ctx.fillStyle = lightGrad(-18, 18);
+    ctx.fill();
+    clipped(() => path(robe), () => {
+        // Deep folds: a shadow stroke with a highlight beside it
+        for (let i = 0; i < 7; i++) {
+            const fx0 = -6 + i * 2, fx1 = -15 + i * 5 + (rand() - 0.5) * 2;
+            ctx.strokeStyle = "rgba(25, 22, 20, 0.5)";
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(X(fx0), Y(-50));
+            ctx.quadraticCurveTo(X((fx0 + fx1) / 2 + (rand() - 0.5) * 3), Y(-25), X(fx1), Y(0));
+            ctx.stroke();
+            if (fx1 < 6) {
+                ctx.strokeStyle = "rgba(240, 236, 226, 0.28)";
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(X(fx0 - 0.9), Y(-48));
+                ctx.quadraticCurveTo(X((fx0 + fx1) / 2 - 1.5), Y(-25), X(fx1 - 1.8), Y(-1));
+                ctx.stroke();
+            }
+        }
+        // Shadow side and under the arms
+        hatch(ctx, rand, X(5), Y(-80), 15 * F, 80 * F, { angle: 1.2, gap: 2.6, alpha: 0.26 });
+        ctx.fillStyle = "rgba(20, 18, 16, 0.3)";
+        ctx.fillRect(X(-12), Y(-62), 24 * F, 10 * F);
+        // Grime running down from the hands like dried tears
+        for (let i = 0; i < 6; i++) {
+            const sx = -5 + rand() * 10;
+            const g = ctx.createLinearGradient(0, Y(-72), 0, Y(-72 + 30 + rand() * 40));
+            g.addColorStop(0, "rgba(22, 24, 20, 0.45)");
+            g.addColorStop(1, "rgba(22, 24, 20, 0)");
+            ctx.fillStyle = g;
+            ctx.fillRect(X(sx), Y(-72), 1.1 * F, 70 * F);
+        }
+        // Moss creeping up the hem
+        for (let i = 0; i < 60; i++) {
+            ctx.fillStyle = `rgba(${48 + rand() * 20}, ${66 + rand() * 24}, ${38 + rand() * 12}, ${0.3 + rand() * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(X(-18 + rand() * 36), Y(-rand() * rand() * 16), (0.5 + rand() * 1.3) * F, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+    path(robe);
+    ink(1.5);
+    // Cord at the waist
+    ctx.strokeStyle = "rgba(30, 26, 22, 0.8)";
+    ctx.lineWidth = 1.4 * F;
+    ctx.beginPath();
+    ctx.moveTo(X(-9.5), Y(-52));
+    ctx.quadraticCurveTo(X(0), Y(-49.5), X(9.5), Y(-52));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(X(1), Y(-50));
+    ctx.quadraticCurveTo(X(2.5), Y(-40), X(1.5), Y(-30));
+    ctx.stroke();
+
+    // Veil over the bowed head, falling behind the shoulders
+    const veil = [[-10, -74], [-11, -86, -8, -94], [-4, -100, 1, -99], [7, -97, 9, -90], [11, -82, 10.5, -74], [0, -77, -10, -74]];
+    path(veil);
+    ctx.fillStyle = lightGrad(-11, 11, "#c7c3b9", "#9d998f", "#5f5c57");
+    ctx.fill();
+    clipped(() => path(veil), () => hatch(ctx, rand, X(3), Y(-102), 10 * F, 30 * F, { angle: 1.2, gap: 2.2, alpha: 0.3 }));
+    path(veil);
+    ink(1.2);
+
+    // Arms raised to the face: upper arms, then the forearms with sleeves hanging from them
+    for (const sd of [-1, 1]) {
+        const arm = [[sd * 10, -76], [sd * 14.5, -70, sd * 14, -60], [sd * 10, -60], [sd * 9, -68, sd * 7, -73]];
+        path(arm);
+        ctx.fillStyle = sd < 0 ? "#aaa69c" : "#6f6c66";
+        ctx.fill();
+        ink(1);
+    }
+    for (const sd of [-1, 1]) {
+        // Sleeve: a bell of cloth from the forearm to below the elbow
+        const sleeve = [[sd * 5, -82], [sd * 12, -70, sd * 15.5, -60], [sd * 17, -52, sd * 13, -45], [sd * 10, -50, sd * 9, -56], [sd * 7, -66, sd * 3.5, -78]];
+        path(sleeve);
+        ctx.fillStyle = sd < 0 ? lightGrad(-17, -3, "#c3bfb5", "#a39f96", "#7c7972") : lightGrad(3, 17, "#8b8881", "#6d6a64", "#4a4844");
+        ctx.fill();
+        clipped(() => path(sleeve), () => {
+            ctx.strokeStyle = "rgba(25, 22, 20, 0.45)";
+            ctx.lineWidth = 0.9;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(X(sd * (7 + i * 2.5)), Y(-72 + i * 3));
+                ctx.quadraticCurveTo(X(sd * (11 + i * 2)), Y(-58), X(sd * (12 + i)), Y(-47));
+                ctx.stroke();
+            }
+            if (sd > 0) hatch(ctx, rand, X(3), Y(-84), 15 * F, 40 * F, { angle: 1.2, gap: 2.3, alpha: 0.3 });
+        });
+        path(sleeve);
+        ink(1.2);
+    }
+    // Hands covering the face, fingers spread over the brow
+    for (const sd of [-1, 1]) {
+        const hx = sd * 2.6, hy = -88.5;
+        ctx.save();
+        ctx.translate(X(hx), Y(hy));
+        ctx.rotate(sd * 0.22);
         ctx.beginPath();
-        ctx.moveTo(fx, y);
-        ctx.quadraticCurveTo(fx + (rand() - 0.5) * 6 * k, y - H * 0.35, fx * 0.6 + x * 0.4, y - H * (0.6 + rand() * 0.1));
+        ctx.ellipse(0, 0, 3.6 * F, 6.6 * F, 0, 0, Math.PI * 2);
+        ctx.fillStyle = sd < 0 ? "#c6c2b8" : "#8e8b84";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(6,4,4,0.85)";
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(30, 26, 22, 0.55)";
+        ctx.lineWidth = 0.6;
+        for (let f = -1; f <= 1; f++) {
+            ctx.beginPath();
+            ctx.moveTo(f * 1.3 * F, -6 * F);
+            ctx.lineTo(f * 1.1 * F, -1.5 * F);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+    // A thin dark tear escaping between the fingers
+    const tr = ctx.createLinearGradient(0, Y(-83), 0, Y(-60));
+    tr.addColorStop(0, "rgba(60, 6, 4, 0.75)");
+    tr.addColorStop(1, "rgba(60, 6, 4, 0)");
+    ctx.fillStyle = tr;
+    ctx.fillRect(X(-0.6), Y(-83), 1.2 * F, 23 * F);
+
+    // Offerings at the foot: votive candles and a wilted bouquet
+    const bq = P(u - 4, w - 30, 0);
+    ctx.strokeStyle = "#2d3320";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(bq.x + i * 2 - 4, bq.y);
+        ctx.quadraticCurveTo(bq.x + i * 3 - 6, bq.y - 6, bq.x + i * 4 - 9, bq.y - 9 - rand() * 3);
         ctx.stroke();
     }
-    hatch(ctx, rand, x + 4 * k, y - H, 22 * k, H, { angle: 1.25, gap: 2.8, alpha: 0.24, cross: true });
-    // Weathering streaks running down from the head
-    for (let i = 0; i < 5; i++) {
-        ctx.fillStyle = "rgba(25, 28, 24, 0.35)";
-        ctx.fillRect(x - 8 * k + rand() * 16 * k, y - H * 0.85, 1.2, H * (0.3 + rand() * 0.4));
+    for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = ["#4a0c0a", "#5d1310", "#3a0807", "#6b1a14"][i];
+        ctx.beginPath();
+        ctx.arc(bq.x + i * 4 - 9, bq.y - 10 - (i % 2) * 2, 2.2, 0, Math.PI * 2);
+        ctx.fill();
     }
-    ctx.restore();
-    robePath();
-    ctx.strokeStyle = "rgba(6,4,4,0.95)";
-    ctx.lineWidth = 1.6;
-    ctx.stroke();
-    // The hollow under the veil where a face should be
-    ctx.fillStyle = "#121010";
-    ctx.beginPath();
-    ctx.ellipse(x - 1 * k, y - H * 0.83, 4.2 * k, 6 * k, 0.15, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(205, 200, 190, 0.55)";
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.ellipse(x - 1 * k, y - H * 0.83, 5 * k, 7 * k, 0.15, Math.PI * 0.85, Math.PI * 2.15);
-    ctx.stroke();
-    // A dark tear-stain running from the hollow
-    ctx.fillStyle = "rgba(70, 8, 6, 0.65)";
-    ctx.fillRect(x - 1.5 * k, y - H * 0.7, 1.3, H * 0.2);
-    ctx.restore();
-    // Votive candles at the plinth's foot
-    out.flames.push(candle(ctx, rand, u - 16, w - 30, 0, 7, 2.6));
-    out.flames.push(candle(ctx, rand, u + 4, w - 32, 0, 4.5, 2.6));
+    out.flames.push(candle(ctx, rand, u - 18, w - 30, 0, 7, 2.6));
+    out.flames.push(candle(ctx, rand, u + 12, w - 32, 0, 4.5, 2.6));
 }
 
 // An iron gibbet cage on a gallows frame, with remains inside
@@ -1109,7 +1314,7 @@ export const PROP_DEFS = [
     { id: "catalog_b", x: 1130, y: 440, du: 34, dw: 18, height: 112, paint: (c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [5, 14] }), extent: { dw0: 40 } },
     { id: "lectern", x: 1268, y: 470, du: 36, dw: 20, height: 90, paint: paintLectern },
     { id: "evidence_board", x: 333, y: 461, du: 46, dw: 14, height: 140, paint: paintEvidenceBoard },
-    { id: "statue", x: 1396, y: 428, du: 24, dw: 24, height: 175, paint: paintStatue, extent: { dw0: 40 } },
+    { id: "statue", x: 1396, y: 428, du: 26, dw: 26, height: 180, paint: paintStatue, extent: { dw0: 40 } },
     { id: "gibbet", x: 1268, y: 705, du: 40, dw: 18, height: 160, paint: paintGibbet },
     { id: "crates_left", x: 205, y: 912, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { skull: true }) },
     { id: "crates_right", x: 1440, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) }
@@ -1126,46 +1331,54 @@ export const PROP_COLLIDERS = PROP_DEFS.map(d => {
 // Paint every prop into its own pair of canvases. Returns sprites plus their flames.
 export function buildPropSprites(scale = 1) {
     const rand = mulberry32(4242);
-    return PROP_DEFS.map(d => {
-        const { u, w } = placeAt(d.x, d.y);
-        const ext = d.extent || {};
-        const reachBack = d.dw + (ext.dw1 || 30), reachFront = d.dw + (ext.dw0 || 30);
-        const corners = [
-            P(u - d.du - 30, w + reachBack, d.height + 20), P(u + d.du + 30, w + reachBack, d.height + 20),
-            P(u - d.du - 30, w - reachFront, 0), P(u + d.du + 30, w - reachFront, 0)
-        ];
-        const x0 = Math.floor(Math.min(...corners.map(p => p.x)) - 10);
-        const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) + 10);
-        const y0 = Math.floor(Math.min(...corners.map(p => p.y)) - 20);
-        const y1 = Math.ceil(Math.max(...corners.map(p => p.y)) + 10);
-        const layer = () => {
-            const c = document.createElement("canvas");
-            c.width = Math.max(1, Math.round((x1 - x0) * scale));
-            c.height = Math.max(1, Math.round((y1 - y0) * scale));
-            const g = c.getContext("2d");
-            g.scale(scale, scale);
-            g.translate(-x0, -y0);
-            return [c, g];
-        };
-        // Floor layer (shadows, spilled paper) sits under every character;
-        // the upright layer is depth-sorted with them.
-        const [floorCanvas, floor] = layer();
-        const [canvas, ctx] = layer();
-        const out = { flames: [], floor };
-        d.paint(ctx, rand, u, w, out);
-        finish(canvas, ctx, (P(u, w - d.dw).y - y0) * scale);
-        // Trim the generous painting margins so each frame draws fewer pixels
-        const t = cropToContent(canvas, scale);
-        return {
-            mask: coverageMask(t.canvas),
-            id: d.id,
-            canvas: t.canvas,
-            floorCanvas,
-            floorRect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 },
-            x: x0 + t.x, y: y0 + t.y, w: t.w, h: t.h,
-            sortY: P(u, w - d.dw).y,
-            topY: P(u, w, d.height).y,
-            flames: out.flames
-        };
-    });
+    return PROP_DEFS.map(d => buildSprite(d, scale, rand));
+}
+
+// Paint one def ({ x, y, du, dw, height, extent?, paint }) into an upright
+// sprite (depth-sorted, trimmed, with a coverage mask) and a floor layer.
+// The painter can leave anything it likes on `out` for the renderer (meta).
+export function buildSprite(d, scale, rand) {
+    const { u, w } = placeAt(d.x, d.y);
+    const ext = d.extent || {};
+    const reachBack = d.dw + (ext.dw1 ?? 30), reachFront = d.dw + (ext.dw0 ?? 30), side = ext.du ?? 30;
+    const corners = [
+        P(u - d.du - side, w + reachBack, d.height + 20), P(u + d.du + side, w + reachBack, d.height + 20),
+        P(u - d.du - side, w - reachFront, 0), P(u + d.du + side, w - reachFront, 0)
+    ];
+    const x0 = Math.floor(Math.min(...corners.map(p => p.x)) - 10);
+    const x1 = Math.ceil(Math.max(...corners.map(p => p.x)) + 10);
+    const y0 = Math.floor(Math.min(...corners.map(p => p.y)) - 20);
+    const y1 = Math.ceil(Math.max(...corners.map(p => p.y)) + 10);
+    const layer = () => {
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round((x1 - x0) * scale));
+        c.height = Math.max(1, Math.round((y1 - y0) * scale));
+        const g = c.getContext("2d");
+        g.scale(scale, scale);
+        g.translate(-x0, -y0);
+        return [c, g];
+    };
+    // Floor layer (shadows, spilled paper) sits under every character;
+    // the upright layer is depth-sorted with them.
+    const [floorCanvas, floor] = layer();
+    const [canvas, ctx] = layer();
+    const out = { flames: [], floor };
+    d.paint(ctx, rand, u, w, out);
+    finish(canvas, ctx, (P(u, w - d.dw).y - y0) * scale);
+    // Trim the generous painting margins so each frame draws fewer pixels
+    const t = cropToContent(canvas, scale);
+    delete out.floor;
+    return {
+        mask: coverageMask(t.canvas),
+        id: d.id,
+        canvas: t.canvas,
+        floorCanvas,
+        floorRect: { x: x0, y: y0, w: x1 - x0, h: y1 - y0 },
+        x: x0 + t.x, y: y0 + t.y, w: t.w, h: t.h,
+        ax: d.x, ay: d.y,
+        sortY: P(u, w - d.dw).y,
+        topY: P(u, w, d.height).y,
+        flames: out.flames,
+        meta: out
+    };
 }

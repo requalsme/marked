@@ -74,7 +74,7 @@ export const ROOM = {
     bossSpawn: { x: 800, y: 470 },
     // Furniture and props live in props.js (painted, with their own colliders)
     obstacles: [
-        { x: 800, y: 620, r: 40, label: "The Monolith" }
+        { x: 800, y: 620, r: 44, label: "The Monolith" }
     ],
     interactables: [
         { type: "blood_ritual_altar", x: 430, y: 800, data: { radius: 28 } },

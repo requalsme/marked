@@ -4,6 +4,9 @@ import { DEATH_ANIMATION_FRAMES } from "./engine.js";
 import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES } from "./world.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
 import { buildPropSprites, propCovers } from "./props.js";
+import { buildFixtures } from "./fixtures.js";
+
+const CORPSE_TYPES = new Set(["fresh_marked_corpse", "burned_corpse_remains", "broadcast_corpse"]);
 
 // Pickup glow colours and labels; gear uses its rarity colour
 const LOOT_STYLE = {
@@ -33,9 +36,9 @@ const INTERACTABLE_SPRITES = {
     corpse_lantern_shrine: { anim: "corpse_lantern_shrine.idle", scale: 0.46, glow: "rgba(230, 180, 90, 0.45)", label: "FILE", light: "#ffb860" },
     wax_record_chest: { anim: "wax_record_chest.idle", open: "wax_record_chest.activate", scale: 0.36, glow: "rgba(184, 31, 31, 0.28)", label: "OPEN" },
     sealed_zone_door: { anim: "sealed_zone_door.idle", open: "sealed_zone_door.activate", scale: 0.7, glow: "rgba(189, 41, 34, 0.3)", label: "EXIT" },
-    fresh_marked_corpse: { anim: "fresh_marked_corpse.idle", scale: 0.34, label: "SEARCH" },
-    burned_corpse_remains: { anim: "burned_corpse_remains.idle", scale: 0.34, label: "REMAINS" },
-    broadcast_corpse: { anim: "broadcast_corpse.idle", scale: 0.34, label: "REMAINS" }
+    fresh_marked_corpse: { anim: "fresh_marked_corpse.idle", scale: 0.34, glow: "rgba(150, 26, 18, 0.32)", label: "SEARCH" },
+    burned_corpse_remains: { anim: "burned_corpse_remains.idle", scale: 0.34, glow: "rgba(200, 90, 30, 0.26)", label: "REMAINS" },
+    broadcast_corpse: { anim: "broadcast_corpse.idle", scale: 0.34, glow: "rgba(120, 150, 200, 0.24)", label: "REMAINS" }
 };
 
 // Enemy art comes from the grim illustrated pack (8-10 frame animations).
@@ -150,6 +153,7 @@ export class CanvasRenderer {
         if (newProps) {
             this.propScale = wanted;
             this.props = buildPropSprites(wanted);
+            this.fixtures = buildFixtures(wanted);
         }
         if (!this.paintedRoom && (newProps || !this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
@@ -164,7 +168,7 @@ export class CanvasRenderer {
         const g = texture.getContext("2d");
         g.save();
         g.setTransform(scale, 0, 0, scale, 0, 0);
-        for (const pr of this.props) g.drawImage(pr.floorCanvas, pr.floorRect.x, pr.floorRect.y, pr.floorRect.w, pr.floorRect.h);
+        for (const pr of this.staticFloors()) g.drawImage(pr.floorCanvas, pr.floorRect.x, pr.floorRect.y, pr.floorRect.w, pr.floorRect.h);
         g.restore();
         this.bakedTexture = texture;
     }
@@ -317,6 +321,7 @@ export class CanvasRenderer {
         ctx.imageSmoothingEnabled = true;
 
         this.drawRoomBackdrop(ctx);
+        this.drawFixtureFloors(ctx, engine);
         this.drawLoot(ctx, engine);
 
         const entities = [];
@@ -329,11 +334,12 @@ export class CanvasRenderer {
 
         this.playerX = engine.player ? engine.player.x : 0;
         for (const intr of engine.interactables) {
-            entities.push({ type: "intr", y: intr.y, ref: intr });
+            entities.push({ type: "intr", y: this.intrSortY(intr), ref: intr });
         }
         for (const obs of engine.obstacles) {
-            if (obs.label === "prop") continue; // drawn from the prop sprites below
-            entities.push({ type: "obstacle", y: obs.r ? obs.y + 10 : obs.y + obs.h, ref: obs });
+            if (obs.label === "prop" || obs.label === "fixture") continue; // drawn as sprites
+            const mono = obs.label === "The Monolith" && this.fixtures ? this.fixtures.monolith : null;
+            entities.push({ type: "obstacle", y: mono ? mono.sortY : obs.r ? obs.y + 10 : obs.y + obs.h, ref: obs });
         }
         for (const pr of this.props) {
             if (this.inView(pr.x, pr.y, pr.w, pr.h)) entities.push({ type: "prop", y: pr.sortY, ref: pr });
@@ -345,7 +351,7 @@ export class CanvasRenderer {
         for (const ent of entities) {
             if (ent.type === "player") this.drawPlayer(ctx, ent.ref);
             else if (ent.type === "deathfx") this.drawDeathFx(ctx, ent.ref);
-            else if (ent.type === "intr") this.drawInteractable(ctx, ent.ref);
+            else if (ent.type === "intr") this.drawInteractable(ctx, ent.ref, engine);
             else if (ent.type === "obstacle") this.drawObstacle(ctx, ent.ref, engine);
             else if (ent.type === "prop") this.drawProp(ctx, ent.ref, engine);
             else this.drawEnemy(ctx, ent.ref);
@@ -381,7 +387,7 @@ export class CanvasRenderer {
             ctx.fillRect(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
         }
         if (this.roomTexture !== this.bakedTexture) {
-            for (const pr of this.props) {
+            for (const pr of this.staticFloors()) {
                 const f = pr.floorRect;
                 if (this.inView(f.x, f.y, f.w, f.h)) ctx.drawImage(pr.floorCanvas, f.x, f.y, f.w, f.h);
             }
@@ -526,118 +532,47 @@ export class CanvasRenderer {
         }
     }
 
-    // The Monolith: a black obelisk whose carved glyphs burn and whose eye
-    // opens as Observation rises.
+    // The Monolith (painted in fixtures.js): its glyphs ignite row by row,
+    // its cracks bleed light and its eye opens as Observation rises.
     drawMonolith(ctx, obs, engine) {
+        const spr = this.fixtures && this.fixtures.monolith;
+        if (!spr) return;
         const o = Math.min(100, engine.player.profile.observation) / 100;
-        const pl = engine.player;
-        const behind = pl.y < obs.y + 10 && Math.abs(pl.x - obs.x) < 46 && pl.y > obs.y - 230;
-        this.monolithAlpha = (this.monolithAlpha ?? 1) + ((behind ? 0.6 : 1) - (this.monolithAlpha ?? 1)) * 0.15;
-        const x = obs.x, base = obs.y + 18;
-        const h = 210, wb = 74, wt = 40;
-        const t = this.frame;
-        ctx.save();
-
-        // Pool of red light and ground shadow
-        const pool = ctx.createRadialGradient(x, base, 4, x, base, 120);
-        pool.addColorStop(0, `rgba(150, 18, 12, ${0.18 + o * 0.35})`);
+        const m = spr.meta, t = this.frame;
+        const pool = ctx.createRadialGradient(m.pool.x, m.pool.y, 4, m.pool.x, m.pool.y, 130);
+        pool.addColorStop(0, `rgba(150, 18, 12, ${0.16 + o * 0.34})`);
         pool.addColorStop(1, "rgba(0,0,0,0)");
         ctx.fillStyle = pool;
         ctx.beginPath();
-        ctx.ellipse(x, base, 120, 40, 0, 0, Math.PI * 2);
+        ctx.ellipse(m.pool.x, m.pool.y, 130, 44, 0, 0, Math.PI * 2);
         ctx.fill();
-        this.drawGroundShadow(ctx, x, base, 64, 18, 0.8);
 
-        // Wax and paper heaped at its foot
-        this.drawSprite(ctx, "wax_seal_growth.idle", x - 46, base + 10, 0.34, 0.95, "right", 7);
-        this.drawSprite(ctx, "paper_root_growth.idle", x + 44, base + 12, 0.3, 0.85, "left", 19);
-
-        // Slab body (fades when the player walks behind it)
-        ctx.globalAlpha = this.monolithAlpha;
-        ctx.beginPath();
-        ctx.moveTo(x - wb / 2, base);
-        ctx.lineTo(x - wt / 2, base - h);
-        ctx.lineTo(x, base - h - 26);
-        ctx.lineTo(x + wt / 2, base - h);
-        ctx.lineTo(x + wb / 2, base);
-        ctx.closePath();
-        const body = ctx.createLinearGradient(x - wb / 2, 0, x + wb / 2, 0);
-        body.addColorStop(0, "#050404");
-        body.addColorStop(0.35, "#1b1614");
-        body.addColorStop(0.55, "#0d0a09");
-        body.addColorStop(1, "#020202");
-        ctx.fillStyle = body;
-        ctx.fill();
-        ctx.lineWidth = 2.5;
-        ctx.strokeStyle = "#000";
-        ctx.stroke();
-
-        // Rim light: warm on the right flank, cold on the left
-        ctx.lineWidth = 1.6;
-        ctx.strokeStyle = "rgba(255, 150, 90, 0.28)";
-        ctx.beginPath();
-        ctx.moveTo(x + wb / 2 - 2, base - 2);
-        ctx.lineTo(x + wt / 2 - 1, base - h);
-        ctx.lineTo(x, base - h - 24);
-        ctx.stroke();
-        ctx.strokeStyle = "rgba(150, 170, 210, 0.18)";
-        ctx.beginPath();
-        ctx.moveTo(x - wb / 2 + 2, base - 2);
-        ctx.lineTo(x - wt / 2 + 1, base - h);
-        ctx.stroke();
-
-        // Facet highlight
-        ctx.beginPath();
-        ctx.moveTo(x - 6, base);
-        ctx.lineTo(x - 3, base - h);
-        ctx.lineTo(x, base - h - 26);
-        ctx.strokeStyle = "rgba(200, 170, 140, 0.12)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Carved glyph column, glowing with Observation
-        const flicker = 0.85 + Math.sin(t * 0.13) * 0.08 + Math.random() * 0.07;
-        ctx.strokeStyle = `rgba(${200 + o * 55}, ${30 + o * 20}, 20, ${(0.45 + o * 0.55) * flicker})`;
-        ctx.shadowColor = "#ff2a10";
-        ctx.shadowBlur = 6 + o * 14;
-        ctx.lineWidth = 1.6;
-        for (let i = 0; i < 7; i++) {
-            const gy = base - 26 - i * 22;
-            const gw = 10 - i * 0.6;
-            ctx.beginPath();
-            // Each glyph: a vertical stroke with crossbars that vary per row
-            ctx.moveTo(x, gy);
-            ctx.lineTo(x, gy - 12);
-            if (i % 2 === 0) { ctx.moveTo(x - gw, gy - 4); ctx.lineTo(x + gw, gy - 8); }
-            else { ctx.moveTo(x - gw, gy - 9); ctx.lineTo(x, gy - 4); ctx.lineTo(x + gw, gy - 9); }
-            if (i % 3 === 0) { ctx.moveTo(x - gw * 0.6, gy); ctx.lineTo(x + gw * 0.6, gy); }
-            ctx.stroke();
-        }
-
-        // The eye near the apex opens with Observation
-        const ey = base - h + 18;
-        const open = 1.5 + o * 9;
-        ctx.shadowBlur = 10 + o * 20;
-        ctx.fillStyle = "#000";
-        ctx.beginPath();
-        ctx.ellipse(x, ey, 14, open + 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = `rgba(255, ${60 + o * 60}, 30, ${0.5 + o * 0.5})`;
-        ctx.beginPath();
-        ctx.ellipse(x, ey, 12, open, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Pupil tracks the player
-        const look = Math.max(-5, Math.min(5, (engine.player.x - x) / 60));
-        ctx.fillStyle = "#050000";
-        ctx.beginPath();
-        ctx.ellipse(x + look, ey, 2.2, Math.max(1, open - 1), 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.save();
+        ctx.globalAlpha = this.ghostAlpha(obs, spr, engine, spr.ax, spr.ay, 1);
+        ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
         ctx.restore();
+
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const flicker = 0.85 + Math.sin(t * 0.13) * 0.08 + Math.random() * 0.07;
+        const layer = (L, a) => {
+            ctx.globalAlpha = Math.max(0, Math.min(1, a));
+            ctx.drawImage(L.canvas, L.x, L.y, L.w, L.h);
+        };
+        for (const L of m.glyphGlow) {
+            const lit = Math.max(0, Math.min(1, o * (m.glyphRows + 1.5) - L.row));
+            layer(L, (0.08 + lit * 0.88) * flicker);
+        }
+        layer(m.crackGlow, (0.04 + o * 0.6) * (0.8 + Math.sin(t * 0.05) * 0.2));
+        ctx.restore();
+        this.drawMonolithEye(ctx, m.eye, o, engine);
+        for (const f of spr.flames) this.drawFlame(ctx, f.x, f.y, f.s * 0.8, f.x * 0.31 + f.y);
     }
 
-    drawInteractable(ctx, intr) {
+    drawInteractable(ctx, intr, engine) {
         const visual = INTERACTABLE_SPRITES[intr.type];
         if (!visual) return;
+        const painted = this.fixtureSprite(intr);
         ctx.save();
         if (visual.glow) {
             const pulse = 0.8 + Math.sin(this.frame * 0.05 + intr.x) * 0.2;
@@ -653,16 +588,20 @@ export class CanvasRenderer {
         }
         const k = depthScale(intr.y);
         const vs = visual.scale * k;
-        this.drawGroundShadow(ctx, intr.x, intr.y + 2, 40 * vs / 0.5, 12 * k, 0.6);
-
         const state = intr.data && intr.data.state;
-        if (visual.open && (state === "opening" || state === "open")) {
+        if (intr.type === "sealed_zone_door" && this.fixtures) {
+            this.drawDoor(ctx, intr);
+        } else if (painted) {
+            this.drawFixture(ctx, intr, painted, engine);
+        } else if (visual.open && (state === "opening" || state === "open")) {
+            this.drawGroundShadow(ctx, intr.x, intr.y + 2, 40 * vs / 0.5, 12 * k, 0.6);
             // Play the activate animation once, then hold its last frame
             const config = assetLoader.animationsMap[visual.open];
             intr.openT = (intr.openT || 0) + 1;
             const idx = config ? Math.min(config.frames - 1, Math.floor(intr.openT * (config.fps / 60))) : 0;
             assetLoader.drawFrame(ctx, visual.open, idx, intr.x, intr.y + 4, "right", vs, 1);
         } else {
+            this.drawGroundShadow(ctx, intr.x, intr.y + 2, 40 * vs / 0.5, 12 * k, 0.6);
             this.drawSprite(ctx, visual.anim, intr.x, intr.y + 4, vs, 1, "right", intr.x);
         }
 
@@ -675,6 +614,248 @@ export class CanvasRenderer {
             ctx.ellipse(intr.x, intr.y - 80, 50, 70, 0, 0, Math.PI * 2);
             ctx.fill();
         }
+        ctx.restore();
+    }
+
+    // ─── Painted fixtures (fixtures.js) ───────────────────────────────────
+    // Fixed fixtures are drawn where they were painted; corpses are painted
+    // once and moved (and rescaled for depth) to wherever the body lies.
+    fixturePlacement(intr, spr) {
+        const moved = Math.abs(intr.x - spr.ax) > 0.5 || Math.abs(intr.y - spr.ay) > 0.5;
+        return { moved, k: moved ? depthScale(intr.y) / depthScale(spr.ay) : 1 };
+    }
+
+    fixtureSprite(intr) {
+        if (!this.fixtures || intr.type === "sealed_zone_door") return null;
+        if (intr.type === "wax_record_chest") {
+            const frames = this.fixtures.chestFrames, st = intr.data && intr.data.state;
+            if (st === "open") return frames[frames.length - 1];
+            if (st === "opening") {
+                const p = 1 - Math.max(0, intr.data.timer) / 45;
+                return frames[Math.min(frames.length - 1, Math.floor(p * frames.length))];
+            }
+            return frames[0];
+        }
+        return this.fixtures.interactables[intr.type] || null;
+    }
+
+    // Depth-sort key: the front edge of the fixture's footprint
+    intrSortY(intr) {
+        const spr = this.fixtureSprite(intr);
+        if (!spr) return intr.y;
+        return intr.y + (spr.sortY - spr.ay) * this.fixturePlacement(intr, spr).k;
+    }
+
+    // World position of a point recorded on a fixture sprite, for this interactable
+    fixturePoint(intr, spr, pt) {
+        const { k } = this.fixturePlacement(intr, spr);
+        return { x: intr.x + (pt.x - spr.ax) * k, y: intr.y + (pt.y - spr.ay) * k };
+    }
+
+    // Floor layers that never move (props, fixed fixtures), baked into the room
+    staticFloors() {
+        const list = this.props.map(pr => pr);
+        if (this.fixtures) {
+            list.push(this.fixtures.monolith);
+            for (const [type, spr] of Object.entries(this.fixtures.interactables)) {
+                if (type === "wax_record_chest" || CORPSE_TYPES.has(type)) continue;
+                list.push(spr);
+            }
+            list.push(this.fixtures.chestFrames[0]);
+        }
+        return list;
+    }
+
+    // Floor layers of moved fixtures (corpses)
+    drawFixtureFloors(ctx, engine) {
+        for (const intr of engine.interactables) {
+            const spr = this.fixtureSprite(intr);
+            if (!spr) continue;
+            const { k, moved } = this.fixturePlacement(intr, spr);
+            if (!moved) continue;
+            const f = spr.floorRect;
+            ctx.save();
+            ctx.translate(intr.x, intr.y);
+            ctx.scale(k, k);
+            ctx.translate(-spr.ax, -spr.ay);
+            ctx.drawImage(spr.floorCanvas, f.x, f.y, f.w, f.h);
+            ctx.restore();
+        }
+    }
+
+    // Fade a sprite while it actually covers the player. (ox, oy, k) place the
+    // sprite: world = o + (sprite - anchor) * k.
+    ghostAlpha(holder, spr, engine, ox, oy, k = 1) {
+        const p = engine.player;
+        let behind = false;
+        if (p) {
+            const lx = (p.x - ox) / k + spr.ax, ly = (p.y - oy) / k + spr.ay;
+            if (ly < spr.sortY && ly > spr.y) {
+                const s = depthScale(p.y) / k;
+                behind = propCovers(spr, [[lx, ly - 6 * s], [lx, ly - 30 * s], [lx - 9 * s, ly - 44 * s], [lx + 9 * s, ly - 44 * s], [lx, ly - 62 * s]]);
+            }
+        }
+        holder.ghost = (holder.ghost ?? 1) + ((behind ? 0.5 : 1) - (holder.ghost ?? 1)) * 0.15;
+        return holder.ghost;
+    }
+
+    drawFixture(ctx, intr, spr, engine) {
+        const { k } = this.fixturePlacement(intr, spr);
+        const alpha = this.ghostAlpha(intr, spr, engine, intr.x, intr.y, k);
+        ctx.save();
+        ctx.translate(intr.x, intr.y);
+        ctx.scale(k, k);
+        ctx.translate(-spr.ax, -spr.ay);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
+        ctx.globalAlpha = 1;
+        this.drawFixtureLife(ctx, intr, spr);
+        ctx.restore();
+    }
+
+    // The living parts of a fixture: flames, static, embers and glows
+    drawFixtureLife(ctx, intr, spr) {
+        const m = spr.meta, t = this.frame;
+        for (const f of spr.flames) this.drawFlame(ctx, f.x, f.y, f.s * 0.8, f.x * 0.31 + f.y);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const glow = (x, y, r, [cr, cg, cb], a) => {
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+            g.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${Math.max(0, a)})`);
+            g.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+            ctx.fillStyle = g;
+            ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        };
+        if (m.dial) glow(m.dial.x, m.dial.y, 8, [255, 190, 110], 0.55 + Math.sin(t * 0.3) * 0.15 + Math.random() * 0.1);
+        if (m.crown) glow(m.crown.x, m.crown.y, 18, [150, 190, 255], 0.22 + Math.random() * 0.2);
+        if (m.spikes && Math.random() < 0.35) {
+            const a = m.spikes[Math.floor(Math.random() * m.spikes.length)];
+            const b = Math.random() < 0.5 ? m.crown : m.spikes[Math.floor(Math.random() * m.spikes.length)];
+            if (a !== b) this.drawStatic(ctx, a, b);
+        }
+        if (m.coil && Math.random() < 0.05) {
+            const y = m.coil.y0 + Math.random() * (m.coil.y1 - m.coil.y0);
+            this.drawStatic(ctx, { x: m.coil.x - 7, y }, { x: m.coil.x - 15 - Math.random() * 8, y: y + (Math.random() - 0.5) * 10 });
+        }
+        if (m.lantern) glow(m.lantern.x, m.lantern.y, 28, [255, 170, 80], 0.45 + Math.sin(t * 0.2) * 0.06 + Math.random() * 0.06);
+        if (m.glowAt && intr.type === "blood_ritual_altar") glow(m.glowAt.x, m.glowAt.y, 34, [200, 30, 16], 0.2 + Math.sin(t * 0.05) * 0.08);
+        if (m.glowAt && intr.type === "wax_record_chest") glow(m.glowAt.x, m.glowAt.y, 28, [255, 200, 120], 0.35 + Math.sin(t * 0.08) * 0.1);
+        if (m.embers) {
+            for (const e of m.embers) glow(e.x, e.y, 4.5, [255, 120, 40], (0.5 + Math.sin(t * 0.1 + e.x) * 0.3 + Math.random() * 0.2) * 0.7);
+        }
+        if (m.eyes) for (const e of m.eyes) glow(e.x, e.y, 3, [255, 90, 30], 0.4 + Math.random() * 0.2);
+        if (m.mark) glow(m.mark.x, m.mark.y, 11, [190, 20, 14], 0.22 + Math.sin(t * 0.06) * 0.12);
+        if (m.beacon && Math.floor(t / 20) % 3 === 0) glow(m.beacon.x, m.beacon.y, 8, [255, 40, 30], 0.9);
+        ctx.restore();
+    }
+
+    // A jagged blue-white thread of static between two points
+    drawStatic(ctx, a, b) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        for (let i = 1; i < 5; i++) {
+            const f = i / 5;
+            ctx.lineTo(a.x + (b.x - a.x) * f + (Math.random() - 0.5) * 6, a.y + (b.y - a.y) * f + (Math.random() - 0.5) * 6);
+        }
+        ctx.lineTo(b.x, b.y);
+        ctx.strokeStyle = "rgba(120, 160, 255, 0.3)";
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(200, 220, 255, 0.9)";
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // The sealed door: shut under seal and chains; when it opens the seal
+    // shudders, the chains drop and the leaves swing in on the stair beyond
+    drawDoor(ctx, intr) {
+        const d = this.fixtures.door, st = intr.data.state, t = this.frame, A = d.arch;
+        const p = st === "open" ? 1 : st === "opening" ? 1 - Math.max(0, intr.data.timer) / 60 : 0;
+        const swing = Math.max(0, Math.min(1, (p - 0.3) / 0.7));
+        if (swing > 0) ctx.drawImage(d.beyond.canvas, d.beyond.x, d.beyond.y, d.beyond.w, d.beyond.h);
+        const open = Math.cos(swing * 1.35);
+        for (const [leaf, side] of [[d.left, -1], [d.right, 1]]) {
+            const w = leaf.w * open;
+            ctx.drawImage(leaf.canvas, side < 0 ? leaf.x : leaf.x + leaf.w - w, leaf.y, w, leaf.h);
+        }
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        // Red light leaking under the door and through the meeting stiles
+        const leak = 0.3 + Math.sin(t * 0.07) * 0.12 + p * 0.5;
+        const under = ctx.createLinearGradient(0, A.bottom - 7, 0, A.bottom);
+        under.addColorStop(0, "rgba(220, 40, 20, 0)");
+        under.addColorStop(1, `rgba(220, 40, 20, ${Math.min(0.8, leak)})`);
+        ctx.fillStyle = under;
+        ctx.fillRect(A.x0 + 2, A.bottom - 7, A.x1 - A.x0 - 4, 7);
+        if (swing === 0) {
+            ctx.fillStyle = `rgba(220, 40, 20, ${0.12 + p * 0.6})`;
+            ctx.fillRect(d.cx - 0.6, A.apex + 20, 1.2, A.bottom - A.apex - 20);
+        }
+        ctx.restore();
+        if (p < 0.55) {
+            const drop = Math.max(0, p - 0.3) / 0.25;
+            const shake = st === "opening" && p < 0.3 ? (Math.random() - 0.5) * 2.6 : 0;
+            ctx.save();
+            ctx.globalAlpha = 1 - drop;
+            ctx.drawImage(d.seal.canvas, d.seal.x + shake, d.seal.y + drop * drop * 70, d.seal.w, d.seal.h);
+            if (st === "opening") {
+                ctx.globalCompositeOperation = "lighter";
+                const g = ctx.createRadialGradient(d.seal.sealX, d.seal.sealY, 0, d.seal.sealX, d.seal.sealY, 30);
+                g.addColorStop(0, `rgba(255, 90, 40, ${0.6 * (1 - drop)})`);
+                g.addColorStop(1, "rgba(255, 90, 40, 0)");
+                ctx.fillStyle = g;
+                ctx.fillRect(d.seal.sealX - 30, d.seal.sealY - 30, 60, 60);
+            }
+            ctx.restore();
+        }
+    }
+
+    drawMonolithEye(ctx, e, o, engine) {
+        const t = this.frame;
+        const blink = t % 480 < 7 ? 0.15 : 1;
+        const h = e.rh * (0.12 + o * 0.88) * blink;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(e.x - e.rw, e.y);
+        ctx.quadraticCurveTo(e.x, e.y - h * 2, e.x + e.rw, e.y);
+        ctx.quadraticCurveTo(e.x, e.y + h * 2, e.x - e.rw, e.y);
+        ctx.closePath();
+        const sc = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.rw);
+        sc.addColorStop(0, "#6a120c");
+        sc.addColorStop(1, "#160303");
+        ctx.fillStyle = sc;
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        // The iris follows the player across the room
+        const ix = e.x + Math.max(-1, Math.min(1, (engine.player.x - e.x) / 320)) * e.rw * 0.45;
+        const iy = e.y + Math.max(-1, Math.min(1, (engine.player.y - e.y) / 500)) * e.rh * 0.35;
+        const ir = e.rh * 0.95;
+        const iris = ctx.createRadialGradient(ix, iy, 0, ix, iy, ir);
+        iris.addColorStop(0, "#ffd8a8");
+        iris.addColorStop(0.35, `rgb(255, ${70 + o * 70}, 30)`);
+        iris.addColorStop(1, "#4a0604");
+        ctx.fillStyle = iris;
+        ctx.beginPath();
+        ctx.arc(ix, iy, ir, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#050000";
+        ctx.beginPath();
+        ctx.ellipse(ix, iy, ir * 0.16 + (1 - o) * ir * 0.1, ir * 0.82, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.9)";
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.globalCompositeOperation = "lighter";
+        const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, e.rw * 2.6);
+        g.addColorStop(0, `rgba(255, 60, 20, ${(0.12 + o * 0.4) * blink})`);
+        g.addColorStop(1, "rgba(255, 60, 20, 0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(e.x - e.rw * 2.6, e.y - e.rw * 2.6, e.rw * 5.2, e.rw * 5.2);
         ctx.restore();
     }
 
@@ -953,16 +1134,30 @@ export class CanvasRenderer {
             const v = INTERACTABLE_SPRITES[intr.type];
             if (v && v.light) {
                 const pulse = 0.85 + Math.sin(t * 0.05 + intr.x) * 0.15;
-                lights.push({ x: intr.x, y: intr.y - 30, r: 130, color: hexRgb(v.light), a: 0.7 * pulse });
+                const spr = this.fixtureSprite(intr), m = spr && spr.meta;
+                const src = m && (m.lightAt || m.lantern || m.glowAt);
+                const at = src ? this.fixturePoint(intr, spr, src) : { x: intr.x, y: intr.y - 30 };
+                lights.push({ x: at.x, y: at.y, r: 130, color: hexRgb(v.light), a: 0.7 * pulse });
             }
-            if (intr.type === "sealed_zone_door" && intr.data.state === "open") {
-                lights.push({ x: intr.x, y: intr.y - 60, r: 220, color: [220, 40, 24], a: 0.9 });
+            if (intr.type === "sealed_zone_door") {
+                // The seal smoulders while the door is shut; the stair beyond floods red once open
+                if (intr.data.state === "open") lights.push({ x: intr.x, y: intr.y - 60, r: 220, color: [220, 40, 24], a: 0.9 });
+                else lights.push({ x: intr.x, y: 190, r: 125, color: [210, 60, 34], a: 0.5 + Math.sin(t * 0.06) * 0.1 });
+            }
+            if (intr.type === "wax_record_chest" && intr.data.state !== "closed") {
+                const spr = this.fixtureSprite(intr);
+                if (spr && spr.meta.glowAt) lights.push({ ...this.fixturePoint(intr, spr, spr.meta.glowAt), r: 110, color: [255, 200, 120], a: 0.6 });
             }
         }
         const mono = engine.obstacles.find(o => o.label === "The Monolith");
         if (mono) {
             const o = Math.min(100, p.profile.observation) / 100;
             lights.push({ x: mono.x, y: mono.y - 40, r: 80 + o * 110, color: [220, 30, 18], a: 0.25 + o * 0.5 });
+            const eye = this.fixtures && this.fixtures.monolith.meta.eye;
+            if (eye) lights.push({ x: eye.x, y: eye.y, r: 40 + o * 90, color: [255, 60, 24], a: 0.2 + o * 0.6 });
+            for (const fl of this.fixtures ? this.fixtures.monolith.flames : []) {
+                if (this.inView(fl.x - 90, fl.y - 90, 180, 180)) lights.push({ x: fl.x, y: fl.y - 4, r: 90, color: [255, 172, 96], a: 0.5 });
+            }
         }
         for (const l of engine.loot) {
             const st = this.lootStyle(l);
