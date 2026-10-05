@@ -88,6 +88,14 @@ const ENEMY_ART = {
 };
 
 const PAINTED_ROOM_URL = "assets/room/room_painted.png";
+// Optional rendered corpse art (see assets/corpses/README.md). When a file is
+// present it replaces the painted body; the blood pool and glows stay.
+const CORPSE_ART = {
+    fresh_marked_corpse: "assets/corpses/fresh_marked_corpse.png",
+    burned_corpse_remains: "assets/corpses/burned_corpse_remains.png",
+    broadcast_corpse: "assets/corpses/broadcast_corpse.png"
+};
+const CORPSE_ART_LENGTH = 92; // world units the body spans, head to feet, at y = 650
 
 // Moonlight shafts falling from the darkness above the walls
 const MOON_SHAFTS = [
@@ -161,6 +169,18 @@ export class CanvasRenderer {
             this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
+        this.loadCorpseArt();
+    }
+
+    loadCorpseArt() {
+        if (this.corpseArt) return;
+        this.corpseArt = {};
+        for (const [type, url] of Object.entries(CORPSE_ART)) {
+            const img = new Image();
+            img.onload = () => { this.corpseArt[type] = img; };
+            img.onerror = () => {};
+            img.src = url;
+        }
     }
 
     // Prop shadows and spilled paper never move, so bake them into the floor
@@ -708,9 +728,18 @@ export class CanvasRenderer {
         ctx.scale(k, k);
         ctx.translate(-spr.ax, -spr.ay);
         ctx.globalAlpha = alpha;
-        ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
-        ctx.globalAlpha = 1;
-        this.drawFixtureLife(ctx, intr, spr);
+        const art = this.corpseArt && this.corpseArt[intr.type];
+        if (art) {
+            // Rendered body: centred on the corpse, its lowest pixels resting on the floor
+            const w = CORPSE_ART_LENGTH, h = w * art.height / art.width;
+            ctx.drawImage(art, spr.ax - w / 2, spr.ay + 8 - h, w, h);
+            ctx.globalAlpha = 1;
+            this.drawFixtureLife(ctx, intr, { ...spr, flames: [], meta: { mark: null, beacon: null, embers: spr.meta.embers } });
+        } else {
+            ctx.drawImage(spr.canvas, spr.x, spr.y, spr.w, spr.h);
+            ctx.globalAlpha = 1;
+            this.drawFixtureLife(ctx, intr, spr);
+        }
         ctx.restore();
     }
 
