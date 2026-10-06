@@ -8,7 +8,7 @@
 // chest lid) is left to the renderer, which reads the positions the painters
 // record on the sprite's `meta`.
 
-import { project, mulberry32, pathPoly, inkLine, inkPoly, hatch, drawSkull, ROOM, ERA } from "./world.js";
+import { project, mulberry32, pathPoly, inkLine, inkPoly, hatch, drawSkull, ROOM } from "./world.js";
 import { placeAt, box, candle, floorShadow, flatPaper, fillFace, buildSprite, WOOD, DARKWOOD, STONE, IRON } from "./props.js";
 
 const P = project;
@@ -1344,7 +1344,7 @@ function paintChest(lidAngle) {
 // ─── Corpses of previous Marked ──────────────────────────────────────────
 // Painted lying in the floor plane at a reference depth; the renderer moves
 // and scales them to wherever the body fell. The body lies along u, head
-// toward -u. Dressed for the era the room is set in (see ERA in world.js).
+// toward -u.
 
 function paintCorpse(kind) {
     return (ctx, rand, u, w, out) => {
@@ -1478,330 +1478,140 @@ function paintCorpse(kind) {
             return;
         }
 
-        if (ERA === "present") {
-            if (kind === "broadcast") pool(flo, rand, u - 2, w + 2, 32, 13, [8, 8, 12]);
-            else pool(flo, rand, u - 22, w + 3, 30, 14, [104, 10, 8]);
-            floorShadow(flo, u - 36, u + 44, w - 14, w + 14, 0.5, 6);
+        if (kind === "broadcast") pool(flo, rand, u - 2, w + 2, 32, 13, [8, 8, 12]);
+        else pool(flo, rand, u - 22, w + 3, 30, 14, [104, 10, 8]);
+        floorShadow(flo, u - 36, u + 40, w - 14, w + 14, 0.5, 6);
 
-            // Someone from now: hoodie with the hood up, jeans, white trainers,
-            // a phone still lit on the floor beside the outstretched hand
-            const hoodie = kind === "broadcast" ? [52, 54, 58] : [40, 40, 46];
-            const rgbS = (c, k = 0) => `rgb(${c[0] + k}, ${c[1] + k}, ${c[2] + k})`;
-            const denim = [44, 56, 78];
-            // Legs: one straight, one bent at the knee
-            const legs = [
-                [at(14, -4, 5), at(30, -6, 4), at(42, -7, 3)],
-                [at(14, 5, 5), at(26, 12, 4), at(38, 9, 3)]
-            ];
-            for (const [hip, knee, ankle] of legs) {
-                for (const [a, b, wd] of [[hip, knee, 7.5], [knee, ankle, 6.5]]) {
-                    line(a, b, wd + 1.6, "rgba(4,3,3,0.9)");
-                    line(a, b, wd, rgbS(denim));
-                    line({ x: a.x, y: a.y - wd * 0.3 }, { x: b.x, y: b.y - wd * 0.3 }, wd * 0.25, "rgba(150, 170, 200, 0.22)");
-                }
-                // Trainer: pale upper, dark sole, toe turned out
-                const toe = { x: ankle.x + 7, y: ankle.y - 1 };
-                ctx.fillStyle = "#cfcbc2";
-                ctx.beginPath();
-                ctx.ellipse((ankle.x + toe.x) / 2, (ankle.y + toe.y) / 2 - 1, 6, 3.4, -0.1, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = "rgba(4,3,3,0.85)";
-                ctx.lineWidth = 0.9;
-                ctx.stroke();
-                line({ x: ankle.x - 1, y: ankle.y + 1.5 }, { x: toe.x + 4, y: toe.y + 1.5 }, 1.4, "#2a2622", "butt");
-            }
-            // Torso under the hoodie, lit along the crest of the back
-            const back = [at(-16, -10, 8), at(-2, -12, 10), at(12, -10, 9), at(18, -6, 7), at(19, 3, 6), at(14, 10, 7), at(-2, 12, 8), at(-16, 9, 7)];
-            shape(back, rgbS(hoodie), 1.3);
-            ctx.save();
+        const cloak = kind === "broadcast" ? [40, 36, 40] : [34, 30, 32];
+        const rgbS = (c, k = 0) => `rgb(${c[0] + k}, ${c[1] + k}, ${c[2] + k})`;
+        // The cloak spread on the floor around the body, its hem ragged
+        const spread = [];
+        const rim = [[-18, -15], [-4, -18], [12, -17], [28, -14], [40, -10], [44, -2], [42, 8], [30, 14], [14, 17], [-2, 18], [-16, 15], [-20, 2]];
+        for (const [du, dw] of rim) spread.push(at(du + (rand() - 0.5) * 3, dw + (rand() - 0.5) * 3, 0.6));
+        shape(spread, rgbS(cloak, -18), 1.1);
+        // Fold lines radiating out across the spread hem
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.lineWidth = 0.8;
+        for (let i = 0; i < 9; i++) {
+            const a = at(-6 + i * 5, (rand() - 0.5) * 6, 5), b = at(-10 + i * 6.5, i % 2 ? -16 : 15, 0.6);
             ctx.beginPath();
-            ctx.moveTo(back[0].x, back[0].y);
-            for (const p of back.slice(1)) ctx.lineTo(p.x, p.y);
-            ctx.closePath();
-            ctx.clip();
-            const crest = ctx.createLinearGradient(0, at(0, -12, 10).y, 0, at(0, 12, 8).y);
-            crest.addColorStop(0, "rgba(190, 185, 190, 0.38)");
-            crest.addColorStop(0.45, "rgba(0, 0, 0, 0)");
-            crest.addColorStop(1, "rgba(0, 0, 0, 0.45)");
-            ctx.fillStyle = crest;
-            ctx.fillRect(at(-20, 0).x, at(0, -14, 12).y, 50, 30);
-            // Hem ribbing and a couple of creases
-            ctx.strokeStyle = "rgba(0,0,0,0.45)";
-            ctx.lineWidth = 0.8;
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+        }
+        // Boots poking out at the feet
+        for (const dw of [-5, 5]) {
+            const a = at(38, dw, 3), b = at(48, dw * 1.5, 2.5);
+            line(a, b, 5, "#1b1412");
+            line(b, at(49, dw * 1.5, 0.5), 5, "#0e0a09");
+            line({ x: a.x, y: a.y - 1.5 }, { x: b.x, y: b.y - 1.5 }, 0.8, "rgba(200, 170, 140, 0.18)");
+        }
+        // The back and shoulders: a hump under the cloth, lit along its crest
+        const back = [at(-16, -10, 8), at(-2, -12, 10), at(16, -11, 9), at(32, -8, 6), at(36, 0, 5), at(32, 8, 5), at(14, 11, 7), at(-2, 12, 8), at(-16, 9, 7)];
+        shape(back, rgbS(cloak, 0), 1.3);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(back[0].x, back[0].y);
+        for (const p of back.slice(1)) ctx.lineTo(p.x, p.y);
+        ctx.closePath();
+        ctx.clip();
+        const crest = ctx.createLinearGradient(0, at(0, -12, 10).y, 0, at(0, 12, 8).y);
+        crest.addColorStop(0, "rgba(190, 180, 175, 0.4)");
+        crest.addColorStop(0.45, "rgba(0, 0, 0, 0)");
+        crest.addColorStop(1, "rgba(0, 0, 0, 0.45)");
+        ctx.fillStyle = crest;
+        ctx.fillRect(at(-20, 0).x, at(0, -14, 12).y, 60, 30);
+        ctx.strokeStyle = "rgba(0,0,0,0.4)";
+        ctx.lineWidth = 0.9;
+        for (let i = 0; i < 5; i++) {
+            const a = at(-10 + i * 9, -11, 9), b = at(-6 + i * 9, 11, 7);
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.quadraticCurveTo((a.x + b.x) / 2 + 3, (a.y + b.y) / 2, b.x, b.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+        // Hood, face down
+        const hood = [at(-17, -8, 8), at(-24, -10, 9), at(-31, -6, 7), at(-33, 2, 5), at(-28, 8, 5), at(-19, 8, 7)];
+        shape(hood, rgbS(cloak, -10), 1.2);
+        // Cold rim light along the crest of the hood and back
+        ctx.strokeStyle = "rgba(200, 196, 205, 0.45)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(hood[3].x + 1, hood[3].y - 1);
+        ctx.quadraticCurveTo(hood[2].x, hood[2].y - 1, hood[1].x, hood[1].y - 0.5);
+        ctx.quadraticCurveTo(back[1].x, back[1].y - 1, back[2].x, back[2].y - 0.5);
+        ctx.quadraticCurveTo(back[3].x, back[3].y, back[4].x, back[4].y);
+        ctx.stroke();
+        // An arm reaching out toward the room, the hand open on the stone
+        const arm = [at(-12, -9, 7), at(-22, -18, 4), at(-34, -20, 2), at(-35, -15, 2), at(-23, -12, 4), at(-14, -4, 6)];
+        shape(arm, rgbS(cloak, -4), 1.1);
+        const hn = at(-38, -18, 1);
+        ctx.fillStyle = "#b5a993";
+        ctx.beginPath();
+        ctx.ellipse(hn.x + 1, hn.y, 3, 2.1, 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(4,3,3,0.7)";
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+        ctx.strokeStyle = "#b5a993";
+        ctx.lineWidth = 0.9;
+        ctx.lineCap = "round";
+        for (let f = 0; f < 4; f++) {
+            ctx.beginPath();
+            ctx.moveTo(hn.x - 1.5, hn.y - 1.2 + f * 0.9);
+            ctx.lineTo(hn.x - 5.5 - (f === 1 ? 1 : 0), hn.y - 2.4 + f * 1.6);
+            ctx.stroke();
+        }
+        ctx.lineCap = "butt";
+        out.mark = at(8, 0, 10);
+
+        if (kind === "broadcast") {
+            // Bound in ticker tape and a few loose turns of copper wire
             for (let i = 0; i < 3; i++) {
-                const a = at(-8 + i * 8, -11, 9), b = at(-5 + i * 8, 11, 7);
+                const a = at(-8 + i * 13, -12, 9), b = at(-2 + i * 13, 12, 7);
+                ctx.strokeStyle = "#d8cba6";
+                ctx.lineWidth = 2.4;
                 ctx.beginPath();
                 ctx.moveTo(a.x, a.y);
-                ctx.quadraticCurveTo((a.x + b.x) / 2 + 2, (a.y + b.y) / 2, b.x, b.y);
+                ctx.quadraticCurveTo((a.x + b.x) / 2 + 3, (a.y + b.y) / 2 - 3, b.x, b.y);
                 ctx.stroke();
-            }
-            const rib0 = at(16, -8, 7), rib1 = at(16, 9, 6);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = rgbS(hoodie, -12);
-            ctx.beginPath();
-            ctx.moveTo(rib0.x, rib0.y);
-            ctx.lineTo(rib1.x, rib1.y);
-            ctx.stroke();
-            ctx.restore();
-            // Hood up over the head, face down; drawstrings trailing on the floor
-            const hood = [at(-17, -8, 8), at(-24, -10, 9), at(-31, -6, 7), at(-33, 2, 5), at(-28, 8, 5), at(-19, 8, 7)];
-            shape(hood, rgbS(hoodie, -8), 1.2);
-            for (const [s0, s1] of [[at(-20, 4, 4), at(-26, 13, 0.5)], [at(-19, 6, 4), at(-22, 15, 0.5)]]) {
-                line(s0, s1, 0.8, "rgba(210, 205, 195, 0.75)");
-            }
-            // Cold rim light along the crest of the hood and back
-            ctx.strokeStyle = "rgba(200, 196, 205, 0.45)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(hood[3].x + 1, hood[3].y - 1);
-            ctx.quadraticCurveTo(hood[2].x, hood[2].y - 1, hood[1].x, hood[1].y - 0.5);
-            ctx.quadraticCurveTo(back[1].x, back[1].y - 1, back[2].x, back[2].y - 0.5);
-            ctx.stroke();
-            // Lanyard and ID card spilled out from the collar
-            const lc = at(-14, 7, 5), card = at(-12, 17, 0.4);
-            line(lc, card, 0.9, "#9a1a14");
-            ctx.save();
-            ctx.translate(card.x, card.y);
-            ctx.rotate(0.25);
-            ctx.fillStyle = "#e4e0d6";
-            ctx.fillRect(-3.5, -2, 7, 4.2);
-            ctx.fillStyle = "#4a4e58";
-            ctx.fillRect(-2.8, -1.3, 2.2, 2.6);
-            ctx.fillStyle = "rgba(40, 40, 50, 0.7)";
-            ctx.fillRect(0, -1, 2.6, 0.6);
-            ctx.fillRect(0, 0.3, 2, 0.6);
-            ctx.strokeStyle = "rgba(4,3,3,0.7)";
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(-3.5, -2, 7, 4.2);
-            ctx.restore();
-            // An arm reaching out toward the room, the hand open on the stone
-            const arm = [at(-12, -9, 7), at(-22, -18, 4), at(-34, -20, 2), at(-35, -15, 2), at(-23, -12, 4), at(-14, -4, 6)];
-            shape(arm, rgbS(hoodie, -4), 1.1);
-            const hn = at(-38, -18, 1);
-            ctx.fillStyle = "#b5a993";
-            ctx.beginPath();
-            ctx.ellipse(hn.x + 1, hn.y, 3, 2.1, 0.15, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = "rgba(4,3,3,0.7)";
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-            ctx.strokeStyle = "#b5a993";
-            ctx.lineWidth = 0.9;
-            ctx.lineCap = "round";
-            for (let f = 0; f < 4; f++) {
-                ctx.beginPath();
-                ctx.moveTo(hn.x - 1.5, hn.y - 1.2 + f * 0.9);
-                ctx.lineTo(hn.x - 5.5 - (f === 1 ? 1 : 0), hn.y - 2.4 + f * 1.6);
+                ctx.strokeStyle = "rgba(6,4,4,0.5)";
+                ctx.lineWidth = 0.5;
                 ctx.stroke();
+                ctx.fillStyle = "rgba(30, 20, 14, 0.8)";
+                for (let k = 0.2; k < 0.9; k += 0.2) ctx.fillRect(a.x + (b.x - a.x) * k + 1, a.y + (b.y - a.y) * k - 1, 0.9, 0.9);
             }
-            ctx.lineCap = "butt";
-            out.mark = at(4, 0, 10);
-
-            // The phone, face up and cracked, its screen still on (lit live)
-            const ph = at(-48, -22, 0.4);
-            ctx.save();
-            ctx.translate(ph.x, ph.y);
-            ctx.rotate(-0.35);
-            ctx.scale(1, 0.55);
-            ctx.fillStyle = "#0c0c10";
-            ctx.beginPath();
-            ctx.roundRect(-4.5, -8, 9, 16, 1.6);
-            ctx.fill();
-            ctx.fillStyle = "#1c2433";
-            ctx.fillRect(-3.6, -7, 7.2, 14);
-            ctx.strokeStyle = "rgba(220, 230, 255, 0.55)";
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(-3, -5);
-            ctx.lineTo(0.5, -1);
-            ctx.lineTo(3, 2);
-            ctx.moveTo(0.5, -1);
-            ctx.lineTo(-2.5, 4);
-            ctx.moveTo(0.5, -1);
-            ctx.lineTo(3.4, -4);
-            ctx.stroke();
-            ctx.restore();
-            out.phone = { x: ph.x, y: ph.y };
-
-            if (kind === "broadcast") {
-                // Bound in printer paper and black cable, a handheld radio still keyed beside them
-                for (let i = 0; i < 3; i++) {
-                    const a = at(-8 + i * 10, -12, 9), b = at(-2 + i * 10, 12, 7);
-                    ctx.strokeStyle = "#ddd6c4";
-                    ctx.lineWidth = 2.4;
-                    ctx.beginPath();
-                    ctx.moveTo(a.x, a.y);
-                    ctx.quadraticCurveTo((a.x + b.x) / 2 + 3, (a.y + b.y) / 2 - 3, b.x, b.y);
-                    ctx.stroke();
-                    ctx.strokeStyle = "rgba(6,4,4,0.5)";
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                    ctx.fillStyle = "rgba(30, 30, 40, 0.75)";
-                    for (let k = 0.2; k < 0.9; k += 0.15) ctx.fillRect(a.x + (b.x - a.x) * k + 1, a.y + (b.y - a.y) * k - 1, 1.4, 0.6);
-                }
-                ctx.strokeStyle = "#141416";
-                ctx.lineWidth = 1.1;
-                ctx.beginPath();
-                let p = at(-14, -10, 9);
-                ctx.moveTo(p.x, p.y);
-                for (let i = 1; i < 8; i++) {
-                    const q = at(-14 + i * 4.5, (i % 2 ? 11 : -11), 8);
-                    ctx.quadraticCurveTo((p.x + q.x) / 2 + 3, (p.y + q.y) / 2, q.x, q.y);
-                    p = q;
-                }
-                ctx.stroke();
-                // Handheld radio standing on the floor, aerial up, LED blinking
-                const rb = at(4, -22, 0);
-                ctx.fillStyle = "#1a1a1d";
-                ctx.fillRect(rb.x - 3.5, rb.y - 13, 7, 13);
-                ctx.strokeStyle = "rgba(4,3,3,0.9)";
-                ctx.lineWidth = 0.8;
-                ctx.strokeRect(rb.x - 3.5, rb.y - 13, 7, 13);
-                ctx.fillStyle = "#3a3d44";
-                for (let y = rb.y - 9; y < rb.y - 2; y += 1.6) ctx.fillRect(rb.x - 2.4, y, 4.8, 0.7);
-                line({ x: rb.x + 2, y: rb.y - 13 }, { x: rb.x + 3.5, y: rb.y - 30 }, 1.2, "#111");
-                ctx.fillStyle = "#3a0806";
-                ctx.beginPath();
-                ctx.arc(rb.x - 1.6, rb.y - 11, 1, 0, Math.PI * 2);
-                ctx.fill();
-                out.beacon = { x: rb.x - 1.6, y: rb.y - 11 };
-            }
-        } else {
-            if (kind === "broadcast") pool(flo, rand, u - 2, w + 2, 32, 13, [8, 8, 12]);
-            else pool(flo, rand, u - 22, w + 3, 30, 14, [104, 10, 8]);
-            floorShadow(flo, u - 36, u + 40, w - 14, w + 14, 0.5, 6);
-
-            const cloak = kind === "broadcast" ? [40, 36, 40] : [34, 30, 32];
-            const rgbS = (c, k = 0) => `rgb(${c[0] + k}, ${c[1] + k}, ${c[2] + k})`;
-            // The cloak spread on the floor around the body, its hem ragged
-            const spread = [];
-            const rim = [[-18, -15], [-4, -18], [12, -17], [28, -14], [40, -10], [44, -2], [42, 8], [30, 14], [14, 17], [-2, 18], [-16, 15], [-20, 2]];
-            for (const [du, dw] of rim) spread.push(at(du + (rand() - 0.5) * 3, dw + (rand() - 0.5) * 3, 0.6));
-            shape(spread, rgbS(cloak, -18), 1.1);
-            // Fold lines radiating out across the spread hem
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+            // A loose coil of copper wire trailing from the aerial to the floor
+            const coil = at(-6, 20, 0.5);
+            ctx.strokeStyle = "#b0683a";
             ctx.lineWidth = 0.8;
-            for (let i = 0; i < 9; i++) {
-                const a = at(-6 + i * 5, (rand() - 0.5) * 6, 5), b = at(-10 + i * 6.5, i % 2 ? -16 : 15, 0.6);
+            for (let r = 3; r < 9; r += 2) {
                 ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.lineTo(b.x, b.y);
+                ctx.ellipse(coil.x + r * 0.3, coil.y, r, r * 0.4, 0, 0, Math.PI * 2);
                 ctx.stroke();
             }
-            // Boots poking out at the feet
-            for (const dw of [-5, 5]) {
-                const a = at(38, dw, 3), b = at(48, dw * 1.5, 2.5);
-                line(a, b, 5, "#1b1412");
-                line(b, at(49, dw * 1.5, 0.5), 5, "#0e0a09");
-                line({ x: a.x, y: a.y - 1.5 }, { x: b.x, y: b.y - 1.5 }, 0.8, "rgba(200, 170, 140, 0.18)");
-            }
-            // The back and shoulders: a hump under the cloth, lit along its crest
-            const back = [at(-16, -10, 8), at(-2, -12, 10), at(16, -11, 9), at(32, -8, 6), at(36, 0, 5), at(32, 8, 5), at(14, 11, 7), at(-2, 12, 8), at(-16, 9, 7)];
-            shape(back, rgbS(cloak, 0), 1.3);
-            ctx.save();
+            const wb = at(10, -2, 10);
             ctx.beginPath();
-            ctx.moveTo(back[0].x, back[0].y);
-            for (const p of back.slice(1)) ctx.lineTo(p.x, p.y);
-            ctx.closePath();
-            ctx.clip();
-            const crest = ctx.createLinearGradient(0, at(0, -12, 10).y, 0, at(0, 12, 8).y);
-            crest.addColorStop(0, "rgba(190, 180, 175, 0.4)");
-            crest.addColorStop(0.45, "rgba(0, 0, 0, 0)");
-            crest.addColorStop(1, "rgba(0, 0, 0, 0.45)");
-            ctx.fillStyle = crest;
-            ctx.fillRect(at(-20, 0).x, at(0, -14, 12).y, 60, 30);
-            ctx.strokeStyle = "rgba(0,0,0,0.4)";
-            ctx.lineWidth = 0.9;
-            for (let i = 0; i < 5; i++) {
-                const a = at(-10 + i * 9, -11, 9), b = at(-6 + i * 9, 11, 7);
-                ctx.beginPath();
-                ctx.moveTo(a.x, a.y);
-                ctx.quadraticCurveTo((a.x + b.x) / 2 + 3, (a.y + b.y) / 2, b.x, b.y);
-                ctx.stroke();
-            }
-            ctx.restore();
-            // Hood, face down
-            const hood = [at(-17, -8, 8), at(-24, -10, 9), at(-31, -6, 7), at(-33, 2, 5), at(-28, 8, 5), at(-19, 8, 7)];
-            shape(hood, rgbS(cloak, -10), 1.2);
-            // Cold rim light along the crest of the hood and back
-            ctx.strokeStyle = "rgba(200, 196, 205, 0.45)";
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(hood[3].x + 1, hood[3].y - 1);
-            ctx.quadraticCurveTo(hood[2].x, hood[2].y - 1, hood[1].x, hood[1].y - 0.5);
-            ctx.quadraticCurveTo(back[1].x, back[1].y - 1, back[2].x, back[2].y - 0.5);
-            ctx.quadraticCurveTo(back[3].x, back[3].y, back[4].x, back[4].y);
+            ctx.moveTo(wb.x, wb.y);
+            ctx.quadraticCurveTo(wb.x - 6, (wb.y + coil.y) / 2 + 6, coil.x + 8, coil.y);
             ctx.stroke();
-            // An arm reaching out toward the room, the hand open on the stone
-            const arm = [at(-12, -9, 7), at(-22, -18, 4), at(-34, -20, 2), at(-35, -15, 2), at(-23, -12, 4), at(-14, -4, 6)];
-            shape(arm, rgbS(cloak, -4), 1.1);
-            const hn = at(-38, -18, 1);
-            ctx.fillStyle = "#b5a993";
+            // An aerial driven into the back
+            const base = at(10, -2, 10), top = { x: base.x + 2, y: base.y - 46 };
+            line(base, top, 1.4, "#1c1917");
+            for (const [dy, half] of [[6, 9], [14, 7], [22, 5]]) line({ x: top.x - half, y: top.y + dy }, { x: top.x + half, y: top.y + dy - 1 }, 1.1, "#1c1917");
+            ctx.fillStyle = "#3a0806";
             ctx.beginPath();
-            ctx.ellipse(hn.x + 1, hn.y, 3, 2.1, 0.15, 0, Math.PI * 2);
+            ctx.arc(top.x, top.y - 1.5, 2.1, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = "rgba(4,3,3,0.7)";
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-            ctx.strokeStyle = "#b5a993";
-            ctx.lineWidth = 0.9;
-            ctx.lineCap = "round";
-            for (let f = 0; f < 4; f++) {
-                ctx.beginPath();
-                ctx.moveTo(hn.x - 1.5, hn.y - 1.2 + f * 0.9);
-                ctx.lineTo(hn.x - 5.5 - (f === 1 ? 1 : 0), hn.y - 2.4 + f * 1.6);
-                ctx.stroke();
-            }
-            ctx.lineCap = "butt";
-            out.mark = at(8, 0, 10);
-
-            if (kind === "broadcast") {
-                // Bound in ticker tape and a few loose turns of copper wire
-                for (let i = 0; i < 3; i++) {
-                    const a = at(-8 + i * 13, -12, 9), b = at(-2 + i * 13, 12, 7);
-                    ctx.strokeStyle = "#d8cba6";
-                    ctx.lineWidth = 2.4;
-                    ctx.beginPath();
-                    ctx.moveTo(a.x, a.y);
-                    ctx.quadraticCurveTo((a.x + b.x) / 2 + 3, (a.y + b.y) / 2 - 3, b.x, b.y);
-                    ctx.stroke();
-                    ctx.strokeStyle = "rgba(6,4,4,0.5)";
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                    ctx.fillStyle = "rgba(30, 20, 14, 0.8)";
-                    for (let k = 0.2; k < 0.9; k += 0.2) ctx.fillRect(a.x + (b.x - a.x) * k + 1, a.y + (b.y - a.y) * k - 1, 0.9, 0.9);
-                }
-                // A loose coil of copper wire trailing from the aerial to the floor
-                const coil = at(-6, 20, 0.5);
-                ctx.strokeStyle = "#b0683a";
-                ctx.lineWidth = 0.8;
-                for (let r = 3; r < 9; r += 2) {
-                    ctx.beginPath();
-                    ctx.ellipse(coil.x + r * 0.3, coil.y, r, r * 0.4, 0, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-                const wb = at(10, -2, 10);
-                ctx.beginPath();
-                ctx.moveTo(wb.x, wb.y);
-                ctx.quadraticCurveTo(wb.x - 6, (wb.y + coil.y) / 2 + 6, coil.x + 8, coil.y);
-                ctx.stroke();
-                // An aerial driven into the back
-                const base = at(10, -2, 10), top = { x: base.x + 2, y: base.y - 46 };
-                line(base, top, 1.4, "#1c1917");
-                for (const [dy, half] of [[6, 9], [14, 7], [22, 5]]) line({ x: top.x - half, y: top.y + dy }, { x: top.x + half, y: top.y + dy - 1 }, 1.1, "#1c1917");
-                ctx.fillStyle = "#3a0806";
-                ctx.beginPath();
-                ctx.arc(top.x, top.y - 1.5, 2.1, 0, Math.PI * 2);
-                ctx.fill();
-                out.beacon = { x: top.x, y: top.y - 1.5 };
-            } else {
-                // The blade they died holding
-                const a = at(-8, -24, 0.5), b = at(24, -27, 0.5), hilt = at(-14, -23, 0.5);
-                line(a, b, 2, "#b8bcc2", "butt");
-                line({ x: a.x, y: a.y - 0.7 }, { x: b.x, y: b.y - 0.7 }, 0.5, "rgba(255,255,255,0.5)", "butt");
-                line(a, hilt, 2.6, "#2a1c12");
-                line({ x: a.x - 1, y: a.y - 4 }, { x: a.x + 1, y: a.y + 4 }, 1.4, "#6a5634");
-            }
+            out.beacon = { x: top.x, y: top.y - 1.5 };
+        } else {
+            // The blade they died holding
+            const a = at(-8, -24, 0.5), b = at(24, -27, 0.5), hilt = at(-14, -23, 0.5);
+            line(a, b, 2, "#b8bcc2", "butt");
+            line({ x: a.x, y: a.y - 0.7 }, { x: b.x, y: b.y - 0.7 }, 0.5, "rgba(255,255,255,0.5)", "butt");
+            line(a, hilt, 2.6, "#2a1c12");
+            line({ x: a.x - 1, y: a.y - 4 }, { x: a.x + 1, y: a.y + 4 }, 1.4, "#6a5634");
         }
     };
 }
@@ -1990,119 +1800,6 @@ function paintDoor(scale) {
     return { left: leaf(-1), right: leaf(1), seal, beyond, cx, arch: DOOR };
 }
 
-// ─── Present-day signal station (ERA === "present") ─────────────────────
-// Whoever holds the broadcasts now does it with a portable PA: a speaker on a
-// tripod, a mixer and a shortwave radio on a folding table, a mic on a stand.
-
-const PLASTIC = { top: [52, 54, 58], front: [34, 35, 38], side: [24, 25, 27] };
-const TABLETOP = { top: [182, 176, 160], front: [120, 116, 104], side: [90, 86, 78] };
-
-function paintPaStation(ctx, rand, u, w, out) {
-    floorShadow(out.floor, u - 32, u + 32, w - 22, w + 24, 0.65);
-    // Cables snaking across the floor to the mic
-    out.floor.strokeStyle = "#141416";
-    out.floor.lineWidth = 1.3;
-    for (const [a, b] of [[[u + 4, w - 8], [u + 34, w - 34]], [[u - 6, w + 6], [u - 34, w + 20]]]) {
-        const p0 = P(a[0], a[1], 0.3), p1 = P(b[0], b[1], 0.3);
-        out.floor.beginPath();
-        out.floor.moveTo(p0.x, p0.y);
-        out.floor.quadraticCurveTo((p0.x + p1.x) / 2 + 10, (p0.y + p1.y) / 2 + 8, p1.x, p1.y);
-        out.floor.stroke();
-    }
-    // Speaker on a tripod, behind the table
-    const sb = P(u - 14, w + 16, 0), st = P(u - 14, w + 16, 92);
-    for (const dx of [-12, 0, 12]) {
-        ctx.strokeStyle = "#1b1c1f";
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(sb.x, sb.y - 24);
-        ctx.lineTo(sb.x + dx, sb.y + (dx ? 0 : 3));
-        ctx.stroke();
-    }
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(sb.x, sb.y - 24);
-    ctx.lineTo(st.x, st.y);
-    ctx.stroke();
-    box(ctx, rand, u - 26, u - 2, w + 8, w + 22, 92, 136, PLASTIC, { hatchFront: 0.05 });
-    const cone = P(u - 14, w + 8, 108), tw = P(u - 14, w + 8, 126);
-    for (const [c, r] of [[cone, 9], [tw, 4]]) {
-        ctx.fillStyle = "#0e0f11";
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#3a3c40";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.strokeStyle = "rgba(255,255,255,0.12)";
-        ctx.beginPath();
-        ctx.arc(c.x - r * 0.2, c.y - r * 0.2, r * 0.6, Math.PI, Math.PI * 1.6);
-        ctx.stroke();
-    }
-    out.crown = { x: cone.x, y: cone.y };
-    out.spikes = [{ x: cone.x - 12, y: cone.y - 8 }, { x: cone.x + 12, y: cone.y - 8 }, { x: cone.x - 10, y: cone.y + 10 }, { x: cone.x + 12, y: cone.y + 8 }];
-    // Folding table with the mixer and the radio
-    for (const [du, dw] of [[-26, -12], [26, -12], [-26, 10], [26, 10]]) {
-        const a = P(u + du, w + dw, 0), b = P(u + du, w + dw, 30);
-        ctx.strokeStyle = "#5a5e62";
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-    }
-    box(ctx, rand, u - 30, u + 30, w - 14, w + 12, 30, 32, TABLETOP, { hatchFront: 0, ink: 0.9 });
-    // Mixer: rows of knobs and faders, a strip of level meters
-    const m = [P(u - 24, w + 6, 32.5), P(u + 4, w + 6, 32.5), P(u + 4, w - 10, 32.5), P(u - 24, w - 10, 32.5)];
-    pathPoly(ctx, m);
-    ctx.fillStyle = "#1c1d20";
-    ctx.fill();
-    inkPoly(ctx, rand, m, 0.7);
-    out.leds = [];
-    for (let i = 0; i < 6; i++) {
-        const k = P(u - 21 + i * 4.4, w + 2, 33);
-        ctx.fillStyle = "#c8c8c8";
-        ctx.fillRect(k.x - 0.8, k.y - 0.8, 1.6, 1.6);
-        const f = P(u - 21 + i * 4.4, w - 6, 33);
-        ctx.fillStyle = "#0a0a0a";
-        ctx.fillRect(f.x - 0.5, f.y - 3, 1, 5);
-        ctx.fillStyle = "#e8e8e8";
-        ctx.fillRect(f.x - 1.2, f.y - 1 + (rand() - 0.5) * 3, 2.4, 1);
-        out.leds.push({ x: k.x, y: k.y - 3, c: i < 4 ? [80, 255, 120] : [255, 80, 40] });
-    }
-    // Shortwave radio: a boxy set with a glowing dial and a telescopic aerial
-    box(ctx, rand, u + 8, u + 28, w - 8, w + 6, 32, 44, PLASTIC, { hatchFront: 0.05, ink: 0.9 });
-    const dl = P(u + 18, w - 8, 39);
-    ctx.fillStyle = "#3a2810";
-    ctx.fillRect(dl.x - 7, dl.y - 2.5, 14, 5);
-    out.dial = { x: dl.x, y: dl.y, r: 5 };
-    const a0 = P(u + 26, w, 44), a1 = P(u + 36, w, 92);
-    ctx.strokeStyle = "#9aa0a6";
-    ctx.lineWidth = 1.1;
-    ctx.beginPath();
-    ctx.moveTo(a0.x, a0.y);
-    ctx.lineTo(a1.x, a1.y);
-    ctx.stroke();
-    // Mic on a boom stand at the front, facing the room
-    const mb = P(u + 22, w - 30, 0), mt = P(u + 22, w - 30, 58), mh = P(u + 8, w - 30, 64);
-    ctx.strokeStyle = "#1b1c1f";
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(mb.x, mb.y);
-    ctx.lineTo(mt.x, mt.y);
-    ctx.lineTo(mh.x, mh.y);
-    ctx.stroke();
-    ctx.fillStyle = "#1b1c1f";
-    ctx.beginPath();
-    ctx.ellipse(mb.x, mb.y, 7, 2.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#3a3c40";
-    ctx.beginPath();
-    ctx.ellipse(mh.x - 2, mh.y + 1, 3.2, 2.2, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-    out.lightAt = P(u, w, 60);
-}
-
 // Pre-rendered glow for a set of polylines (a blurred halo under a bright
 // core), so the renderer can fade it in and out without per-frame shadows
 function glowLayer(lines, scale, rgb, core = 1.3, halo = 3) {
@@ -2135,10 +1832,9 @@ const room = type => ROOM.interactables.find(i => i.type === type) || { x: 800, 
 const REF = { x: 800, y: 650 }; // where relocatable fixtures (corpses) are painted
 
 // Footprints (floor units) for the solid fixtures
-const NOW = ERA === "present";
 const FIXTURE_DEFS = {
     blood_ritual_altar: { du: 48, dw: 27, height: 80, paint: paintAltar },
-    static_signal_pylon: { du: 22, dw: 16, height: 190, paint: NOW ? paintPaStation : paintPylon, extent: { du: 50, dw0: 50 } },
+    static_signal_pylon: { du: 20, dw: 14, height: 190, paint: paintPylon, extent: { du: 50 } },
     corpse_lantern_shrine: { du: 26, dw: 17, height: 115, paint: paintShrine, extent: { du: 40 } },
     wax_record_chest: { du: 31, dw: 18, height: 70, paint: paintChest(0) }
 };

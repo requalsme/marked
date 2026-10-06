@@ -1,8 +1,7 @@
 // Canvas Graphics Renderer with sprite-led room dressing, VFX, lighting, and HUD prompts.
 import { assetLoader } from "./assets.js";
 import { DEATH_ANIMATION_FRAMES } from "./engine.js";
-import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES, ERA } from "./world.js";
-import { paintPresentOverlay } from "./roommodern.js";
+import { ROOM, WORLD_WIDTH, WORLD_HEIGHT, buildRoomTexture, depthScale, SCONCE_CANDLES } from "./world.js";
 import { RARITY_MULTIPLIERS } from "./state.js";
 import { buildPropSprites, propCovers } from "./props.js";
 import { buildFixtures } from "./fixtures.js";
@@ -159,7 +158,6 @@ export class CanvasRenderer {
         if (!this.paintedRoom && (newProps || !this.roomTexture || wanted > this.roomTextureScale + 0.25)) {
             this.roomTextureScale = wanted;
             this.roomTexture = buildRoomTexture(wanted);
-            if (ERA === "present") paintPresentOverlay(this.roomTexture, wanted);
             this.bakePropFloors(this.roomTexture, wanted);
         }
         this.loadPaintedRoom();
@@ -397,7 +395,6 @@ export class CanvasRenderer {
         }
         for (const c of this.candles) {
             if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
-            else if (c.kind === "worklight") this.drawWorkLight(ctx, c);
             else if (c.kind === "floorcandles") this.drawFloorCandles(ctx, c);
             else this.drawCandle(ctx, c);
         }
@@ -461,45 +458,6 @@ export class CanvasRenderer {
             ctx.fillRect(x - 0.4 * k, y - h * k - 2.5 * k, 0.8 * k, 2.5 * k);
             this.drawFlame(ctx, x, y - h * k - 2.5 * k, k, c.x + dx);
         }
-        ctx.restore();
-    }
-
-    // A portable LED work light on a tripod, turned on the room (the present day)
-    drawWorkLight(ctx, c) {
-        const k = depthScale(c.y), x = c.x, y = c.y, H = 62 * k;
-        ctx.save();
-        this.drawGroundShadow(ctx, x, y + 1, 18 * k, 5 * k, 0.6);
-        ctx.strokeStyle = "#1b1c1f";
-        ctx.lineCap = "round";
-        ctx.lineWidth = 2 * k;
-        for (const dx of [-12, 0, 12]) {
-            ctx.beginPath();
-            ctx.moveTo(x, y - 22 * k);
-            ctx.lineTo(x + dx * k, y + (dx === 0 ? 3 : 0) * k);
-            ctx.stroke();
-        }
-        ctx.lineWidth = 2.4 * k;
-        ctx.beginPath();
-        ctx.moveTo(x, y - 22 * k);
-        ctx.lineTo(x, y - H);
-        ctx.stroke();
-        ctx.lineCap = "butt";
-        // Yellow housing tilted down toward the floor, its face blazing
-        ctx.translate(x, y - H);
-        ctx.rotate(0.25);
-        ctx.fillStyle = "#c99a1c";
-        ctx.fillRect(-11 * k, -9 * k, 22 * k, 14 * k);
-        ctx.strokeStyle = "rgba(6,4,4,0.9)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(-11 * k, -9 * k, 22 * k, 14 * k);
-        ctx.fillStyle = "#f4f6ff";
-        ctx.fillRect(-9 * k, -3 * k, 18 * k, 7 * k);
-        ctx.globalCompositeOperation = "lighter";
-        const g = ctx.createRadialGradient(0, 2 * k, 0, 0, 2 * k, 30 * k);
-        g.addColorStop(0, "rgba(220, 230, 255, 0.55)");
-        g.addColorStop(1, "rgba(220, 230, 255, 0)");
-        ctx.fillStyle = g;
-        ctx.fillRect(-30 * k, -28 * k, 60 * k, 60 * k);
         ctx.restore();
     }
 
@@ -584,38 +542,6 @@ export class CanvasRenderer {
         if (obs.label === "The Monolith") this.drawMonolith(ctx, obs, engine);
     }
 
-    // Fluorescent tubes: the left one steady, the right one failing in stutters
-    tubeOn(pr) {
-        if (pr.id !== "tube_right") return true;
-        const t = this.frame % 400;
-        return !(t > 300 && t < 340 && Math.random() < 0.7) && !(t > 120 && t < 126);
-    }
-
-    // The camera turns to keep the player in frame; its red light blinks
-    drawCctvHead(ctx, at, engine) {
-        const p = engine.player;
-        const a = p ? Math.max(0.2, Math.min(Math.PI - 0.2, Math.atan2(p.y - at.y, p.x - at.x))) : Math.PI / 2;
-        ctx.save();
-        ctx.translate(at.x, at.y);
-        ctx.rotate(a);
-        ctx.fillStyle = "#d8d9dc";
-        ctx.fillRect(-2, -4, 16, 8);
-        ctx.fillStyle = "#1a1b1e";
-        ctx.fillRect(14, -3.4, 3, 6.8);
-        ctx.strokeStyle = "rgba(6,4,4,0.9)";
-        ctx.lineWidth = 0.8;
-        ctx.strokeRect(-2, -4, 16, 8);
-        ctx.fillStyle = "#9aa0a8";
-        ctx.fillRect(-2, -5.5, 17, 1.6);
-        if (Math.floor(this.frame / 30) % 2 === 0) {
-            ctx.fillStyle = "#ff2a1a";
-            ctx.beginPath();
-            ctx.arc(2, 2, 1.1, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        ctx.restore();
-    }
-
     // A painted furniture sprite; it thins to a ghost when the player walks
     // behind it so they are never lost, and its candles burn on top.
     drawProp(ctx, pr, engine) {
@@ -632,35 +558,6 @@ export class CanvasRenderer {
         ctx.restore();
         for (const f of pr.flames) {
             this.drawFlame(ctx, f.x, f.y, f.s * 0.8, f.x * 0.31 + f.y);
-        }
-        const m = pr.meta || {};
-        if (m.glows || m.tube || m.cctv) {
-            ctx.save();
-            ctx.globalCompositeOperation = "lighter";
-            for (const gl of m.glows || []) {
-                const g = ctx.createRadialGradient(gl.x, gl.y, 0, gl.x, gl.y, gl.r);
-                g.addColorStop(0, `rgba(${gl.color.join(",")}, ${gl.a})`);
-                g.addColorStop(1, `rgba(${gl.color.join(",")}, 0)`);
-                ctx.fillStyle = g;
-                ctx.fillRect(gl.x - gl.r, gl.y - gl.r, gl.r * 2, gl.r * 2);
-            }
-            if (m.tube && this.tubeOn(pr)) {
-                ctx.strokeStyle = "rgba(235, 245, 255, 0.95)";
-                ctx.lineWidth = 2.4;
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.moveTo(m.tube.x0, m.tube.y);
-                ctx.lineTo(m.tube.x1 - 8, m.tube.y);
-                ctx.stroke();
-                const g = ctx.createLinearGradient(0, m.tube.y - 14, 0, m.tube.y + 30);
-                g.addColorStop(0, "rgba(200, 220, 255, 0)");
-                g.addColorStop(0.3, "rgba(200, 220, 255, 0.28)");
-                g.addColorStop(1, "rgba(200, 220, 255, 0)");
-                ctx.fillStyle = g;
-                ctx.fillRect(m.tube.x0 - 10, m.tube.y - 14, m.tube.x1 - m.tube.x0 + 20, 44);
-            }
-            ctx.restore();
-            if (m.cctv) this.drawCctvHead(ctx, m.cctv, engine);
         }
     }
 
@@ -878,13 +775,6 @@ export class CanvasRenderer {
         if (m.eyes) for (const e of m.eyes) glow(e.x, e.y, 3, [255, 90, 30], 0.4 + Math.random() * 0.2);
         if (m.mark) glow(m.mark.x, m.mark.y, 11, [190, 20, 14], 0.22 + Math.sin(t * 0.06) * 0.12);
         if (m.beacon && Math.floor(t / 20) % 3 === 0) glow(m.beacon.x, m.beacon.y, 8, [255, 40, 30], 0.9);
-        for (const gl of m.glows || []) glow(gl.x, gl.y, gl.r, gl.color, gl.a * (0.85 + Math.random() * 0.15));
-        for (const [i, l] of (m.leds || []).entries()) {
-            if ((Math.floor(t / (6 + (i % 5) * 3)) + i) % 3) glow(l.x, l.y, 2.5, l.c, 0.95);
-        }
-        if (m.rec && Math.floor(t / 25) % 2 === 0) glow(m.rec.x, m.rec.y, 3, [255, 30, 20], 1);
-        // A dead phone's screen, still waking now and then
-        if (m.phone) glow(m.phone.x, m.phone.y, 12, [150, 185, 255], (t + m.phone.x * 7) % 300 < 200 ? 0.45 + Math.random() * 0.08 : 0.08);
         ctx.restore();
     }
 
@@ -1390,10 +1280,6 @@ export class CanvasRenderer {
         lights.push({ x: p.x, y: p.y - 24, r: 70, color: [255, 240, 215], a: 0.5 });
         for (const c of this.candles) {
             const f = 1 + Math.sin(t * 0.21 + c.x) * 0.05 + (Math.random() - 0.5) * 0.08;
-            if (c.kind === "worklight") {
-                lights.push({ x: c.x, y: c.y - 40, r: 300 * c.intensity, color: [225, 235, 255], a: 1.0 });
-                continue;
-            }
             if (c.kind === "floorcandles") {
                 lights.push({ x: c.x, y: c.y - 20, r: 150 * c.intensity * f, color: [255, 170, 95], a: 0.85 * f });
                 continue;
@@ -1411,12 +1297,6 @@ export class CanvasRenderer {
                 const f = 1 + Math.sin(t * 0.23 + fl.x) * 0.06 + (Math.random() - 0.5) * 0.08;
                 lights.push({ x: fl.x, y: fl.y - 4, r: 105 * f, color: [255, 172, 96], a: 0.62 * f });
             }
-        }
-        for (const pr of this.props) {
-            const m = pr.meta;
-            if (!m) continue;
-            for (const l of m.lights || []) lights.push(l);
-            if (m.tube && this.tubeOn(pr)) lights.push({ x: (m.tube.x0 + m.tube.x1) / 2, y: m.tube.y + 40, r: 230, color: [210, 225, 255], a: 0.75 });
         }
         for (const sh of MOON_SHAFTS) {
             lights.push({ x: sh.floor.x, y: sh.floor.y, r: sh.w1 * 1.1, color: [140, 160, 205], a: 0.55 });
@@ -1438,10 +1318,6 @@ export class CanvasRenderer {
                 // The seal smoulders while the door is shut; the stair beyond floods red once open
                 if (intr.data.state === "open") lights.push({ x: intr.x, y: intr.y - 60, r: 220, color: [220, 40, 24], a: 0.9 });
                 else lights.push({ x: intr.x, y: 190, r: 125, color: [210, 60, 34], a: 0.5 + Math.sin(t * 0.06) * 0.1 });
-            }
-            const cs = CORPSE_TYPES.has(intr.type) && this.fixtureSprite(intr);
-            if (cs && cs.meta.phone && (t + cs.meta.phone.x * 7) % 300 < 200) {
-                lights.push({ ...this.fixturePoint(intr, cs, cs.meta.phone), r: 55, color: [150, 185, 255], a: 0.5 });
             }
             if (intr.type === "wax_record_chest" && intr.data.state !== "closed") {
                 const spr = this.fixtureSprite(intr);
@@ -1622,11 +1498,6 @@ export class CanvasRenderer {
         const par = 1.35;
         const cxw = this.camera.x + this.viewW / 2;
         ctx.save();
-        if (ERA === "present") {
-            this.drawForegroundCables(ctx, w, cxw, par);
-            ctx.restore();
-            return;
-        }
         this.drawForegroundChandelier(ctx, w, cxw, par);
         for (const ch of FOREGROUND_CHAINS) {
             const sx = w / 2 + (ch.x - cxw) * this.zoom * par;
@@ -1658,57 +1529,6 @@ export class CanvasRenderer {
             }
         }
         ctx.restore();
-    }
-
-    // The present day: cables sagging from the ceiling, a caged lamp on a flex
-    drawForegroundCables(ctx, w, cxw, par) {
-        const z = this.zoom;
-        const X = x => w / 2 + (x - cxw) * z * par;
-        ctx.lineCap = "round";
-        // Loops of cable slung between ceiling points
-        for (const [a, b, sag] of [[40, 420, 70], [380, 700, 40], [1150, 1560, 90]]) {
-            const xa = X(a), xb = X(b);
-            if (xb < -40 || xa > w + 40) continue;
-            ctx.strokeStyle = "rgba(4, 4, 5, 0.95)";
-            ctx.lineWidth = 3 * z * 0.8;
-            ctx.beginPath();
-            ctx.moveTo(xa, -6);
-            ctx.quadraticCurveTo((xa + xb) / 2, sag * z * 2, xb, -6);
-            ctx.stroke();
-        }
-        // Flex cords hanging straight down, two ending in caged work lamps
-        for (const ch of FOREGROUND_CHAINS) {
-            const sx = X(ch.x);
-            if (sx < -60 || sx > w + 60) continue;
-            const len = ch.len * z, sway = Math.sin(this.frame * 0.012 + ch.x) * 5;
-            ctx.strokeStyle = "rgba(4, 4, 5, 0.96)";
-            ctx.lineWidth = 2.2 * z * 0.8;
-            ctx.beginPath();
-            ctx.moveTo(sx, -6);
-            ctx.quadraticCurveTo(sx, len * 0.6, sx + sway, len);
-            ctx.stroke();
-            if (ch.hook) {
-                const x = sx + sway, y = len;
-                ctx.fillStyle = "rgba(6, 6, 7, 0.97)";
-                ctx.beginPath();
-                ctx.moveTo(x - 9 * z, y + 20 * z);
-                ctx.lineTo(x - 4 * z, y);
-                ctx.lineTo(x + 4 * z, y);
-                ctx.lineTo(x + 9 * z, y + 20 * z);
-                ctx.closePath();
-                ctx.fill();
-                const on = (this.frame + ch.x) % 360 > 12;
-                if (on) {
-                    ctx.globalCompositeOperation = "lighter";
-                    const g = ctx.createRadialGradient(x, y + 22 * z, 0, x, y + 22 * z, 46 * z);
-                    g.addColorStop(0, "rgba(255, 220, 170, 0.5)");
-                    g.addColorStop(1, "rgba(255, 220, 170, 0)");
-                    ctx.fillStyle = g;
-                    ctx.fillRect(x - 46 * z, y - 24 * z, 92 * z, 92 * z);
-                    ctx.globalCompositeOperation = "source-over";
-                }
-            }
-        }
     }
 
     // The past: an iron chandelier of guttering candles hanging close to us

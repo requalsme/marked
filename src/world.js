@@ -7,20 +7,6 @@
 // outlines, cross-hatched shadows, desaturated stone with wax-red accents)
 // and the sprites and props are layered on top.
 
-// Which era the Keeping House is dressed for: "past" (the old archive, lit by
-// candle) or "present" (the same building in 2026: work lights, fluorescent
-// tubes, CCTV, crime-scene clutter). Choose with ?era=present or ?era=past;
-// the choice is remembered.
-export const ERA = (() => {
-    try {
-        const q = new URLSearchParams(location.search).get("era");
-        if (q === "present" || q === "past") localStorage.setItem("marked_era", q);
-        return localStorage.getItem("marked_era") === "present" ? "present" : "past";
-    } catch (e) {
-        return "past";
-    }
-})();
-
 export const WORLD_WIDTH = 1600;
 export const WORLD_HEIGHT = 1000;
 export const WALL_BASE_Y = 300;   // where the back wall meets the floor
@@ -77,13 +63,13 @@ const PLINTH_Y = 268;
 // Two tallow candles per sconce: [dx, height]
 export const SCONCE_CANDLES = [[-5, 18], [5, 13]];
 
-// Room geometry for the alternative (present-day) shell in roommodern.js
-export const GEOM = { VP_X, BACK_W, BACK_S, HALF_U, WALL_L, WALL_R, WALL_TOP_H, PILLARS, DOOR_PILLARS, SCONCE_PILLARS, SCONCE_Y };
-
 function sideSconce(side, w) {
     const p = project(side * HALF_U, w, 175);
     return { x: p.x + side * -2 * p.s, y: p.y, intensity: 0.7, kind: "sconce", scale: p.s, wall: true };
 }
+
+// Stained-glass lancet windows on each side wall (floor depth of their centres)
+const LANCETS = [880, 520];
 
 export const ROOM = {
     bounds: { minX: 70, maxX: 1530, minY: 335, maxY: 965 },
@@ -101,14 +87,15 @@ export const ROOM = {
         { type: "sealed_zone_door", x: 800, y: 302, data: { radius: 34, state: "closed" } }
     ],
     candles: [
-        // Floor candelabras (in 2026 the two at the back are tripod work lights)
-        { x: 292, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
-        { x: 1308, y: 356, intensity: ERA === "present" ? 1.15 : 0.85, kind: ERA === "present" ? "worklight" : undefined },
-        { x: 205, y: 730, intensity: 0.75, kind: ERA === "present" ? "floorcandles" : undefined },
-        { x: 1405, y: 650, intensity: 0.75, kind: ERA === "present" ? "floorcandles" : undefined },
-        { x: 800, y: 952, intensity: 0.7, kind: ERA === "present" ? "floorcandles" : undefined },
+        // Floor candelabras
+        { x: 292, y: 356, intensity: 0.85 },
+        { x: 1308, y: 356, intensity: 0.85 },
+        { x: 205, y: 730, intensity: 0.75 },
+        { x: 1405, y: 650, intensity: 0.75 },
+        { x: 800, y: 952, intensity: 0.7 },
         // Clusters of ritual candles stood straight on the flagstones
-        ...(ERA === "present" ? [] : [{ x: 470, y: 590, intensity: 0.5, kind: "floorcandles" }, { x: 1150, y: 580, intensity: 0.5, kind: "floorcandles" }]),
+        { x: 470, y: 590, intensity: 0.5, kind: "floorcandles" },
+        { x: 1050, y: 570, intensity: 0.5, kind: "floorcandles" },
         // Iron sconces on the back-wall pillars
         ...[...SCONCE_PILLARS].map(x => ({ x, y: SCONCE_Y, intensity: 0.75, kind: "sconce", scale: 1, wall: true })),
         // Sconces on the side walls
@@ -116,7 +103,12 @@ export const ROOM = {
     ],
     // Static glows baked into the architecture (the carved eye above the door)
     glows: [
-        { x: 800, y: 122, r: 95, color: [210, 35, 22], a: 0.45 }
+        { x: 800, y: 122, r: 95, color: [210, 35, 22], a: 0.45 },
+        // Coloured light falling from the stained glass
+        ...[-1, 1].flatMap(side => LANCETS.map((w, i) => {
+            const p = project(side * HALF_U, w, 210);
+            return { x: p.x + side * -36, y: p.y + 20, r: 150, color: i ? [100, 80, 190] : [190, 60, 70], a: 0.6 };
+        }))
     ]
 };
 
@@ -199,7 +191,7 @@ export function hatch(ctx, rand, x, y, w, h, { angle = 0.8, gap = 4, alpha = 0.2
     ctx.restore();
 }
 
-export function blotch(ctx, x, y, r, color) {
+function blotch(ctx, x, y, r, color) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, color);
     g.addColorStop(1, color.replace(/[\d.]+\)$/, "0)"));
@@ -207,7 +199,7 @@ export function blotch(ctx, x, y, r, color) {
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
 }
 
-export function makeGrain(size = 256) {
+function makeGrain(size = 256) {
     const c = document.createElement("canvas");
     c.width = c.height = size;
     const g = c.getContext("2d");
@@ -281,6 +273,8 @@ function drawFloor(ctx, rand) {
         w += rowD;
     }
 
+    for (const [u, w, rot] of [[-250, 150, 0.04], [330, 420, -0.05], [-600, 620, 0.02]]) drawLedgerStone(ctx, rand, u, w, rot);
+
     // Grime: damp patches, soot, worn lighter stone
     for (let i = 0; i < 140; i++) {
         const p = project((rand() - 0.5) * 1700, rand() * BACK_W);
@@ -339,6 +333,98 @@ function drawFloor(ctx, rand) {
     inkLine(ctx, rand, fp[0].x, fp[0].y, fp[1].x, fp[1].y, 2.2);
     inkLine(ctx, rand, fp[0].x, fp[0].y, fp[3].x, fp[3].y, 2.2);
     inkLine(ctx, rand, fp[1].x, fp[1].y, fp[2].x, fp[2].y, 2.2);
+}
+
+// A memorial slab set flush in the floor: dark slate, a cut border, a skull
+// and crossbones, lines of worn lettering and an hourglass
+function drawLedgerStone(ctx, rand, u0, w0, rot) {
+    const L = 34, D = 62;
+    const at = (du, dw) => project(u0 + du * Math.cos(rot) - dw * Math.sin(rot), w0 + du * Math.sin(rot) + dw * Math.cos(rot));
+    const quad = (a, b, c, d) => [at(a, d), at(b, d), at(b, c), at(a, c)];
+    const slab = quad(-L, L, -D, D);
+    pathPoly(ctx, slab);
+    ctx.fillStyle = "#34363b";
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    // Polished where feet have worn it
+    const mid = at(0, 0);
+    blotch(ctx, mid.x, mid.y, 40 * mid.s, "rgba(150, 150, 160, 0.12)");
+    ctx.restore();
+    const border = quad(-L + 5, L - 5, -D + 5, D - 5);
+    pathPoly(ctx, border);
+    ctx.strokeStyle = "rgba(10, 10, 12, 0.85)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(180, 180, 190, 0.16)";
+    ctx.lineWidth = 0.6;
+    ctx.save();
+    ctx.translate(0.6, 0.8);
+    pathPoly(ctx, border);
+    ctx.stroke();
+    ctx.restore();
+    // Skull and crossbones at the head of the slab, foreshortened into the floor
+    const sk = at(0, D - 22);
+    ctx.save();
+    ctx.translate(sk.x, sk.y);
+    ctx.scale(1, 0.5);
+    ctx.strokeStyle = "rgba(10, 10, 12, 0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-12 * sk.s, -10 * sk.s);
+    ctx.lineTo(12 * sk.s, 10 * sk.s);
+    ctx.moveTo(12 * sk.s, -10 * sk.s);
+    ctx.lineTo(-12 * sk.s, 10 * sk.s);
+    ctx.stroke();
+    ctx.fillStyle = "#4a4c52";
+    ctx.beginPath();
+    ctx.ellipse(0, -2 * sk.s, 8 * sk.s, 9 * sk.s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(10, 10, 12, 0.9)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#121316";
+    for (const dx of [-3.2, 3.2]) {
+        ctx.beginPath();
+        ctx.arc(dx * sk.s, -3 * sk.s, 2.4 * sk.s, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillRect(-3 * sk.s, 4 * sk.s, 6 * sk.s, 2 * sk.s);
+    ctx.restore();
+    // Lettering: rows of chiselled strokes, half worn away
+    for (let r = 0; r < 6; r++) {
+        const dw = D - 46 - r * 9;
+        const len = (r === 0 ? 0.6 : 0.85) * (L - 10);
+        for (let du = -len; du < len; du += 3 + rand() * 2) {
+            if (rand() < 0.25) continue;
+            const a = at(du, dw), b = at(du + 1.6, dw);
+            ctx.strokeStyle = "rgba(10, 10, 12, 0.75)";
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y - 1.6 * a.s);
+            ctx.stroke();
+        }
+    }
+    // Hourglass near the foot: time runs out for everyone under these stones
+    const hg = at(0, -D + 18);
+    ctx.save();
+    ctx.translate(hg.x, hg.y);
+    ctx.scale(1, 0.5);
+    ctx.strokeStyle = "rgba(10, 10, 12, 0.85)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-6 * hg.s, -8 * hg.s);
+    ctx.lineTo(6 * hg.s, -8 * hg.s);
+    ctx.lineTo(-6 * hg.s, 8 * hg.s);
+    ctx.lineTo(6 * hg.s, 8 * hg.s);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+    // A crack across one corner
+    const c0 = at(-L + 4, -D + 30), c1 = at(-6, -D + 4);
+    inkLine(ctx, rand, c0.x, c0.y, c1.x, c1.y, 0.9, 0.7);
+    inkPoly(ctx, rand, slab, 1.3);
 }
 
 const STONE_TONES = [[84, 82, 80], [92, 86, 78], [70, 70, 71], [78, 81, 82], [98, 92, 84], [64, 62, 60], [88, 80, 72]];
@@ -853,6 +939,11 @@ function drawBackWall(ctx, rand) {
     }
 
     drawFrieze(ctx, rand);
+    // Crocketed gables rise behind every shelf bay's arch
+    for (let i = 0; i < PILLARS.length - 1; i++) {
+        const a = PILLARS[i], b = PILLARS[i + 1];
+        if (!(DOOR_PILLARS.has(a) && DOOR_PILLARS.has(b))) drawGable(ctx, rand, a + pillarWidth(a) / 2, b - pillarWidth(b) / 2);
+    }
 
     // Shelf bays between pillars, and the door bay at the centre
     for (let i = 0; i < PILLARS.length - 1; i++) {
@@ -864,6 +955,7 @@ function drawBackWall(ctx, rand) {
 
     drawPlinth(ctx, rand);
     for (const x of PILLARS) drawPillar(ctx, rand, x, pillarWidth(x), SCONCE_PILLARS.has(x));
+    for (const x of PILLARS) drawGargoyle(ctx, rand, x, 84);
 
     // Red thread strung between the pillars, hung with notes
     for (let i = 0; i < PILLARS.length - 1; i++) {
@@ -880,9 +972,9 @@ function drawBackWall(ctx, rand) {
     drawBanner(ctx, rand, 928, 6, 228);
 
     // The wall rises into darkness
-    const dark = ctx.createLinearGradient(0, 0, 0, 120);
-    dark.addColorStop(0, "rgba(2, 1, 1, 0.97)");
-    dark.addColorStop(0.55, "rgba(2, 1, 1, 0.55)");
+    const dark = ctx.createLinearGradient(0, 0, 0, 90);
+    dark.addColorStop(0, "rgba(2, 1, 1, 0.9)");
+    dark.addColorStop(0.55, "rgba(2, 1, 1, 0.4)");
     dark.addColorStop(1, "rgba(2, 1, 1, 0)");
     ctx.fillStyle = dark;
     ctx.fillRect(WALL_L, 0, WALL_R - WALL_L, 120);
@@ -950,8 +1042,260 @@ function drawShelfCandles(ctx, rand) {
     }
 }
 
-export function pillarWidth(x) {
+function pillarWidth(x) {
     return DOOR_PILLARS.has(x) ? 42 : 34;
+}
+
+// ─── Gothic ornament ─────────────────────────────────────────────────────
+
+// A crocketed gable (wimperg) rising over a bay's arch, with a cross finial
+function drawGable(ctx, rand, x0, x1) {
+    const cx = (x0 + x1) / 2, base = 96, apexY = 18;
+    const L = { x: x0 + 2, y: base }, R = { x: x1 - 2, y: base }, A = { x: cx, y: apexY };
+    // The gable's stone face, behind the arch head
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(L.x, L.y);
+    ctx.lineTo(A.x, A.y);
+    ctx.lineTo(R.x, R.y);
+    ctx.closePath();
+    ctx.fillStyle = "#4c4d52";
+    ctx.fill();
+    ctx.clip();
+    hatch(ctx, rand, x0, apexY, x1 - x0, base - apexY, { angle: 0.7, gap: 3.6, alpha: 0.18 });
+    // A blind quatrefoil in the gable
+    const q = { x: cx, y: 54 };
+    ctx.fillStyle = "#26272a";
+    for (const [dx, dy] of [[0, -5], [0, 5], [-5, 0], [5, 0]]) {
+        ctx.beginPath();
+        ctx.arc(q.x + dx, q.y + dy, 5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+    // Raking mouldings with crockets curling up them
+    for (const [a, b] of [[L, A], [R, A]]) {
+        ctx.strokeStyle = "#6a6b70";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        inkLine(ctx, rand, a.x, a.y - 2, b.x, b.y - 2, 1.2);
+        const n = 5;
+        for (let i = 1; i < n; i++) {
+            const t = i / n, x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+            const out = Math.sign(a.x - cx);
+            ctx.fillStyle = "#5c5d62";
+            ctx.beginPath();
+            ctx.moveTo(x, y - 2);
+            ctx.quadraticCurveTo(x + out * 6, y - 9, x + out * 2, y - 11);
+            ctx.quadraticCurveTo(x + out * 7, y - 6, x + out * 3, y + 1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = "rgba(6,4,4,0.85)";
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+        }
+    }
+    // Finial: a fleuron and a small iron cross
+    ctx.fillStyle = "#5c5d62";
+    ctx.beginPath();
+    ctx.moveTo(A.x - 4, A.y + 2);
+    ctx.quadraticCurveTo(A.x - 5, A.y - 8, A.x, A.y - 12);
+    ctx.quadraticCurveTo(A.x + 5, A.y - 8, A.x + 4, A.y + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(6,4,4,0.85)";
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.strokeStyle = "#1a1715";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y - 12);
+    ctx.lineTo(A.x, A.y - 22);
+    ctx.moveTo(A.x - 4, A.y - 18);
+    ctx.lineTo(A.x + 4, A.y - 18);
+    ctx.stroke();
+}
+
+// A grotesque glaring out from under a pillar's capital: horned, wide-mouthed
+function drawGargoyle(ctx, rand, cx, y) {
+    const flip = cx < VP_X ? 1 : -1;
+    ctx.save();
+    ctx.translate(cx, y);
+    // Bat-like wings folded against the pillar
+    ctx.fillStyle = "#3e3f43";
+    for (const sd of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(sd * 4, -2);
+        ctx.quadraticCurveTo(sd * 18, -10, sd * 20, 2);
+        ctx.lineTo(sd * 16, 0);
+        ctx.lineTo(sd * 14, 6);
+        ctx.lineTo(sd * 10, 3);
+        ctx.lineTo(sd * 7, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = "rgba(6,4,4,0.85)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+    }
+    // Head
+    const g = ctx.createLinearGradient(-9, 0, 9, 0);
+    g.addColorStop(0, "#77787c");
+    g.addColorStop(0.5, "#626367");
+    g.addColorStop(1, "#3c3d41");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-8, -4);
+    ctx.quadraticCurveTo(0, -11, 8, -4);
+    ctx.quadraticCurveTo(10, 6, 5, 12);
+    ctx.quadraticCurveTo(0, 15, -5, 12);
+    ctx.quadraticCurveTo(-10, 6, -8, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(6,4,4,0.9)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Horns curling back
+    ctx.strokeStyle = "#4a4b4f";
+    ctx.lineWidth = 2;
+    for (const sd of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(sd * 5, -7);
+        ctx.quadraticCurveTo(sd * 11, -13, sd * 8, -17);
+        ctx.stroke();
+    }
+    // Brow, deep eye sockets, a snarling open mouth with fangs
+    ctx.fillStyle = "#0b0807";
+    for (const sd of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(sd * 3.4, -1, 2.2, 1.6, sd * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 7, 4.2, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#b8b4aa";
+    for (const dx of [-2.5, 2.5]) {
+        ctx.beginPath();
+        ctx.moveTo(dx - 1, 4.4);
+        ctx.lineTo(dx + 1, 4.4);
+        ctx.lineTo(dx, 7.4);
+        ctx.fill();
+    }
+    ctx.strokeStyle = "rgba(255, 245, 225, 0.2)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-6 * flip, -5);
+    ctx.quadraticCurveTo(-2 * flip, -8, 3 * flip, -6);
+    ctx.stroke();
+    // Rain-stain running from its mouth down the pillar
+    const st = ctx.createLinearGradient(0, 10, 0, 70);
+    st.addColorStop(0, "rgba(10, 14, 12, 0.45)");
+    st.addColorStop(1, "rgba(10, 14, 12, 0)");
+    ctx.fillStyle = st;
+    ctx.fillRect(-1.5, 10, 3, 60);
+    ctx.restore();
+}
+
+// A tall lancet window of stained glass in a side wall, its tracery dark
+// against the coloured panes; the glass glows faintly from outside
+function drawLancet(ctx, rand, U, w) {
+    const wW = 46, h0 = 120, h1 = 278, hTip = 330;
+    const P = (dw, h) => project(U, w + dw, h);
+    const frame = () => {
+        ctx.beginPath();
+        const a = P(wW, h0), b = P(wW, h1), tip = P(0, hTip), c = P(-wW, h1), d = P(-wW, h0);
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.quadraticCurveTo(P(wW, h1 + 34).x, P(wW, h1 + 34).y, tip.x, tip.y);
+        ctx.quadraticCurveTo(P(-wW, h1 + 34).x, P(-wW, h1 + 34).y, c.x, c.y);
+        ctx.lineTo(d.x, d.y);
+        ctx.closePath();
+    };
+    // Deep stone reveal around the opening
+    ctx.save();
+    frame();
+    ctx.lineWidth = 9;
+    ctx.strokeStyle = "#3a3b3f";
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    frame();
+    ctx.clip();
+    // Panes: jewel colours, darkest at the bottom where the glass is grimed
+    const palette = [[210, 44, 44], [56, 96, 210], [236, 176, 56], [56, 160, 90], [160, 66, 170]];
+    for (let h = h0; h < hTip; h += 12) {
+        for (let dw = -wW; dw < wW; dw += 12) {
+            const c = palette[Math.floor(rand() * palette.length)];
+            const k = 0.7 + (h - h0) / (hTip - h0) * 0.45;
+            const q = [P(dw, h + 12), P(dw + 12, h + 12), P(dw + 12, h), P(dw, h)];
+            pathPoly(ctx, q);
+            ctx.fillStyle = `rgb(${c[0] * k}, ${c[1] * k}, ${c[2] * k})`;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(8, 6, 6, 0.9)";
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+        }
+    }
+    // A pale figure with a halo in the middle lights, as in an old saint window
+    const fig = P(0, 215);
+    ctx.fillStyle = "rgba(210, 200, 170, 0.55)";
+    ctx.beginPath();
+    ctx.ellipse(fig.x, fig.y - 16 * fig.s, 5 * fig.s, 6 * fig.s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(fig.x - 6 * fig.s, fig.y - 10 * fig.s, 12 * fig.s, 40 * fig.s);
+    ctx.strokeStyle = "rgba(230, 190, 80, 0.6)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(fig.x, fig.y - 16 * fig.s, 9 * fig.s, 0, Math.PI * 2);
+    ctx.stroke();
+    // Some panes broken out: black holes in the glass
+    for (let i = 0; i < 3; i++) {
+        const p = P((rand() - 0.5) * wW * 1.4, h0 + 10 + rand() * 60);
+        ctx.fillStyle = "#050404";
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - 6);
+        ctx.lineTo(p.x + 4, p.y + 1);
+        ctx.lineTo(p.x - 1, p.y + 7);
+        ctx.lineTo(p.x - 5, p.y);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.restore();
+    // Stone tracery: a central mullion, a transom and a trefoil in the head
+    const m0 = P(0, h0), m1 = P(0, h1 + 10);
+    ctx.strokeStyle = "#4e4f53";
+    ctx.lineWidth = 4 * m0.s;
+    ctx.beginPath();
+    ctx.moveTo(m0.x, m0.y);
+    ctx.lineTo(m1.x, m1.y);
+    ctx.stroke();
+    const t0 = P(-wW, 200), t1 = P(wW, 200);
+    ctx.lineWidth = 3 * t0.s;
+    ctx.beginPath();
+    ctx.moveTo(t0.x, t0.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.stroke();
+    const tf = P(0, 300);
+    ctx.lineWidth = 2;
+    for (const [dx, dy] of [[0, -6], [-6, 4], [6, 4]]) {
+        ctx.beginPath();
+        ctx.arc(tf.x + dx * tf.s * 0.6, tf.y + dy * tf.s, 6 * tf.s, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    frame();
+    ctx.strokeStyle = "rgba(6,4,4,0.95)";
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    // Sill
+    const s0 = P(-wW - 6, h0 - 4), s1 = P(wW + 6, h0 - 4);
+    ctx.strokeStyle = "#55565a";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(s0.x, s0.y);
+    ctx.lineTo(s1.x, s1.y);
+    ctx.stroke();
 }
 
 function drawFrieze(ctx, rand) {
@@ -1673,6 +2017,7 @@ function drawSideWall(ctx, rand, side) {
     dark.addColorStop(1, "rgba(2,1,1,0)");
     ctx.fillStyle = dark;
     ctx.fillRect(0, 0, WORLD_WIDTH, 760);
+    for (const w of LANCETS) drawLancet(ctx, rand, U, w);
     ctx.restore();
 
     // Corner edge
