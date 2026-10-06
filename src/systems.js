@@ -100,18 +100,24 @@ export function corruptText(text, sanity) {
     return arr.join("");
 }
 
-export function updateObservation(profile, engine) {
+// Rates are per second of active play (frame-rate independent). Mirrored in
+// tools/simulation/adapters/mock_adapter.py.
+export const OBSERVATION_PER_SEC = 0.06;         // passive: ~3.6% per minute
+export const OBSERVATION_MOVING_PER_SEC = 0.024; // extra while moving
+export const OBSERVATION_PER_ATTACK = 0.03;      // each attack is recorded
+export const SANITY_DECAY_PER_SEC = 0.12;        // before light / gear / upgrade modifiers
+
+export function updateObservation(profile, engine, dt = 1 / 60) {
     // Increment base observation based on survival time and upgrades (obfuscation slows it down)
-    const baseGain = 0.005; // per frame/update tick roughly
     const obfLevel = profile.upgrades.obfuscation || 0;
     const modifier = 1.0 - (obfLevel * 0.15); // 15% reduction per level
     const tarotMod = profile.activeTarot === "Judgement" ? 1.5 : 1.0;
 
-    let totalGain = baseGain * modifier * tarotMod;
+    let totalGain = OBSERVATION_PER_SEC * dt * modifier * tarotMod;
     
-    // Additional gain based on player action counts
-    if (engine.player.vx !== 0 || engine.player.vy !== 0) totalGain += 0.002 * modifier;
-    if (engine.player.attackCooldown === engine.player.attackDelay) totalGain += 0.01 * modifier;
+    // Additional gain based on player actions
+    if (engine.player.vx !== 0 || engine.player.vy !== 0) totalGain += OBSERVATION_MOVING_PER_SEC * dt * modifier;
+    if (engine.player.attackCooldown === engine.player.attackDelay) totalGain += OBSERVATION_PER_ATTACK * modifier * tarotMod;
 
     profile.observation = Math.min(100, profile.observation + totalGain);
 
@@ -131,31 +137,26 @@ export function updateObservation(profile, engine) {
 
     profile.activeDiagnosis = `Diagnosis: ${style} / ${systemsReliance}`;
 
-    // Threshold Event check (Watcher signals)
+    // Threshold Event check (Watcher signals). Returns the tier crossed this tick, if any,
+    // so the orchestrator can show an alert.
     const prevObs = profile.observation - totalGain;
-    
-    if (prevObs < 25 && profile.observation >= 25) {
-        profile.signals.unshift("Watcher Signal: Observation grid stable. Target is NOTICED. Keep recording.");
-        triggerWatcherWhisper(profile);
+    for (const t of OBSERVATION_TIERS) {
+        if (prevObs < t.at && profile.observation >= t.at) {
+            profile.signals.unshift(`Watcher Signal: Observation ${t.at}%. Target is ${t.name.toUpperCase()}. ${t.detail}`);
+            triggerWatcherWhisper(profile);
+            return t;
+        }
     }
-    if (prevObs < 50 && profile.observation >= 50) {
-        profile.signals.unshift("Watcher Signal: Observation 50%. The Monolith actively counters your build.");
-        triggerWatcherWhisper(profile);
-    }
-    if (prevObs < 100 && profile.observation >= 100) {
-        profile.signals.unshift("Watcher Signal: Observation 100%. Maximum surveillance achieved.");
-        triggerWatcherWhisper(profile);
-    }
-    if (prevObs < 50 && profile.observation >= 50) {
-        profile.signals.unshift("Watcher Signal: Target is STUDIED. Environmental Reality Traits now active.");
-    }
-    if (prevObs < 75 && profile.observation >= 75) {
-        profile.signals.unshift("Watcher Signal: Target is MODELED. Behavior archives syncing to entities.");
-    }
-    if (prevObs < 100 && profile.observation >= 100) {
-        profile.signals.unshift("Watcher Signal: Shape replication COMPLETE. The Shape has been introduced to Keeping House.");
-    }
+    return null;
 }
+
+// Observation tiers: Noticed → Studied → Modeled → Known
+export const OBSERVATION_TIERS = [
+    { at: 25, tier: 1, name: "Noticed", detail: "The grid has your outline. Keep recording." },
+    { at: 50, tier: 2, name: "Studied", detail: "Environmental Reality Traits are now active." },
+    { at: 75, tier: 3, name: "Modeled", detail: "Behavior archives sync to entities. The Seal Mother stirs." },
+    { at: 100, tier: 4, name: "Known", detail: "Shape replication complete. Maximum surveillance." }
+];
 
 export function triggerWatcherWhisper(profile) {
     const rIdx = Math.floor(Math.random() * WATCHER_QUOTES.length);
@@ -168,9 +169,9 @@ export function triggerWatcherWhisper(profile) {
     }
 }
 
-export function handleSanityDecay(profile, engine) {
+export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     // Decay sanity slowly over time
-    const baseDecay = 0.0084; // per tick
+    const baseDecay = SANITY_DECAY_PER_SEC * dt;
     
     // Reduced by mind upgrades and equipment sanity resistance
     const mindUp = profile.upgrades.mind || 0;

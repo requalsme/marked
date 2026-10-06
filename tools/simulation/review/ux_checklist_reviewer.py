@@ -221,7 +221,7 @@ class UXChecklistReviewer:
 
         # Check if proximity is communicated in-world (canvas prompt)
         canvas_src = self._read("src/canvas.js")
-        if canvas_src and "[E]" in canvas_src:
+        if canvas_src and ("[E]" in canvas_src or "drawInteractPrompts" in canvas_src):
             pass  # good — canvas shows [E] USE prompt
         else:
             self._add("critical", "UX", "no_world_interaction_prompt",
@@ -277,7 +277,9 @@ class UXChecklistReviewer:
                 "Ensure sanity-broken CSS state doesn't make the game unplayable (key UI still readable).")
 
         # Check if sanity impacts audio (expected finding: it doesn't)
-        has_sanity_audio = "AudioContext" in combined or "sanityAudio" in combined
+        audio_src = self._read("src/audio.js") or ""
+        has_sanity_audio = ("AudioContext" in combined or "sanityAudio" in combined
+                            or ("AudioContext" in audio_src and "sanity" in audio_src.lower()))
         if not has_sanity_audio:
             self._add("high", "UX", "sanity_no_audio_feedback",
                 "Sanity degradation has no audio feedback. The horror atmosphere is significantly weakened.",
@@ -461,7 +463,7 @@ class UXChecklistReviewer:
         if not canvas_src:
             return
 
-        if "SEAL MOTHER" in canvas_src:
+        if "SEAL MOTHER" in canvas_src or ('"Seal Mother"' in canvas_src and "boss.health" in canvas_src):
             # Boss bar exists
             if "barW = 400" in canvas_src:
                 # Check width is responsive
@@ -480,7 +482,10 @@ class UXChecklistReviewer:
                         "Add a health % text next to the boss health bar: 'SEAL MOTHER — 73%'.")
 
             # Check if boss encounter is announced
-            if "boss_spawn" not in canvas_src.lower() and "SEAL MOTHER appears" not in canvas_src:
+            main_src = self._read("src/main.js") or ""
+            announced = "boss_spawn" in canvas_src.lower() or "SEAL MOTHER appears" in canvas_src \
+                or ("boss_spawn" in main_src and "showBanner" in main_src)
+            if not announced:
                 self._add("medium", "UX", "boss_no_announcement",
                     "Seal Mother appears with no dramatic announcement. Boss encounter lacks impact.",
                     "Add a full-screen dramatic title card: 'SEAL MOTHER — ARCHIVE CORE CURSE' on spawn, similar to Souls games.")

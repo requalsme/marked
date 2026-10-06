@@ -32,7 +32,7 @@ ENEMIES = [
     {"name": "Witness Chair",    "health": 100, "damage": 15, "speed": 2.0, "loot_rarity": "Unsettling"},
 ]
 
-BOSS = {"name": "Seal Mother", "health": 250, "damage": 15, "speed": 0.8, "loot_rarity": "Cursed"}
+BOSS = {"name": "Seal Mother", "health": 600, "damage": 15, "speed": 0.8, "loot_rarity": "Cursed"}
 
 REGIONS = ["The Keeping House", "Ash Fields", "Static Forest", "Drowned Cathedral", "Outer Monolith Ruins"]
 

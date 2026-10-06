@@ -166,7 +166,8 @@ export function getEquipmentStats(profile) {
         crit: 0,
         speed: 0,
         obfuscation: 0,
-        goldFind: 0
+        goldFind: 0,
+        healthRegen: 0
     };
 
     if (!profile || !profile.gear) return stats;
@@ -183,6 +184,7 @@ export function getEquipmentStats(profile) {
         if (item.crit) stats.crit += item.crit;
         if (item.baseDamage) stats.damage += item.baseDamage;
         if (item.speed) stats.speed += item.speed;
+        if (item.healthRegen) stats.healthRegen += item.healthRegen;
 
         // Check sub-affix
         if (item.affix) {

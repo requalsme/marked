@@ -1,5 +1,20 @@
 // Offline Progress Simulation Engine
 
+// Offline earnings can never outpace playing: the per-second offline rate is capped
+// at this fraction of the player's own lifetime active rate.
+export const IDLE_TO_ACTIVE_MAX_RATIO = 0.5;
+// Assumed active rates until the player has 5 minutes of active play on record.
+const DEFAULT_ACTIVE_GOLD_PER_SEC = 0.5;
+const DEFAULT_ACTIVE_EXP_PER_SEC = 0.6;
+
+export function activeRates(profile) {
+    const st = profile.stats || {};
+    if ((st.activeSeconds || 0) < 300) {
+        return { gold: DEFAULT_ACTIVE_GOLD_PER_SEC, exp: DEFAULT_ACTIVE_EXP_PER_SEC };
+    }
+    return { gold: (st.activeGold || 0) / st.activeSeconds, exp: (st.activeExp || 0) / st.activeSeconds };
+}
+
 export function calculateOfflineProgress(profile) {
     const now = Date.now();
     const lastTime = profile.lastTimestamp || now;
@@ -29,9 +44,11 @@ export function calculateOfflineProgress(profile) {
     const survivedSec = Math.floor(actualOffline * baseSurvivalChance);
     const survivedMin = survivedSec / 60;
 
-    // Math accruals
-    const expGained = Math.round(survivedMin * 8);
-    const goldGained = Math.min(Math.round(survivedMin * 0.1), 150);
+    // Math accruals, capped relative to the player's active earning rate
+    const rates = activeRates(profile);
+    const hermit = profile.activeTarot === "The Hermit" ? 1.4 : 1.0; // +40% offline gains
+    const expGained = Math.round(Math.min(survivedMin * 8 * hermit, rates.exp * IDLE_TO_ACTIVE_MAX_RATIO * survivedSec));
+    const goldGained = Math.round(Math.min(survivedMin * 0.1 * hermit, 150, rates.gold * IDLE_TO_ACTIVE_MAX_RATIO * survivedSec));
     
     // Rare materials
     let parchmentGained = 0;
@@ -39,9 +56,9 @@ export function calculateOfflineProgress(profile) {
     let waxSealsGained = 0;
 
     for (let m = 0; m < survivedMin; m++) {
-        if (Math.random() < 0.15) parchmentGained++;
-        if (Math.random() < 0.08) inkGained++;
-        if (Math.random() < 0.04) waxSealsGained++;
+        if (Math.random() < 0.15 * hermit) parchmentGained++;
+        if (Math.random() < 0.08 * hermit) inkGained++;
+        if (Math.random() < 0.04 * hermit) waxSealsGained++;
     }
 
     // Sanity pressure offline

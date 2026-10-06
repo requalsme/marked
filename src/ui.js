@@ -4,6 +4,27 @@ import { getEquipmentStats, CLASSES } from "./state.js";
 import { corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
 import { audioManager } from "./audio.js";
 
+// Ritual terms worsen with each bargain signed in the current descent
+// (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
+export function ritualTerms(n) {
+    return {
+        cooldownMs: Math.round(120000 * (1 + 0.5 * n)),
+        titheDamage: Math.max(2, Math.round(8 / (1 + 0.35 * n))),
+        commSanity: 10 + 5 * n,
+        eraseGold: 80 * (n + 1)
+    };
+}
+
+function toRoman(n) {
+    if (!Number.isFinite(n) || n <= 0 || n >= 4000) return String(n);
+    const table = [[1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]];
+    let out = "";
+    for (const [v, sym] of table) {
+        while (n >= v) { out += sym; n -= v; }
+    }
+    return out;
+}
+
 export class GameUI {
     constructor(orchestrator) {
         this.orch = orchestrator;
@@ -18,10 +39,10 @@ export class GameUI {
 
         if (this.tutorialSkipBtn) {
             this.tutorialSkipBtn.addEventListener("click", () => {
-                if (this.orch.profile) {
-                    this.orch.profile.tutorialStep = 4;
+                if (this.orch.activeProfile) {
+                    this.orch.activeProfile.tutorialStep = 4;
                     this.orch.saveActiveProfile();
-                    this.renderTutorial(this.orch.profile);
+                    this.renderTutorial(this.orch.activeProfile);
                     this.renderActiveTab();
                 }
             });
@@ -43,29 +64,104 @@ export class GameUI {
                 if (btn.classList.contains("tab-locked")) {
                     return; // Prevent switching to locked tabs
                 }
-                const tab = e.target.getAttribute("data-tab");
-                this.switchTab(tab);
-                
-                // Tutorial Step 2 -> 3 (Open Inventory)
-                if (tab === "inventory" && this.orch.profile && this.orch.profile.tutorialStep === 2) {
-                    this.orch.profile.tutorialStep = 3;
-                    this.orch.saveActiveProfile();
-                    this.renderTutorial(this.orch.profile);
-                }
+                this.toggleTab(btn.getAttribute("data-tab"));
             });
         });
 
         // Toggle Auto-Attack
         const autoToggle = document.getElementById("auto-attack-btn");
         if (autoToggle) {
-            autoToggle.addEventListener("click", () => {
-                if (this.orch.engine) {
-                    this.orch.engine.autoAttack = !this.orch.engine.autoAttack;
-                    autoToggle.textContent = this.orch.engine.autoAttack ? "Auto-Combat: ON" : "Auto-Combat: OFF";
-                    autoToggle.classList.toggle("btn-active", this.orch.engine.autoAttack);
-                }
-            });
+            autoToggle.addEventListener("click", () => this.toggleAutoAttack());
         }
+
+        const closeBtn = document.getElementById("drawer-close");
+        if (closeBtn) closeBtn.addEventListener("click", () => this.closeDrawer());
+    }
+
+    toggleAutoAttack() {
+        const engine = this.orch.engine;
+        if (!engine) return;
+        engine.autoAttack = !engine.autoAttack;
+        const btn = document.getElementById("auto-attack-btn");
+        if (btn) {
+            btn.querySelector(".action-name").textContent = engine.autoAttack ? "Auto: ON" : "Auto: OFF";
+            btn.classList.toggle("btn-active", engine.autoAttack);
+        }
+        this.showToast(engine.autoAttack ? "Auto-combat ON [T]" : "Auto-combat OFF [T]");
+    }
+
+    isDrawerOpen() {
+        const d = document.getElementById("sidebar-panel");
+        return Boolean(d && d.classList.contains("open"));
+    }
+
+    // Open a panel in the drawer; pressing the same panel's key again closes it
+    toggleTab(tabId) {
+        const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (btn && btn.classList.contains("tab-locked")) return;
+        if (this.isDrawerOpen() && this.activeTab === tabId) {
+            this.closeDrawer();
+            return;
+        }
+        audioManager.play("tab_switch");
+        this.switchTab(tabId);
+        this.afterTabOpened(tabId);
+    }
+
+    afterTabOpened(tab) {
+        // Tutorial Step 2 -> 3 (Open Inventory)
+        const p = this.orch.activeProfile;
+        if (tab === "inventory" && p && p.tutorialStep === 2) {
+            p.tutorialStep = 3;
+            this.orch.saveActiveProfile();
+            this.renderTutorial(p);
+        }
+    }
+
+    closeDrawer() {
+        const d = document.getElementById("sidebar-panel");
+        if (!d || !d.classList.contains("open")) return;
+        d.classList.remove("open");
+        document.body.classList.remove("drawer-open");
+        d.setAttribute("aria-hidden", "true");
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("tab-btn-active"));
+        this.hideTooltip();
+    }
+
+    // The eye opens as Observation rises; the pupil narrows to a slit
+    updateWatcherEye(obs) {
+        const open = 2 + Math.min(100, obs) / 100 * 17;
+        const d = `M-50 0 Q0 ${-open * 1.6} 50 0 Q0 ${open * 1.6} -50 0Z`;
+        const clip = document.getElementById("eye-clip-path");
+        const lid = document.getElementById("eye-lid-line");
+        if (clip && clip.getAttribute("d") !== d) {
+            clip.setAttribute("d", d);
+            lid.setAttribute("d", d);
+        }
+        const pupil = document.getElementById("eye-pupil");
+        if (pupil) pupil.setAttribute("rx", (4.5 - Math.min(100, obs) / 100 * 3).toFixed(2));
+    }
+
+    flashObservation() {
+        const bar = document.querySelector(".watcher-eye");
+        if (!bar) return;
+        bar.classList.remove("obs-flash");
+        void bar.offsetWidth; // restart the animation
+        bar.classList.add("obs-flash");
+    }
+
+    showToast(message, duration = 1800) {
+        let toast = document.getElementById("game-toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "game-toast";
+            toast.className = "game-toast";
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add("visible");
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => toast.classList.remove("visible"), duration);
     }
 
     switchTab(tabId) {
@@ -81,6 +177,16 @@ export class GameUI {
         const btn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
         if (panel) panel.classList.add("active-panel");
         if (btn) btn.classList.add("tab-btn-active");
+
+        const drawer = document.getElementById("sidebar-panel");
+        if (drawer) {
+            document.body.classList.add("drawer-open");
+            drawer.classList.add("open");
+            drawer.setAttribute("aria-hidden", "false");
+        }
+        const title = document.getElementById("drawer-title");
+        const names = { inventory: "Inventory", rituals: "Rituals", signals: "Signals", corpses: "Corpse Registry", monolith: "Monolith" };
+        if (title) title.textContent = names[tabId] || tabId;
 
         this.renderActiveTab();
     }
@@ -163,7 +269,7 @@ export class GameUI {
             hpBar.style.width = `${pct}%`;
         }
         if (hpText) {
-            hpText.textContent = corruptText(`${engine.player.health} / ${engine.player.maxHealth}`, san);
+            hpText.textContent = corruptText(`${Math.ceil(engine.player.health)} / ${engine.player.maxHealth}`, san);
         }
 
         // Apply sanity bar width
@@ -173,7 +279,7 @@ export class GameUI {
             sanBar.style.width = `${san}%`;
         }
         if (sanText) {
-            sanText.textContent = corruptText(`${san}% Sanity`, san);
+            sanText.textContent = corruptText(`${san}%`, san);
         }
 
         // Apply observation bar width
@@ -184,14 +290,24 @@ export class GameUI {
             obsBar.style.width = `${profile.observation}%`;
         }
         if (obsText) {
-            obsText.textContent = corruptText(`Observation: ${profile.observation.toFixed(1)}%`, san);
+            const o = profile.observation;
+            const tier = o >= 100 ? "Known" : o >= 75 ? "Modeled" : o >= 50 ? "Studied" : o >= 25 ? "Noticed" : "Unseen";
+            obsText.textContent = corruptText(`${tier} · ${o.toFixed(0)}%`, san);
         }
+        this.updateWatcherEye(profile.observation);
         if (obsDiag) {
             obsDiag.textContent = corruptText(profile.activeDiagnosis, san);
         }
 
         // Update Level, Gold, Currencies
-        document.getElementById("hud-level").textContent = corruptText(`Level ${profile.level}`, san);
+        document.getElementById("hud-level").textContent = toRoman(profile.level);
+        const xpNeeded = profile.level * 100;
+        const xpBar = document.getElementById("hud-xp-bar");
+        if (xpBar) xpBar.style.width = `${Math.min(100, (profile.exp / xpNeeded) * 100)}%`;
+        const xpText = document.getElementById("hud-xp-text");
+        if (xpText) xpText.textContent = `${Math.floor(profile.exp)} / ${xpNeeded}`;
+        const nameEl = document.getElementById("hud-name");
+        if (nameEl) nameEl.textContent = corruptText(profile.name, san);
         document.getElementById("hud-gold").textContent = corruptText(profile.gold.toString(), san);
         document.getElementById("hud-parchment").textContent = corruptText(profile.parchment.toString(), san);
         document.getElementById("hud-ink").textContent = corruptText(profile.ink.toString(), san);
@@ -256,9 +372,11 @@ export class GameUI {
         const equipStats = getEquipmentStats(profile);
         const baseClass = CLASSES[profile.classType];
         
-        const dmgTotal = baseClass.baseDamage + equipStats.damage;
-        const hpTotal = baseClass.baseHealth + equipStats.health;
-        const critPct = Math.round((baseClass.baseCrit + equipStats.crit) * 100);
+        // Show the live combat values when in a descent, otherwise the class sheet
+        const live = this.orch.engine && this.orch.engine.player;
+        const dmgTotal = live ? live.damage : baseClass.baseDamage + equipStats.damage;
+        const hpTotal = live ? live.maxHealth : baseClass.baseHealth + equipStats.health;
+        const critPct = Math.round((live ? live.crit : baseClass.baseCrit + equipStats.crit) * 100);
 
         document.getElementById("stats-summary").innerHTML = `
             <div>Base Class: <strong>${corruptText(profile.classType, san)}</strong></div>
@@ -311,7 +429,7 @@ export class GameUI {
             if (item.icon) {
                 el.innerHTML = `
                     <div class="equip-label">${slotType.toUpperCase()}</div>
-                    <img src="${item.icon}" class="slot-icon-img" style="width: 32px; height: 32px; object-fit: contain; margin-top: 1px;">
+                    <img src="${item.icon}" class="slot-icon-img equip-icon-img">
                 `;
             } else {
                 el.innerHTML = `<div class="equip-label">${slotType.toUpperCase()}</div><span style="color: ${item.color}">${item.name}</span>`;
@@ -349,11 +467,23 @@ export class GameUI {
 
         this.tooltip.innerHTML = `
             <div class="tooltip-title" style="color: ${item.color}">${item.name}</div>
-            <div class="tooltip-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()} <span style="font-size:10px; color:#aaa;">[Click to Equip]</span></div>
+            <div class="tooltip-rarity" style="color: ${item.color}">${item.rarity.toUpperCase()} <span style="font-size:11px; color:#aaa;">[Click to Equip]</span></div>
             <hr style="border-color: rgba(255,255,255,0.1); margin: 6px 0;">
             <div class="tooltip-stats">${statDesc}</div>
             <div class="tooltip-desc">"${item.desc}"</div>
         `;
+        this.positionTooltip(e);
+    }
+
+    positionTooltip(e) {
+        const pad = 12;
+        const rect = this.tooltip.getBoundingClientRect();
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        if (x + rect.width > window.innerWidth - pad) x = e.clientX - rect.width - 15;
+        if (y + rect.height > window.innerHeight - pad) y = window.innerHeight - rect.height - pad;
+        this.tooltip.style.left = `${Math.max(pad, x)}px`;
+        this.tooltip.style.top = `${Math.max(pad, y)}px`;
     }
 
     hideTooltip() {
@@ -368,6 +498,7 @@ export class GameUI {
         const slot = item.type;
         const oldEquipped = p.gear[slot];
 
+        audioManager.play("equip_item");
         p.gear[slot] = item;
         if (oldEquipped) {
             p.inventory[invIndex] = oldEquipped;
@@ -386,12 +517,14 @@ export class GameUI {
         if (!item) return;
 
         if (p.inventory.length < 15) {
+            audioManager.play("unequip_item");
             p.inventory.push(item);
             p.gear[slotType] = null;
             this.hideTooltip();
             this.orch.recalculateStats();
             this.renderActiveTab();
         } else {
+            audioManager.play("error_sound");
             p.signals.unshift("Inventory FULL. Cannot unequip gear.");
             this.renderActiveTab();
         }
@@ -399,25 +532,29 @@ export class GameUI {
 
     renderRituals(profile) {
         const panel = document.getElementById("panel-rituals");
+        const n = profile.ritualsThisDescent || 0;
+        const r = ritualTerms(n);
+        const cooldownLeft = Math.max(0, Math.ceil((r.cooldownMs - (Date.now() - (profile.lastRitualTime || 0))) / 1000));
         panel.innerHTML = `<h3>Rituals & Blood Bargains</h3>
             <p class="tab-desc">Step close to the Altar in the Keeping House to sign dark ledgers. Bargains grant supreme power with steep costs.</p>
             <div class="ritual-list">
                 <div class="ritual-card">
                     <div class="ritual-name">Blood Tithe</div>
-                    <div class="ritual-deal">Permanently lose 25 Max Health. Gain +8 Base Attack Damage.</div>
+                    <div class="ritual-deal">Permanently lose 25 Max Health. Gain +${r.titheDamage} Base Attack Damage.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="blood_tithe">Sign Contract</button>
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Static Communion</div>
-                    <div class="ritual-deal">Spend 10 Sanity. Immediately intercept and decode a hidden Warning Signal.</div>
+                    <div class="ritual-deal">Spend ${r.commSanity} Sanity. Immediately intercept and decode a hidden Warning Signal.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="static_comm">Consume Sanity</button>
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Name Erasure</div>
-                    <div class="ritual-deal">Sacrifice 1 Character Level and 80 Debt Gold. Mask your steps, reducing Observation by 25%.</div>
+                    <div class="ritual-deal">Sacrifice 1 Character Level and ${r.eraseGold} Debt Gold. Mask your steps, reducing Observation by 25%.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="name_erase">Erase Registry</button>
                 </div>
-            </div>`;
+            </div>
+            <div class="ritual-meta">Bargains signed this descent: <strong>${n}</strong> · Altar cooldown: <strong>${Math.round(r.cooldownMs / 1000)}s</strong>${cooldownLeft > 0 ? ` · <span class="ritual-wait">ready in ${cooldownLeft}s</span>` : ""}<br>Each bargain hungers more: cooldowns lengthen and rewards thin until you die or escape.</div>`;
 
         // Check distance to altar
         let nearAltar = false;
@@ -445,8 +582,11 @@ export class GameUI {
 
     executeRitual(profile, type) {
         const now = Date.now();
-        if (profile.lastRitualTime && now - profile.lastRitualTime < 120000) {
-            profile.signals.unshift("Altar rejects you. The blood needs time to dry. Wait 120 seconds.");
+        const terms = ritualTerms(profile.ritualsThisDescent || 0);
+        if (profile.lastRitualTime && now - profile.lastRitualTime < terms.cooldownMs) {
+            const wait = Math.ceil((terms.cooldownMs - (now - profile.lastRitualTime)) / 1000);
+            audioManager.play("ritual_fail");
+            profile.signals.unshift(`Altar rejects you. The blood needs time to dry. Wait ${wait} seconds.`);
             this.renderActiveTab();
             return;
         }
@@ -461,7 +601,8 @@ export class GameUI {
                 if (this.orch.engine.player.health > profile.maxHealth) {
                     this.orch.engine.player.health = profile.maxHealth;
                 }
-                this.orch.engine.player.damage += 8;
+                profile.ritualDamage = (profile.ritualDamage || 0) + terms.titheDamage;
+                this.orch.recalculateStats();
                 profile.signals.unshift("Blood Tithe Contract Signed. Max HP decreased, Attack Power amplified.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#9a1616", 20);
                 this.orch.engine.player.sanity = Math.max(0, this.orch.engine.player.sanity - 10);
@@ -470,8 +611,8 @@ export class GameUI {
                 profile.signals.unshift("The Altar rejects your tithe. Your vital blood is too thin.");
             }
         } else if (type === "static_comm") {
-            if (this.orch.engine.player.sanity >= 10) {
-                this.orch.engine.player.sanity -= 10;
+            if (this.orch.engine.player.sanity >= terms.commSanity) {
+                this.orch.engine.player.sanity -= terms.commSanity;
                 // Add a warning signal
                 const warnings = [
                     "Memory Signal: The Keeping House was once a cathedral. We filed names under index tags.",
@@ -486,9 +627,9 @@ export class GameUI {
                 profile.signals.unshift("Comm fails. Your mind is too fractured to tune the static.");
             }
         } else if (type === "name_erase") {
-            if (profile.level > 1 && profile.gold >= 80) {
+            if (profile.level > 1 && profile.gold >= terms.eraseGold) {
                 profile.level -= 1;
-                profile.gold -= 80;
+                profile.gold -= terms.eraseGold;
                 profile.observation = Math.max(0, profile.observation - 25);
                 profile.signals.unshift("Registry erased. Your presence slips into shadow. Observation reduced.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#545454", 20);
@@ -500,6 +641,12 @@ export class GameUI {
 
         if (ritualSuccess) {
             profile.lastRitualTime = now;
+            profile.ritualsThisDescent = (profile.ritualsThisDescent || 0) + 1;
+            audioManager.play("ritual_perform", { kind: type });
+            if (type === "static_comm") audioManager.play("signal_decode");
+            this.orch.canvasRenderer.triggerShake(6);
+        } else {
+            audioManager.play("ritual_fail");
         }
 
         this.orch.saveActiveProfile();
@@ -534,21 +681,9 @@ export class GameUI {
             return;
         }
 
-        // Check if player is near a corpse in engine
-        let nearCorpseIdx = -1;
-        if (this.orch.engine) {
-            const corpseIntr = this.orch.engine.interactables.find(i => 
-                i.type === "fresh_marked_corpse" || 
-                i.type === "burned_corpse_remains" || 
-                i.type === "broadcast_corpse"
-            );
-            if (corpseIntr) {
-                const dist = this.orch.engine.distance(this.orch.engine.player.x, this.orch.engine.player.y, corpseIntr.x, corpseIntr.y);
-                if (dist < corpseIntr.radius + this.orch.engine.player.radius + 15) {
-                    nearCorpseIdx = profile.corpses.length - 1;
-                }
-            }
-        }
+        // Which corpse (if any) is the player standing next to?
+        const nearIntr = this.nearCorpseInteractable();
+        const nearCorpseIdx = nearIntr ? profile.corpses.indexOf(nearIntr.data.corpse) : -1;
 
         profile.corpses.forEach((corp, idx) => {
             const isBurned = corp.state === "burned";
@@ -561,7 +696,7 @@ export class GameUI {
                 <div>Status: <strong style="color: ${isBurned ? '#d4a343' : isBroadcasted ? '#3b82f6' : '#b01212'}">${isBurned ? 'BURNED' : isBroadcasted ? 'BROADCASTED' : 'FRESH'}</strong></div>
                 <div>Death Cause: <span style="color:#b51919">${corp.cause || "Sanity collapse"}</span></div>
                 <div class="corpse-actions" style="margin-top: 10px;">
-                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Recover (Fight Echo)</button>
+                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Recover (Gold + Echo)</button>
                     <button class="game-btn corpse-btn" data-action="burn" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Burn (Sanity)</button>
                     <button class="game-btn corpse-btn" data-action="broadcast" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Broadcast (Clarity)</button>
                     <button class="game-btn corpse-btn" data-action="devour" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Devour (Damage)</button>
@@ -583,41 +718,46 @@ export class GameUI {
         });
     }
 
+    nearCorpseInteractable() {
+        const eng = this.orch.engine;
+        if (!eng || !eng.player) return null;
+        return eng.interactables.find(i => i.data && i.data.corpse &&
+            eng.distance(eng.player.x, eng.player.y, i.x, i.y) < i.radius + eng.player.radius + 15) || null;
+    }
+
     executeCorpseAction(profile, idx, action) {
         const corp = profile.corpses[idx];
         if (!corp) return;
+        const intr = this.orch.engine ? this.orch.engine.interactables.find(i => i.data && i.data.corpse === corp) : null;
 
         let removeCorpse = false;
+        audioManager.play("corpse_interact", { kind: action });
 
         if (action === "recover") {
-            profile.signals.unshift(`Corpse Recovered: A hostile memory echo manifests!`);
+            const gold = (corp.level || 1) * 20 * (profile.activeTarot === "Death" ? 2 : 1);
+            profile.gold += gold;
+            profile.signals.unshift(`Corpse Recovered: +${gold} Debt Gold. A hostile memory echo manifests!`);
             if (this.orch.engine) {
                 this.orch.engine.spawnCorpseEcho(corp);
             }
             removeCorpse = true;
         } else if (action === "burn") {
             this.orch.engine.player.sanity = Math.min(100, this.orch.engine.player.sanity + 30);
+            audioManager.play("sanity_recover");
             profile.observation = Math.max(0, profile.observation - 15);
             profile.signals.unshift("Corpse Burned: evidence destroyed. Sanity restored, Observation reduced.");
             corp.state = "burned";
             
-            // Mutate in-world model
-            if (this.orch.engine) {
-                const intr = this.orch.engine.interactables.find(i => i.type === "fresh_marked_corpse");
-                if (intr) intr.type = "burned_corpse_remains";
-            }
+            if (intr) intr.type = "burned_corpse_remains";
         } else if (action === "broadcast") {
             profile.waxSeals += 2;
             profile.signals.unshift("Corpse Broadcasted: transmitted telemetry details. Earned +2 Wax Seals.");
             corp.state = "broadcasted";
 
-            // Mutate in-world model
-            if (this.orch.engine) {
-                const intr = this.orch.engine.interactables.find(i => i.type === "fresh_marked_corpse");
-                if (intr) intr.type = "broadcast_corpse";
-            }
+            if (intr) intr.type = "broadcast_corpse";
         } else if (action === "devour") {
-            this.orch.engine.player.damage = Math.round(this.orch.engine.player.damage * 1.15);
+            profile.devourMult = (profile.devourMult || 1) * 1.15;
+            this.orch.recalculateStats();
             profile.observation = Math.min(100, profile.observation + 10);
             profile.signals.unshift("Corpse Devoured: fed on tissue snapshots. Attuned +15% damage, but Monolith observed closely.");
             removeCorpse = true;
@@ -626,11 +766,7 @@ export class GameUI {
         if (removeCorpse) {
             profile.corpses.splice(idx, 1);
             if (this.orch.engine) {
-                this.orch.engine.interactables = this.orch.engine.interactables.filter(i => 
-                    i.type !== "fresh_marked_corpse" && 
-                    i.type !== "burned_corpse_remains" && 
-                    i.type !== "broadcast_corpse"
-                );
+                this.orch.engine.interactables = this.orch.engine.interactables.filter(i => i !== intr);
             }
         }
 
@@ -724,6 +860,8 @@ export class GameUI {
             profile.upgrades.obfuscation++;
         }
 
+        audioManager.play("upgrade_purchase");
+        this.orch.canvasRenderer.triggerShake(4);
         profile.signals.unshift(`Monolith Upgrade Purchased: Strengthened ${up.toUpperCase()} node.`);
         
         // Tutorial Step 1 -> 2

@@ -1,13 +1,25 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
-import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats } from "./state.js";
-import { GameEngine } from "./engine.js";
+import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats, CLASSES } from "./state.js";
+import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
 import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
+import { ROOM } from "./world.js";
+import { installUiTextures } from "./uitextures.js";
+
+const STEP_MS = 1000 / 60; // fixed simulation step
+
+const CLASS_COLORS = {
+    "Blood Marked": "#c4231b",
+    "Signal Marked": "#4a8ed6",
+    "Bone Marked": "#d8ccb0",
+    "Static Marked": "#16d8a4",
+    "Ritual Marked": "#a45ad0"
+};
 
 class GameOrchestrator {
     constructor() {
@@ -18,6 +30,7 @@ class GameOrchestrator {
         this.canvas = document.getElementById("game-canvas");
         this.canvasRenderer = new CanvasRenderer(this.canvas);
         this.engine.canvasRenderer = this.canvasRenderer; // cross ref
+        this.canvasRenderer.onDrawWorld = (ctx) => this.drawWaxTraps(ctx);
         
         this.ui = new GameUI(this);
 
@@ -28,6 +41,7 @@ class GameOrchestrator {
     }
 
     init() {
+        installUiTextures();
         this.bindInputEvents();
         this.initArchiveUI();
         
@@ -53,10 +67,42 @@ class GameOrchestrator {
     }
 
     bindInputEvents() {
+        // Browsers only allow audio after a user gesture: start the title theme on first input
+        const unlockAudio = () => {
+            audioManager.init();
+            if (this.gameState === "title") audioManager.play("title_music");
+        };
+        window.addEventListener("pointerdown", unlockAudio, { once: true });
+        window.addEventListener("keydown", unlockAudio, { once: true });
+
         // Keyboard inputs
         window.addEventListener("keydown", (e) => {
-            if (this.gameState !== "active") return;
             const key = e.key.toLowerCase();
+            const typing = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT");
+            if (key === "m" && !typing) {
+                const muted = audioManager.toggleMute();
+                this.ui.showToast(muted ? "Audio muted [M]" : "Audio on [M]");
+                return;
+            }
+            if (this.gameState !== "active") return;
+            if (typing) return;
+
+            // Panel hotkeys
+            const panelKeys = { i: "inventory", r: "rituals", j: "signals", c: "corpses", u: "monolith" };
+            if (panelKeys[key] && !e.repeat) {
+                this.ui.toggleTab(panelKeys[key]);
+                return;
+            }
+            if (key === "escape") {
+                this.ui.closeDrawer();
+                return;
+            }
+            if (key === "t" && !e.repeat) {
+                this.ui.toggleAutoAttack();
+                return;
+            }
+            // Keep Space/arrows from scrolling the page mid-fight
+            if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
             this.engine.keys[key] = true;
 
             // Trigger interact key E
@@ -71,18 +117,21 @@ class GameOrchestrator {
         });
 
         // Mouse inputs
+        // Mouse positions are converted from screen space to world space (camera)
         this.canvas.addEventListener("mousemove", (e) => {
-            const rect = this.canvas.getBoundingClientRect();
-            this.engine.mouse.x = e.clientX - rect.left;
-            this.engine.mouse.y = e.clientY - rect.top;
+            const w = this.canvasRenderer.screenToWorld(e.clientX, e.clientY);
+            this.engine.mouse.x = w.x;
+            this.engine.mouse.y = w.y;
         });
 
         this.canvas.addEventListener("mousedown", (e) => {
-            if (this.gameState !== "active") return;
-            const rect = this.canvas.getBoundingClientRect();
+            if (this.gameState !== "active" || e.button !== 0) return;
+            const w = this.canvasRenderer.screenToWorld(e.clientX, e.clientY);
+            this.engine.mouse.x = w.x;
+            this.engine.mouse.y = w.y;
             this.engine.mouse.click = true;
-            this.engine.mouse.clickX = e.clientX - rect.left;
-            this.engine.mouse.clickY = e.clientY - rect.top;
+            this.engine.mouse.clickX = w.x;
+            this.engine.mouse.clickY = w.y;
         });
     }
 
@@ -104,6 +153,7 @@ class GameOrchestrator {
                     this.ui.switchTab("corpses");
                 } else if (intr.type === "wax_record_chest") {
                     if (intr.data.state === "closed") {
+                        audioManager.play("corpse_interact");
                         intr.data.state = "opening";
                         intr.data.timer = 45; // opening animation duration
                         this.activeProfile.signals.unshift("Opening Wax Record Chest...");
@@ -112,6 +162,7 @@ class GameOrchestrator {
                     if (intr.data.state === "open") {
                         this.triggerVictory();
                     } else {
+                        audioManager.play("error_sound");
                         this.activeProfile.signals.unshift("The door is sealed. Defeat the Seal Mother to release the wax seal.");
                     }
                 }
@@ -169,38 +220,23 @@ class GameOrchestrator {
 
     renderTitleScreen() {
         this.gameState = "title";
+        audioManager.play("title_music");
         document.getElementById("title-screen").style.display = "flex";
         document.getElementById("game-layout").style.display = "none";
         document.getElementById("offline-modal").style.display = "none";
         document.getElementById("archive-modal").style.display = "none";
         document.getElementById("game-over-screen").style.display = "none";
 
-        const container = document.getElementById("profile-list-container");
-        container.innerHTML = "";
+        this.renderProfileList();
+        this.renderClassPicker();
 
-        if (this.saveData.profiles.length === 0) {
-            container.innerHTML = `<div class="empty-msg">No wanderers registered. Form a new shape to begin.</div>`;
-        } else {
-            this.saveData.profiles.forEach(prof => {
-                const card = document.createElement("div");
-                card.className = "profile-card";
-                card.innerHTML = `
-                    <div style="flex:1;">
-                        <div class="profile-name">${prof.name}</div>
-                        <div class="profile-meta">Level ${prof.level} ${prof.classType} | Monolith Lv: ${prof.monolithLevel}</div>
-                    </div>
-                    <div>
-                        <button class="game-btn load-profile-btn" data-id="${prof.id}">Descent</button>
-                        <button class="game-btn delete-profile-btn btn-danger" data-id="${prof.id}" style="margin-left:5px;">Erase</button>
-                    </div>
-                `;
-
-                card.querySelector(".load-profile-btn").addEventListener("click", () => this.selectProfile(prof.id));
-                card.querySelector(".delete-profile-btn").addEventListener("click", () => this.deleteProfile(prof.id));
-
-                container.appendChild(card);
-            });
-        }
+        // Menu: Continue / New Shape panes
+        const hasProfiles = this.saveData.profiles.length > 0;
+        document.getElementById("menu-continue-btn").style.display = hasProfiles ? "" : "none";
+        document.querySelectorAll(".menu-item[data-pane]").forEach(btn => {
+            btn.onclick = () => this.showTitlePane(btn.dataset.pane);
+        });
+        this.showTitlePane(hasProfiles ? "continue" : "new");
 
         // Setup character creation listeners
         const form = document.getElementById("char-creation-form");
@@ -220,6 +256,109 @@ class GameOrchestrator {
                 this.selectProfile(newP.id);
             }
         };
+    }
+
+    showTitlePane(pane) {
+        document.querySelectorAll(".menu-pane").forEach(el => el.classList.toggle("active", el.id === `pane-${pane}`));
+        document.querySelectorAll(".menu-item[data-pane]").forEach(el => el.classList.toggle("selected", el.dataset.pane === pane));
+        if (pane === "new") {
+            const input = document.getElementById("char-name-input");
+            if (input) setTimeout(() => input.focus(), 50);
+        }
+    }
+
+    renderProfileList() {
+        const container = document.getElementById("profile-list-container");
+        container.innerHTML = "";
+        if (this.saveData.profiles.length === 0) {
+            container.innerHTML = `<div class="empty-msg">No wanderers registered. Form a new shape to begin.</div>`;
+            return;
+        }
+        // Most recently played first
+        const profiles = [...this.saveData.profiles].sort((a, b) => (b.lastTimestamp || 0) - (a.lastTimestamp || 0));
+        for (const prof of profiles) {
+            const card = document.createElement("div");
+            card.className = "profile-card";
+            card.style.setProperty("--sigil", CLASS_COLORS[prof.classType] || "#c79a42");
+            card.innerHTML = `
+                <div class="profile-sigil"><div class="sprite-idle"></div></div>
+                <div class="profile-info">
+                    <div class="profile-name"></div>
+                    <div class="profile-meta"></div>
+                </div>
+                <div class="profile-actions">
+                    <button class="game-btn btn-primary load-profile-btn">Descend</button>
+                    <button class="game-btn delete-profile-btn btn-danger" title="Erase this record">✕</button>
+                </div>
+            `;
+            // User-entered names go in via textContent, never as HTML
+            card.querySelector(".profile-name").textContent = prof.name;
+            const deaths = prof.stats && prof.stats.deaths ? ` · ${prof.stats.deaths} death${prof.stats.deaths === 1 ? "" : "s"}` : "";
+            card.querySelector(".profile-meta").textContent = `Level ${prof.level} ${prof.classType}${deaths}`;
+            card.querySelector(".load-profile-btn").addEventListener("click", () => this.selectProfile(prof.id));
+            card.querySelector(".delete-profile-btn").addEventListener("click", () => this.deleteProfile(prof.id));
+            container.appendChild(card);
+        }
+    }
+
+    renderClassPicker() {
+        const picker = document.getElementById("class-picker");
+        const select = document.getElementById("char-class-select");
+        const detail = document.getElementById("class-detail");
+        if (!picker || picker.childElementCount > 0) return;
+
+        // Stats as combat actually computes them (class base + starting gear)
+        const sheets = Object.keys(CLASSES).map(name => {
+            const prof = createProfile("preview", name);
+            const eq = getEquipmentStats(prof);
+            return {
+                name,
+                desc: CLASSES[name].desc,
+                health: prof.maxHealth + eq.health,
+                damage: playerDamage(prof, eq.damage),
+                speed: basePlayerSpeed(name) + eq.speed,
+                crit: basePlayerCrit(name) + eq.crit
+            };
+        });
+        const max = {
+            health: Math.max(...sheets.map(c => c.health)),
+            damage: Math.max(...sheets.map(c => c.damage)),
+            speed: Math.max(...sheets.map(c => c.speed)),
+            crit: Math.max(...sheets.map(c => c.crit))
+        };
+        const pips = (v, m) => {
+            const n = Math.max(1, Math.round((v / m) * 5));
+            return Array.from({ length: 5 }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("");
+        };
+
+        const choose = (sheet) => {
+            select.value = sheet.name;
+            picker.querySelectorAll(".class-card").forEach(c => c.classList.toggle("selected", c.dataset.cls === sheet.name));
+            detail.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
+            detail.innerHTML = `
+                <div class="class-detail-name font-cinzel">${sheet.name}</div>
+                <div class="class-detail-desc">${sheet.desc}</div>
+                <div class="class-stats">
+                    <span>Flesh</span><span class="pips">${pips(sheet.health, max.health)}</span><b>${sheet.health}</b>
+                    <span>Damage</span><span class="pips">${pips(sheet.damage, max.damage)}</span><b>${sheet.damage}</b>
+                    <span>Speed</span><span class="pips">${pips(sheet.speed, max.speed)}</span><b>${sheet.speed.toFixed(1)}</b>
+                    <span>Critical</span><span class="pips">${pips(sheet.crit, max.crit)}</span><b>${Math.round(sheet.crit * 100)}%</b>
+                </div>`;
+            audioManager.play("button_click");
+        };
+
+        for (const sheet of sheets) {
+            const card = document.createElement("button");
+            card.type = "button";
+            card.className = "class-card";
+            card.dataset.cls = sheet.name;
+            card.setAttribute("role", "radio");
+            card.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
+            card.innerHTML = `<div class="sprite-idle"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
+            card.addEventListener("click", () => choose(sheet));
+            picker.appendChild(card);
+        }
+        choose(sheets.find(c => c.name === select.value) || sheets[0]);
     }
 
     selectProfile(id) {
@@ -249,6 +388,8 @@ class GameOrchestrator {
 
     showOfflineReport(report) {
         this.gameState = "offline_report";
+        audioManager.init();
+        audioManager.play("idle_return_music");
         document.getElementById("title-screen").style.display = "none";
         document.getElementById("archive-modal").style.display = "none";
         document.getElementById("offline-modal").style.display = "flex";
@@ -281,6 +422,7 @@ class GameOrchestrator {
         
         // Load engine and reset
         this.engine.reset();
+        this.waxTraps = [];
         
         // Tarot Deck Draw
         const keys = Object.keys(TAROT_DECK);
@@ -302,26 +444,29 @@ class GameOrchestrator {
             sanityResist: eqStats.sanityResist,
             signalClarity: eqStats.signalClarity,
             crit: eqStats.crit,
-            speed: eqStats.speed
+            speed: eqStats.speed,
+            healthRegen: eqStats.healthRegen
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
+        this.canvasRenderer.resize();
+        this.canvasRenderer.snapCamera(this.engine);
+        this.ui.closeDrawer();
 
         // Spawn permanent interactables in Keeping House
-        this.engine.addInteractable("blood_ritual_altar", 205, 362, { radius: 28 });
-        this.engine.addInteractable("static_signal_pylon", 96, 314, { radius: 24 });
-        this.engine.addInteractable("corpse_lantern_shrine", 646, 356, { radius: 25 });
-        this.engine.addInteractable("wax_record_chest", 520, 382, { radius: 22, state: "closed" });
-        this.engine.addInteractable("sealed_zone_door", 375, 176, { radius: 34, state: "closed" });
+        for (const intr of ROOM.interactables) {
+            this.engine.addInteractable(intr.type, intr.x, intr.y, { ...intr.data });
+        }
         
-        // Spawn previous corpse if exists
+        // Place previous corpses where they fell
         this.activeProfile.corpses.forEach(corp => {
-            if (corp.active) {
-                this.engine.addInteractable("decaying_corpse", corp.x, corp.y, { radius: 18, data: corp });
-            }
+            const type = corp.state === "burned" ? "burned_corpse_remains"
+                : corp.state === "broadcasted" ? "broadcast_corpse" : "fresh_marked_corpse";
+            const cy = this.engine.clampY(corp.y);
+            this.engine.addInteractable(type, this.engine.clampX(corp.x, cy), cy, { radius: 18, corpse: corp });
         });
 
-        this.lastTime = performance.now();
+        this.stepAccumulator = 0;
         
         // Show tutorial if active
         this.ui.renderTutorial(this.activeProfile);
@@ -333,11 +478,14 @@ class GameOrchestrator {
     recalculateStats() {
         if (!this.engine.player) return;
         const eqStats = getEquipmentStats(this.activeProfile);
+        const archStats = getArchiveStats(this.saveData.archive);
+        eqStats.damage += archStats.damage;
+        eqStats.health += archStats.health;
         this.engine.player.stats = eqStats;
         this.engine.player.maxHealth = this.activeProfile.maxHealth + eqStats.health;
-        this.engine.player.damage = (this.activeProfile.classType === "Blood Marked" ? 25 : 18) + eqStats.damage;
-        this.engine.player.crit = (this.activeProfile.classType === "Static Marked" ? 0.25 : 0.10) + eqStats.crit;
-        this.engine.player.speed = (this.activeProfile.classType === "Static Marked" ? 4.5 : 3.5) + eqStats.speed;
+        this.engine.player.damage = playerDamage(this.activeProfile, eqStats.damage);
+        this.engine.player.crit = basePlayerCrit(this.activeProfile.classType) + eqStats.crit;
+        this.engine.player.speed = basePlayerSpeed(this.activeProfile.classType) + eqStats.speed;
     }
 
     saveActiveProfile() {
@@ -351,6 +499,11 @@ class GameOrchestrator {
             this.activeProfile.level += 1;
             this.activeProfile.maxHealth += 10;
             this.activeProfile.health = this.activeProfile.maxHealth;
+            // Apply to the live body too: +10 max and a full heal
+            if (this.engine.player) {
+                this.engine.player.maxHealth += 10;
+                this.engine.player.health = this.engine.player.maxHealth;
+            }
             this.activeProfile.signals.unshift(`DIAGNOSTIC: Form stabilized. Level ${this.activeProfile.level} reached.`);
             
             // Audio and Visual Feedback
@@ -377,6 +530,16 @@ class GameOrchestrator {
         saveProfiles(this.saveData);
     }
 
+    // Close out the current life: record its length and reset per-descent counters
+    endLife() {
+        const p = this.activeProfile;
+        const life = this.engine.player ? this.engine.player.currentLifeDuration : 0;
+        p.longestLife = Math.max(p.longestLife || 0, life);
+        p.currentLifeDuration = 0;
+        p.ritualsThisDescent = 0;
+        p.lastRitualTime = 0;
+    }
+
     triggerGameOver(cause = "Combat defeat") {
         this.gameState = "game_over";
         document.getElementById("game-layout").style.display = "none";
@@ -400,9 +563,14 @@ class GameOrchestrator {
         };
 
         this.activeProfile.corpses.push(corpseData);
+        // Keep the registry readable: only the five most recent remains persist
+        if (this.activeProfile.corpses.length > 5) this.activeProfile.corpses.shift();
+        audioManager.play("corpse_spawn");
+        audioManager.setMusicState("silent");
         this.activeProfile.stats.deaths++;
 
         // Reset stats for next descent
+        this.endLife();
         this.activeProfile.health = this.activeProfile.maxHealth;
         this.activeProfile.sanity = 100;
         this.activeProfile.observation = 0; // resets observation on death to start fresh slice
@@ -424,6 +592,8 @@ class GameOrchestrator {
 
     triggerVictory() {
         this.gameState = "game_over";
+        audioManager.setMusicState("silent");
+        audioManager.play("victory");
         document.getElementById("game-layout").style.display = "none";
         const overlay = document.getElementById("game-over-screen");
         overlay.style.display = "flex";
@@ -434,6 +604,7 @@ class GameOrchestrator {
         document.getElementById("death-cause-text").textContent = "Success: Descent completed, observation records synced with Monolith.";
         
         // Reset descent stats, preserving gold and inventory items
+        this.endLife();
         this.activeProfile.sanity = 100;
         this.activeProfile.observation = 0;
         if (!this.activeProfile.stats.escapes) this.activeProfile.stats.escapes = 0;
@@ -457,61 +628,107 @@ class GameOrchestrator {
         };
     }
 
-    loop() {
+    loop(now) {
+        // Fixed-timestep simulation: game logic always advances at 60 steps per
+        // second regardless of the display's refresh rate; rendering happens once
+        // per animation frame.
+        if (this.lastTime === undefined) this.lastTime = now;
+        const elapsed = Math.min(250, Math.max(0, now - this.lastTime));
+        this.lastTime = now;
+
         if (this.gameState === "active" && this.engine.player) {
-            // Engine update callback events
-            this.engine.update((event, data) => {
-                if (event === "player_died") {
-                    this.canvasRenderer.triggerShake(30);
-                    this.triggerGameOver("Collapsed in Keeping House battle.");
-                } else if (event === "boss_wax_trap") {
-                    // Spawn wax trap
-                    this.waxTraps.push({
-                        x: data.x,
-                        y: data.y,
-                        radius: 35,
-                        timer: 60, // frames to trigger
-                        active: true
-                    });
-                } else if (event === "boss_defeated") {
-                    this.canvasRenderer.triggerShake(40);
-                    this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
-                    this.activeProfile.exp += 300;
-                }
-            });
+            this.stepAccumulator = (this.stepAccumulator || 0) + elapsed;
+            let steps = 0;
+            while (this.stepAccumulator >= STEP_MS && steps < 5 && this.gameState === "active") {
+                this.update();
+                this.stepAccumulator -= STEP_MS;
+                steps++;
+            }
+            if (steps === 5) this.stepAccumulator = 0; // too far behind: drop the backlog
 
-            // Run systems update (Observation, Sanity decay)
-            if (this.gameState === "active") {
-                updateObservation(this.activeProfile, this.engine);
-                handleSanityDecay(this.activeProfile, this.engine);
-                audioManager.updateSanity(this.activeProfile.sanity);
-                
-                if (this.activeProfile.levelUpTimer > 0) {
-                    this.activeProfile.levelUpTimer--;
-                }
-
-                // Update traps
-                this.updateWaxTraps();
-
-                // Save automatically every 3 seconds to keep offline dates accurate
-                if (this.canvasRenderer.frame % 180 === 0) {
-                    this.saveActiveProfile();
-                }
-
-                // Render active UI Tab updates
-                if (this.canvasRenderer.frame % 10 === 0) {
-                    this.ui.updateHUD(this.activeProfile, this.engine);
-                }
+            // Render active UI updates
+            if (this.gameState === "active" && this.canvasRenderer.frame % 10 === 0) {
+                this.ui.updateHUD(this.activeProfile, this.engine);
             }
 
-            // Draw game
+            // Draw game (wax traps are drawn through the renderer's world-space hook)
             this.canvasRenderer.draw(this.engine);
-            
-            // Draw wax trap warnings on top
-            this.drawWaxTraps();
         }
 
         requestAnimationFrame(this.loop);
+    }
+
+    update() {
+        this.simTick = (this.simTick || 0) + 1;
+
+        // Engine update callback events
+        this.engine.update((event, data) => {
+            if (event === "player_died") {
+                this.canvasRenderer.triggerShake(30);
+                this.triggerGameOver("Collapsed in Keeping House battle.");
+            } else if (event === "boss_wax_trap") {
+                // Spawn wax trap
+                audioManager.play("wax_trap");
+                this.waxTraps.push({
+                    x: data.x,
+                    y: data.y,
+                    radius: 35,
+                    timer: 60, // frames to trigger
+                    active: true
+                });
+            } else if (event === "watcher_confrontation") {
+                audioManager.play("observation_threshold", { tier: Math.min(4, data.wave) });
+                this.canvasRenderer.triggerShake(16);
+                this.canvasRenderer.showBanner(`WATCHER CONFRONTATION ${data.wave}`, `${data.count} witness${data.count === 1 ? "" : "es"} descend${data.count === 1 ? "s" : ""}. Survival is being studied.`, "#9a4ab8", 200);
+            } else if (event === "boss_spawned") {
+                this.canvasRenderer.triggerShake(25);
+                this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
+                this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
+            } else if (event === "boss_defeated") {
+                this.canvasRenderer.triggerShake(40);
+                this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
+                this.activeProfile.exp += 300;
+            }
+        });
+
+        if (this.gameState !== "active") return;
+
+        // Run systems update (Observation, Sanity decay)
+        const dt = STEP_MS / 1000;
+        const crossed = updateObservation(this.activeProfile, this.engine, dt);
+        if (crossed) {
+            audioManager.play("observation_threshold", { tier: crossed.tier });
+            this.canvasRenderer.triggerShake(6 + crossed.tier * 3);
+            this.canvasRenderer.showBanner(`YOU ARE ${crossed.name.toUpperCase()}`, `Observation ${crossed.at}% — ${crossed.detail}`, "#c4231b", 200);
+            this.ui.flashObservation();
+        }
+        handleSanityDecay(this.activeProfile, this.engine, dt);
+        const p = this.engine.player;
+        audioManager.update({
+            sanity: p.sanity,
+            observation: this.activeProfile.observation,
+            enemiesNear: this.engine.enemies.filter(e => this.engine.distance(p.x, p.y, e.x, e.y) < 260).length,
+            bossActive: this.engine.bossSpawned
+        });
+
+        // Update traps
+        this.updateWaxTraps();
+
+        // Location-dependent panels refresh when the player walks in/out of range
+        if (this.simTick % 15 === 0 && this.ui.isDrawerOpen() && (this.ui.activeTab === "rituals" || this.ui.activeTab === "corpses")) {
+            const near = this.engine.interactables
+                .filter(i => this.engine.distance(p.x, p.y, i.x, i.y) < i.radius + p.radius + 15)
+                .map(i => i.type).join(",");
+            if (near !== this.lastNearKey) {
+                this.lastNearKey = near;
+                this.ui.renderActiveTab();
+            }
+        }
+
+        // Save automatically every 3 seconds to keep offline dates accurate
+        if (this.simTick % 180 === 0) {
+            this.saveActiveProfile();
+        }
     }
 
     updateWaxTraps() {
@@ -522,9 +739,10 @@ class GameOrchestrator {
             if (trap.timer <= 0) {
                 // Trap triggers!
                 if (trap.active) {
+                    audioManager.play("wax_trap_trigger");
                     let dist = this.engine.distance(p.x, p.y, trap.x, trap.y);
                     if (dist < trap.radius + p.radius) {
-                        this.engine.damagePlayer(25, 15);
+                        this.engine.damagePlayer(25, 15, trap.x, trap.y);
                         this.canvasRenderer.triggerShake(15);
                         
                         // Stall player velocity/action (stun effect)
@@ -539,8 +757,7 @@ class GameOrchestrator {
         }
     }
 
-    drawWaxTraps() {
-        const ctx = this.canvasRenderer.ctx;
+    drawWaxTraps(ctx) {
         ctx.save();
         for (const trap of this.waxTraps) {
             const pct = 1.0 - trap.timer / 60;

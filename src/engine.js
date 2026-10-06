@@ -1,18 +1,59 @@
 // Physics, Collision, and Entity Management
 import { audioManager } from "./audio.js";
+import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
+import { PROP_COLLIDERS } from "./props.js";
+import { FIXTURE_COLLIDERS } from "./fixtures.js";
+
+// ─── Tuning constants ────────────────────────────────────────────────────────
+export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
+export const PLAYER_DASH_MULT = 2.5;
+export const DEATH_ANIMATION_FRAMES = 75;    // collapse + slow fade before game over
+export const PLAYER_KNOCKBACK = 5;           // initial px/frame push when the player is hit
+export const ENEMY_KNOCKBACK = 6;            // initial px/frame push when an enemy is hit
+export const KNOCKBACK_DAMPING = 0.78;       // velocity multiplier per frame (vx *= ...)
+export const BASE_MAX_ENEMIES = 4;           // grows with Observation, see maxEnemies()
+export const BOSS_OBSERVATION_THRESHOLD = 75;
+export const CONFRONTATION_INTERVAL = 600;   // seconds of survival between Watcher Confrontations
+export const CONFRONTATION_OBSERVATION = 10; // Observation added per confrontation
+export const ENEMY_SCALING_PER_LEVEL = 0.12;  // +12% enemy health/damage per player level above 1
+export const BLOOD_VIAL_CHANCE = 0.15;        // share of drops that are healing vials
+export const BLOOD_VIAL_HEAL_PCT = 0.20;      // of max health
+
+// The Monolith counters what survives: enemies grow with the player's level
+export function enemyScale(level) {
+    return 1 + ENEMY_SCALING_PER_LEVEL * Math.max(0, (level || 1) - 1);
+}
+
+export function basePlayerSpeed(classType) {
+    return PLAYER_BASE_SPEED + (classType === "Static Marked" ? 1 : 0);
+}
+
+export function basePlayerDamage(classType) {
+    return classType === "Blood Marked" ? 25 : 18;
+}
+
+// Total attack damage: class base + gear + permanent ritual/corpse bonuses
+export function playerDamage(profile, gearDamage = 0) {
+    const flat = basePlayerDamage(profile.classType) + gearDamage + (profile.ritualDamage || 0);
+    return Math.round(flat * (profile.devourMult || 1));
+}
+
+export function basePlayerCrit(classType) {
+    return classType === "Static Marked" ? 0.25 : 0.10;
+}
+
+// Particle colours that are liquids: they fly as drops and stain the floor
+const LIQUIDS = {
+    "#9a1616": "blood", "#3a0808": "blood", "#7a0c0c": "blood", "#b01212": "blood", "#000000": "ink"
+};
 
 export class GameEngine {
     constructor() {
-        this.width = 750;
-        this.height = 450;
+        this.width = WORLD_WIDTH;
+        this.height = WORLD_HEIGHT;
         
-        // Define Walkable boundaries (Keeping House floor plane)
-        this.bounds = {
-            minX: 40,
-            maxX: 710,
-            minY: 100,
-            maxY: 420
-        };
+        // Walkable boundaries (Keeping House floor plane)
+        this.bounds = { ...ROOM.bounds };
 
         this.reset();
     }
@@ -22,7 +63,10 @@ export class GameEngine {
         this.enemies = [];
         this.projectiles = [];
         this.particles = [];
+        this.decals = [];     // stains waiting for the renderer to press into the floor
+        this.decalEpoch = (this.decalEpoch || 0) + 1; // a new run starts on a clean floor
         this.floatingTexts = [];
+        this.deathFx = [];   // enemy death animations playing out
         this.loot = [];
         this.interactables = []; // Altars, Corpses
         
@@ -35,29 +79,29 @@ export class GameEngine {
         this.bossSpawned = false;
         
         this.hitStop = 0; // Frames to freeze the engine
+        this.bossDefeated = false;
+        this.bossAnnounced = false;
         
         // Static Obstacles in Keeping House. These are collision shapes for sprite props.
-        this.obstacles = [
-            { x: 118, y: 202, w: 86, h: 42, label: "Evidence Board" },
-            { x: 522, y: 204, w: 90, h: 46, label: "Nameplate Heap" },
-            { x: 375, y: 258, r: 38, label: "The Monolith" }
-        ];
+        this.obstacles = ROOM.obstacles.map(o => ({ ...o })).concat([...PROP_COLLIDERS, ...FIXTURE_COLLIDERS].map(c => ({ ...c })));
     }
 
     setPlayer(profile, extraStats) {
         this.player = {
             profile: profile,
             stats: extraStats,
-            x: 100,
-            y: 300,
+            x: ROOM.playerStart.x,
+            y: ROOM.playerStart.y,
             vx: 0,
             vy: 0,
+            kbVx: 0,
+            kbVy: 0,
             radius: 16,
             health: profile.health,
             maxHealth: profile.maxHealth + extraStats.health,
-            speed: (profile.classType === "Static Marked" ? 5.5 : 4.5) + (extraStats.speed || 0),
-            damage: (profile.classType === "Blood Marked" ? 25 : 18) + (extraStats.damage || 0),
-            crit: (profile.classType === "Static Marked" ? 0.25 : 0.10) + (extraStats.crit || 0),
+            speed: basePlayerSpeed(profile.classType) + (extraStats.speed || 0),
+            damage: playerDamage(profile, extraStats.damage || 0),
+            crit: basePlayerCrit(profile.classType) + (extraStats.crit || 0),
             sanity: profile.sanity,
             attackCooldown: 0,
             attackDelay: 45, // frames between attacks
@@ -69,7 +113,8 @@ export class GameEngine {
             dashCooldown: 0,
             dashDx: 0,
             dashDy: 0,
-            currentLifeDuration: profile.currentLifeDuration || 0
+            currentLifeDuration: profile.currentLifeDuration || 0,
+            confrontationWave: Math.floor((profile.currentLifeDuration || 0) / CONFRONTATION_INTERVAL)
         };
     }
 
@@ -92,14 +137,18 @@ export class GameEngine {
             let parchment = 0;
             let ink = 0;
             let sanityRestore = 0;
+            let healPct = 0;
 
-            if (rand < 0.20) {
+            if (rand < BLOOD_VIAL_CHANCE) {
+                lootType = "blood_vial";
+                healPct = BLOOD_VIAL_HEAL_PCT;
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.20) {
                 lootType = "cursed_gear_drop";
                 item = stateMod.generateLootItem(rarityLimit);
-            } else if (rand < 0.45) {
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.40) {
                 lootType = "sanity_shard";
                 sanityRestore = 15;
-            } else if (rand < 0.70) {
+            } else if (rand < BLOOD_VIAL_CHANCE + 0.60) {
                 lootType = "signal_fragment";
                 parchment = 1;
                 ink = Math.random() < 0.5 ? 1 : 0;
@@ -117,10 +166,13 @@ export class GameEngine {
                 parchment: parchment,
                 ink: ink,
                 sanityRestore: sanityRestore,
+                healPct: healPct,
                 vx: (Math.random() - 0.5) * 4,
                 vy: (Math.random() - 0.5) * 4 - 3,
+                groundY: y + 8 + Math.random() * 14,
                 bounce: 0,
-                grav: 0.25
+                grav: 0.25,
+                age: 0
             });
         });
     }
@@ -140,6 +192,9 @@ export class GameEngine {
             state: "walk",
             attackCooldown: 0,
             behaviorTimer: 0,
+            kbVx: 0,
+            kbVy: 0,
+            hitFlash: 0,
             lootRarity: "Worn"
         };
 
@@ -165,19 +220,26 @@ export class GameEngine {
             e.damage = 15;
             e.lootRarity = "Unsettling";
         } else if (type === "Seal Mother") {
-            e.health = e.maxHealth = 250;
+            e.health = e.maxHealth = 600;
             e.radius = 28;
             e.speed = 1.35;
             e.damage = 18;
             e.lootRarity = "Cursed";
             this.bossSpawned = true;
-        } else if (type === "The Shape") {
+        }
+
+        if (type === "The Shape") {
             // Player clone
             e.health = e.maxHealth = this.player.maxHealth * 0.8;
             e.radius = 16;
             e.speed = this.player.speed * 0.75;
             e.damage = this.player.damage * 0.6;
             e.lootRarity = "Relic";
+        } else {
+            // The Shape already mirrors the player's stats; everything else scales with level
+            const scale = enemyScale(this.player.profile.level);
+            e.health = e.maxHealth = Math.round(e.health * scale);
+            e.damage = Math.round(e.damage * scale);
         }
 
         this.enemies.push(e);
@@ -200,6 +262,9 @@ export class GameEngine {
             attackCooldown: 0,
             behaviorTimer: 0,
             lootRarity: "Cursed",
+            kbVx: 0,
+            kbVy: 0,
+            hitFlash: 0,
             classType: corp.classType // "Blood Marked" etc
         };
         this.enemies.push(e);
@@ -207,7 +272,18 @@ export class GameEngine {
     }
 
     createParticleExplosion(x, y, color, count) {
+        const liquid = LIQUIDS[color];
         for (let i = 0; i < count; i++) {
+            if (liquid) {
+                // Drops thrown up from the wound, arcing down to stain the floor
+                const a = Math.random() * Math.PI * 2, sp = 0.6 + Math.random() * 2.6;
+                this.particles.push({
+                    x, y, z: 16 + Math.random() * 22,
+                    vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.5, vz: 1 + Math.random() * 2.8,
+                    color, liquid, alpha: 1, decay: 0, size: 1.2 + Math.random() * 2.2
+                });
+                continue;
+            }
             this.particles.push({
                 x: x,
                 y: y,
@@ -239,6 +315,7 @@ export class GameEngine {
             angle: angle
         };
         this.projectiles.push(p);
+        if (owner === "enemy") audioManager.play("projectile_fire", { pan: this.panFor(x) });
     }
 
     update(onEvent) {
@@ -256,7 +333,13 @@ export class GameEngine {
         if (this.player.health <= 0) {
             this.player.state = "dead";
             this.player.deathTimer++;
-            if (this.player.deathTimer === 60) {
+            // World keeps drifting in slow motion while the body collapses
+            if (this.player.deathTimer % 3 === 0) {
+                this.updateEnemies(() => {});
+                this.updateProjectiles(() => {});
+            }
+            this.updateFloatingTexts();
+            if (this.player.deathTimer === DEATH_ANIMATION_FRAMES) {
                 // Inform orchestrator that player collapsed
                 onEvent("player_died", { x: this.player.x, y: this.player.y });
             }
@@ -265,16 +348,23 @@ export class GameEngine {
         }
 
         this.player.currentLifeDuration += 1 / 60;
+        this.player.profile.currentLifeDuration = this.player.currentLifeDuration;
+        this.player.profile.stats.activeSeconds = (this.player.profile.stats.activeSeconds || 0) + 1 / 60;
 
-        // 3-hour pressure event (10800 seconds)
-        if (this.player.currentLifeDuration >= 10800 && !this.player.profile.pressureEventTriggered) {
-            this.player.profile.pressureEventTriggered = true;
-            this.player.profile.observation = Math.min(100, this.player.profile.observation + 25);
-            this.spawnEnemy("The Shape", this.player.x + 100, this.player.y);
-            this.player.profile.signals.unshift("Watcher Warning: 3 hours survived. The Shape descends.");
+        // Recurring pressure: every CONFRONTATION_INTERVAL seconds alive, the Watcher
+        // confronts the player with an escalating wave. Surviving longer gets harder.
+        const wave = Math.floor(this.player.currentLifeDuration / CONFRONTATION_INTERVAL);
+        if (wave > (this.player.confrontationWave || 0)) {
+            this.player.confrontationWave = wave;
+            this.triggerConfrontation(wave, onEvent);
         }
 
         if (this.player.invulnTimer > 0) this.player.invulnTimer--;
+
+        // Gear regeneration (healthRegen = HP per second)
+        if (this.player.stats.healthRegen > 0 && this.player.health < this.player.maxHealth) {
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + this.player.stats.healthRegen / 60);
+        }
         if (this.player.attackCooldown > 0) this.player.attackCooldown--;
         if (this.player.dashCooldown > 0) this.player.dashCooldown--;
 
@@ -289,28 +379,76 @@ export class GameEngine {
         this.updateEnemies(onEvent);
         this.updateProjectiles(onEvent);
         this.updateParticles();
+        this.updateDeathFx();
         this.updateFloatingTexts();
         this.updateLoot();
         this.updateInteractables();
+
+        // Boss: the Seal Mother manifests once the Monolith has modeled the player
+        if (!this.bossSpawned && !this.bossDefeated && this.player.profile.observation >= BOSS_OBSERVATION_THRESHOLD) {
+            this.spawnEnemy("Seal Mother", ROOM.bossSpawn.x, ROOM.bossSpawn.y);
+            audioManager.play("boss_spawn");
+            onEvent("boss_spawned", {});
+        }
 
         // Spawn timer
         if (!this.bossSpawned) {
             this.enemySpawnTimer += 16.67;
             if (this.enemySpawnTimer >= this.spawnDelay) {
                 this.enemySpawnTimer = 0;
-                this.spawnRandomEnemy();
+                if (this.enemies.length < this.maxEnemies()) {
+                    this.spawnRandomEnemy();
+                }
             }
         }
+    }
+
+    triggerConfrontation(wave, onEvent) {
+        const profile = this.player.profile;
+        profile.observation = Math.min(100, profile.observation + CONFRONTATION_OBSERVATION);
+        // Wave 1: one Shape. Every two waves adds a Witness Chair escort.
+        const shapes = 1 + Math.floor(wave / 3);
+        const chairs = Math.floor(wave / 2);
+        for (let i = 0; i < shapes; i++) {
+            const a = (i / shapes) * Math.PI * 2;
+            const sy = this.clampY(this.player.y + Math.sin(a) * 90);
+            this.spawnEnemy("The Shape", this.clampX(this.player.x + Math.cos(a) * 140, sy), sy);
+        }
+        for (let i = 0; i < chairs; i++) {
+            const cy = this.bounds.minY + 40 + i * 60;
+            const span = walkableX(cy);
+            this.spawnEnemy("Witness Chair", i % 2 ? span.min + 20 : span.max - 20, cy);
+        }
+        profile.signals.unshift(`Watcher Confrontation ${wave}: ${Math.round(this.player.currentLifeDuration / 60)} minutes survived. The Monolith sends ${shapes + chairs} witness${shapes + chairs === 1 ? "" : "es"}.`);
+        onEvent("watcher_confrontation", { wave, count: shapes + chairs });
+    }
+
+    // The floor narrows toward the back wall (perspective), so x limits depend on y
+    clampX(x, y = this.bounds.maxY) {
+        const span = walkableX(y);
+        return Math.max(span.min + 20, Math.min(span.max - 20, x));
+    }
+    clampY(y) { return Math.max(this.bounds.minY + 20, Math.min(this.bounds.maxY - 20, y)); }
+
+    maxEnemies() {
+        // 4 at low Observation, up to 8 when fully Known
+        return BASE_MAX_ENEMIES + Math.floor((this.player.profile.observation || 0) / 25);
+    }
+
+    panFor(x) {
+        return ((x - this.width / 2) / (this.width / 2)) * 0.6;
     }
 
     spawnRandomEnemy() {
         // Spawn along margins
         const side = Math.floor(Math.random() * 4);
         let x = 100, y = 100;
-        if (side === 0) { x = this.bounds.minX + 10; y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY); }
-        else if (side === 1) { x = this.bounds.maxX - 10; y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY); }
-        else if (side === 2) { x = this.bounds.minX + Math.random() * (this.bounds.maxX - this.bounds.minX); y = this.bounds.minY + 10; }
-        else { x = this.bounds.minX + Math.random() * (this.bounds.maxX - this.bounds.minX); y = this.bounds.maxY - 10; }
+        if (side === 0 || side === 1) y = this.bounds.minY + Math.random() * (this.bounds.maxY - this.bounds.minY);
+        else y = side === 2 ? this.bounds.minY + 10 : this.bounds.maxY - 10;
+        const span = walkableX(y);
+        if (side === 0) x = span.min + 10;
+        else if (side === 1) x = span.max - 10;
+        else x = span.min + Math.random() * (span.max - span.min);
 
         // Choose enemy type based on observation and probability
         const roll = Math.random();
@@ -342,8 +480,8 @@ export class GameEngine {
         if (this.player.dashTimer > 0) {
             // Currently dashing
             this.player.dashTimer--;
-            this.player.vx = this.player.dashDx * (this.player.speed * 2.5);
-            this.player.vy = this.player.dashDy * (this.player.speed * 2.5);
+            this.player.vx = this.player.dashDx * (this.player.speed * PLAYER_DASH_MULT);
+            this.player.vy = this.player.dashDy * (this.player.speed * PLAYER_DASH_MULT);
             this.player.state = "dashing";
             this.player.invulnTimer = Math.max(this.player.invulnTimer, 5); // i-frames
             
@@ -366,7 +504,7 @@ export class GameEngine {
                     this.player.dashDx = dx;
                     this.player.dashDy = dy;
                     this.player.state = "dashing";
-                    audioManager.playHit(); // simple sound for now
+                    audioManager.play("dash");
                 } else {
                     this.player.vx = dx * this.player.speed;
                     this.player.vy = dy * this.player.speed;
@@ -383,43 +521,88 @@ export class GameEngine {
             }
         }
 
-        // Apply velocities
-        this.player.x += this.player.vx;
-        this.player.y += this.player.vy;
+        // Apply velocities (input + decaying knockback)
+        this.player.x += this.player.vx + this.player.kbVx;
+        this.player.y += this.player.vy + this.player.kbVy;
+        this.player.kbVx *= KNOCKBACK_DAMPING;
+        this.player.kbVy *= KNOCKBACK_DAMPING;
+        if (Math.abs(this.player.kbVx) < 0.05) this.player.kbVx = 0;
+        if (Math.abs(this.player.kbVy) < 0.05) this.player.kbVy = 0;
 
         // Wall collisions
-        if (this.player.x - this.player.radius < this.bounds.minX) this.player.x = this.bounds.minX + this.player.radius;
-        if (this.player.x + this.player.radius > this.bounds.maxX) this.player.x = this.bounds.maxX - this.player.radius;
         if (this.player.y - this.player.radius < this.bounds.minY) this.player.y = this.bounds.minY + this.player.radius;
         if (this.player.y + this.player.radius > this.bounds.maxY) this.player.y = this.bounds.maxY - this.player.radius;
+        const span = walkableX(this.player.y);
+        if (this.player.x - this.player.radius < span.min) this.player.x = span.min + this.player.radius;
+        if (this.player.x + this.player.radius > span.max) this.player.x = span.max - this.player.radius;
 
         // Obstacle collisions
+        this.pushOutOfObstacles(this.player, this.player.radius);
+    }
+
+    // Push a circle (entity centre + radius) out of the Monolith and furniture.
+    // Returns the last rectangle hit and the push normal, so walkers can slide around it.
+    pushOutOfObstacles(ent, radius) {
+        let hit = null;
         for (const obs of this.obstacles) {
             if (obs.r) {
-                // Circle Monolith
-                let distVecX = this.player.x - obs.x;
-                let distVecY = this.player.y - obs.y;
-                let dist = Math.sqrt(distVecX * distVecX + distVecY * distVecY);
-                let minDist = obs.r + this.player.radius;
+                const dx = ent.x - obs.x, dy = ent.y - obs.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = obs.r + radius;
                 if (dist < minDist) {
-                    let angle = Math.atan2(distVecY, distVecX);
-                    this.player.x = obs.x + Math.cos(angle) * minDist;
-                    this.player.y = obs.y + Math.sin(angle) * minDist;
+                    const angle = dist > 0.001 ? Math.atan2(dy, dx) : Math.PI / 2;
+                    ent.x = obs.x + Math.cos(angle) * minDist;
+                    ent.y = obs.y + Math.sin(angle) * minDist;
                 }
-            } else {
-                // Rectangle box
-                let closestX = Math.max(obs.x, Math.min(this.player.x, obs.x + obs.w));
-                let closestY = Math.max(obs.y, Math.min(this.player.y, obs.y + obs.h));
-                let dx = this.player.x - closestX;
-                let dy = this.player.y - closestY;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < this.player.radius) {
-                    let angle = Math.atan2(dy, dx);
-                    let push = this.player.radius - dist;
-                    this.player.x += Math.cos(angle) * push;
-                    this.player.y += Math.sin(angle) * push;
-                }
+                continue;
             }
+            const cx = Math.max(obs.x, Math.min(ent.x, obs.x + obs.w));
+            const cy = Math.max(obs.y, Math.min(ent.y, obs.y + obs.h));
+            const dx = ent.x - cx, dy = ent.y - cy;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 0.001) {
+                if (dist < radius) {
+                    ent.x += (dx / dist) * (radius - dist);
+                    ent.y += (dy / dist) * (radius - dist);
+                    hit = { obs, nx: dx / dist, ny: dy / dist };
+                }
+                continue;
+            }
+            // Centre is inside the rectangle: leave by the nearest side
+            const exits = [
+                [ent.x - obs.x, -1, 0], [obs.x + obs.w - ent.x, 1, 0],
+                [ent.y - obs.y, 0, -1], [obs.y + obs.h - ent.y, 0, 1]
+            ].sort((a, b) => a[0] - b[0]);
+            const [d, ex, ey] = exits[0];
+            ent.x += ex * (d + radius);
+            ent.y += ey * (d + radius);
+            hit = { obs, nx: ex, ny: ey };
+        }
+        return hit;
+    }
+
+    // An enemy blocked head-on by furniture commits to walking along it to
+    // whichever clear end is the shorter way round, then resumes the chase
+    startDetour(e, hit) {
+        const { obs, nx, ny } = hit;
+        const r = Math.min(e.radius || 16, 22) + 6;
+        const sp = Math.max(0.5, e.speed || 1.5);
+        if (Math.abs(ny) > Math.abs(nx)) {
+            const span = walkableX(e.y, 30);
+            const ends = [
+                { dir: -1, x: obs.x - r, cost: Math.abs(e.x - obs.x) + Math.abs(this.player.x - obs.x) },
+                { dir: 1, x: obs.x + obs.w + r, cost: Math.abs(obs.x + obs.w - e.x) + Math.abs(obs.x + obs.w - this.player.x) }
+            ].filter(end => end.x > span.min && end.x < span.max).sort((a, b) => a.cost - b.cost);
+            if (!ends.length) return;
+            // Went round this way recently and are back against it: try the other end
+            const last = e.lastDetour;
+            const pick = last && last.obs === obs && e.behaviorTimer - last.at < 240 && ends.length > 1 && ends[0].dir === last.dir ? ends[1] : ends[0];
+            e.detour = { axis: "x", dir: pick.dir, t: Math.ceil(Math.abs(pick.x - e.x) / sp) + 4 };
+            e.lastDetour = { obs, dir: pick.dir, at: e.behaviorTimer };
+        } else {
+            const dir = this.player.y > obs.y + obs.h / 2 ? 1 : -1;
+            const ty = dir > 0 ? obs.y + obs.h + r : obs.y - r;
+            e.detour = { axis: "y", dir, t: Math.ceil(Math.abs(ty - e.y) / sp) + 4 };
         }
     }
 
@@ -451,6 +634,7 @@ export class GameEngine {
             this.player.attackCooldown = this.player.attackDelay;
             this.player.profile.stats.attacks++;
             this.player.state = "attacking";
+            audioManager.play("attack_swing");
 
             // Class-specific attacks
             const type = this.player.profile.classType;
@@ -524,16 +708,26 @@ export class GameEngine {
             if (e.health <= 0) {
                 // Reward and remove
                 this.player.profile.exp += 15;
-                this.player.profile.gold += e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
                 
                 // Roll loot
                 this.spawnLoot(e.x, e.y, e.lootRarity);
                 
-                // Explode particles
-                this.createParticleExplosion(e.x, e.y, "#721010", 20);
+                // Death animation + particles
+                this.deathFx.push({ type: e.type, x: e.x, y: e.y, t: 0, facing: this.player.x < e.x ? "left" : "right" });
+                // What each thing leaves behind on the stone
+                const remains = e.type === "Ink Redactor" ? "ink" : e.type === "Paper Wraith" ? "paper" : e.type === "Witness Chair" ? "splinters" : "blood";
+                this.decals.push({ kind: "pool", x: e.x, y: e.y + 4, r: 16 + (e.radius || 18) * 0.6, liquid: remains });
+                this.createParticleExplosion(e.x, e.y, remains === "ink" ? "#000000" : "#3a0808", 14);
+                audioManager.play("enemy_death", { pan: this.panFor(e.x) });
+                const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
+                this.player.profile.gold += goldDrop;
+                this.trackActiveGain(goldDrop, 15);
+                this.spawnFloatingText(`+${goldDrop} DG`, e.x, e.y - 34, "#d4af37", false);
                 
                 if (e.type === "Seal Mother") {
                     this.bossSpawned = false;
+                    this.bossDefeated = true;
+                    audioManager.play("boss_defeated");
                     onEvent("boss_defeated", e);
                     const door = this.interactables.find(intr => intr.type === "sealed_zone_door");
                     if (door) {
@@ -546,6 +740,7 @@ export class GameEngine {
                         y: e.y,
                         vx: (Math.random() - 0.5) * 4,
                         vy: -4,
+                        groundY: e.y + 12,
                         bounce: 0,
                         grav: 0.25
                     });
@@ -556,6 +751,7 @@ export class GameEngine {
                         y: e.y,
                         vx: (Math.random() - 0.5) * 4,
                         vy: -4,
+                        groundY: e.y + 12,
                         bounce: 0,
                         grav: 0.25
                     });
@@ -567,6 +763,7 @@ export class GameEngine {
 
             e.attackCooldown = Math.max(0, e.attackCooldown - 1);
             e.behaviorTimer++;
+            if (e.hitFlash > 0) e.hitFlash--;
 
             // Enemy AI movement and actions
             let dx = this.player.x - e.x;
@@ -588,7 +785,7 @@ export class GameEngine {
                 // Attack check
                 if (dist < e.radius + this.player.radius + 5 && e.attackCooldown === 0) {
                     e.attackCooldown = 70;
-                    this.damagePlayer(e.damage);
+                    this.damagePlayer(e.damage, 0, e.x, e.y);
                 }
             } else if (e.type === "Ink Redactor") {
                 // Ranged shooter. Tries to maintain 150px distance
@@ -661,7 +858,9 @@ export class GameEngine {
                 // Melee strike
                 if (dist < e.radius + this.player.radius + 10 && e.attackCooldown === 0) {
                     e.attackCooldown = 80;
-                    this.damagePlayer(e.damage);
+                    audioManager.play("boss_attack");
+                    this.damagePlayer(e.damage, 0, e.x, e.y);
+                    if (this.canvasRenderer) this.canvasRenderer.triggerShake(12);
                     this.createParticleExplosion(this.player.x, this.player.y, "#ffcc00", 15);
                 }
             } else if (e.type === "The Shape") {
@@ -710,18 +909,30 @@ export class GameEngine {
                 }
             }
 
-            e.x += e.vx;
-            e.y += e.vy;
+            if (e.detour) {
+                if (--e.detour.t <= 0) e.detour = null;
+                else if (e.detour.axis === "x") { e.vx = e.detour.dir * e.speed; e.vy = 0; }
+                else { e.vy = e.detour.dir * e.speed; e.vx = 0; }
+            }
+
+            e.x += e.vx + e.kbVx;
+            e.y += e.vy + e.kbVy;
+            e.kbVx *= KNOCKBACK_DAMPING;
+            e.kbVy *= KNOCKBACK_DAMPING;
 
             // Simple wall boundaries for enemies
-            if (e.x < this.bounds.minX) e.x = this.bounds.minX;
-            if (e.x > this.bounds.maxX) e.x = this.bounds.maxX;
             if (e.y < this.bounds.minY) e.y = this.bounds.minY;
             if (e.y > this.bounds.maxY) e.y = this.bounds.maxY;
+            const espan = walkableX(e.y, 30);
+            if (e.x < espan.min) e.x = espan.min;
+            if (e.x > espan.max) e.x = espan.max;
+            const hit = this.pushOutOfObstacles(e, Math.min(e.radius || 16, 22));
+            // Steer round only when pressing into the furniture, not when brushing past it
+            if (hit && !e.detour && e.vx * hit.nx + e.vy * hit.ny < 0 && Math.abs(e.vx * hit.ny - e.vy * hit.nx) < (e.speed || 1.5) * 0.7) this.startDetour(e, hit);
         }
     }
 
-    damagePlayer(amount, sanityAmount = 0) {
+    damagePlayer(amount, sanityAmount = 0, sourceX = null, sourceY = null) {
         if (this.player.health <= 0 || this.player.invulnTimer > 0) return;
 
         // Apply armor formula
@@ -734,11 +945,28 @@ export class GameEngine {
         this.spawnFloatingText(reduced, this.player.x, this.player.y - 20, "#b01212", false);
         this.hitStop = 2; // mini freeze on getting hit
         
-        audioManager.playHit();
-        if (this.canvasRenderer) this.canvasRenderer.triggerShake(5);
+        // Knockback away from the source of the hit
+        if (sourceX !== null && sourceY !== null) {
+            const angle = Math.atan2(this.player.y - sourceY, this.player.x - sourceX);
+            this.player.kbVx += Math.cos(angle) * PLAYER_KNOCKBACK;
+            this.player.kbVy += Math.sin(angle) * PLAYER_KNOCKBACK;
+        }
+
+        audioManager.play("hit_player");
+        if (this.canvasRenderer) {
+            this.canvasRenderer.triggerShake(5);
+            this.canvasRenderer.triggerDamageFlash(0.35);
+        }
         
         if (this.player.health <= 0) {
-            audioManager.playDeath();
+            this.player.health = 0;
+            audioManager.play("player_death");
+            this.hitStop = 10;
+            if (this.canvasRenderer) {
+                this.canvasRenderer.triggerShake(18);
+                this.canvasRenderer.triggerDamageFlash(0.8);
+            }
+            this.createParticleExplosion(this.player.x, this.player.y, "#7a0c0c", 40);
         }
 
         if (sanityAmount > 0) {
@@ -776,14 +1004,21 @@ export class GameEngine {
                         this.createParticleExplosion(e.x, e.y, isCrit ? "#ffdd00" : "#aaaaaa", 6);
                         this.spawnFloatingText(finalDmg, e.x, e.y - 20, isCrit ? "#ffdd00" : "#ffffff", isCrit);
                         
-                        if (isCrit) this.hitStop = 4; // satisfying hit-stop on crits
-
-                        audioManager.playHit();
+                        e.hitFlash = 6;
+                        const pan = this.panFor(e.x);
+                        if (isCrit) {
+                            this.hitStop = 4; // satisfying hit-stop on crits
+                            audioManager.play("crit_hit", { pan });
+                            if (this.canvasRenderer) this.canvasRenderer.triggerShake(4);
+                        } else {
+                            audioManager.play("hit_enemy", { pan });
+                        }
                         
-                        // Knockback
+                        // Knockback (bosses are too heavy to shove far)
                         const angle = Math.atan2(e.y - p.y, e.x - p.x);
-                        e.x += Math.cos(angle) * 10;
-                        e.y += Math.sin(angle) * 10;
+                        const kb = e.type === "Seal Mother" ? ENEMY_KNOCKBACK * 0.2 : ENEMY_KNOCKBACK;
+                        e.kbVx += Math.cos(angle) * kb;
+                        e.kbVy += Math.sin(angle) * kb;
                         
                         // Destroy projectile if single-hit
                         p.life = 0;
@@ -793,11 +1028,17 @@ export class GameEngine {
             } else {
                 // Check player
                 if (this.player.health > 0 && this.distance(p.x, p.y, this.player.x, this.player.y) < p.radius + this.player.radius) {
-                    this.damagePlayer(p.damage, p.sanityDamage);
+                    this.damagePlayer(p.damage, p.sanityDamage, p.x - p.vx * 3, p.y - p.vy * 3);
                     p.life = 0;
                 }
             }
         }
+    }
+
+    updateDeathFx() {
+        for (const fx of this.deathFx) fx.t++;
+        // Death animations are at most ~1.4s plus a fade
+        this.deathFx = this.deathFx.filter(fx => fx.t < 140);
     }
 
     updateParticles() {
@@ -805,6 +1046,15 @@ export class GameEngine {
             const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
+            if (p.liquid) {
+                p.z += p.vz;
+                p.vz -= 0.3;
+                if (p.z <= 0) {
+                    this.decals.push({ kind: "drop", x: p.x, y: p.y, r: p.size * (1 + Math.random()), liquid: p.liquid, vx: p.vx, vy: p.vy });
+                    this.particles.splice(i, 1);
+                }
+                continue;
+            }
             p.alpha -= p.decay;
             if (p.alpha <= 0) {
                 this.particles.splice(i, 1);
@@ -814,6 +1064,7 @@ export class GameEngine {
 
     updateLoot() {
         for (const l of this.loot) {
+            l.age = (l.age || 0) + 1;
             if (l.bounce < 1) {
                 // Fall physics
                 l.vy += l.grav;
@@ -822,8 +1073,9 @@ export class GameEngine {
                 
                 // Friction
                 l.vx *= 0.95;
-                if (l.vy > 0 && l.y >= 350 + (l.x % 30)) { // rough floor bounds
-                    l.y = 350 + (l.x % 30);
+                const ground = l.groundY ?? l.y;
+                if (l.vy > 0 && l.y >= ground) {
+                    l.y = ground;
                     l.vy = -l.vy * 0.4;
                     l.vx *= 0.5;
                     l.bounce++;
@@ -832,8 +1084,10 @@ export class GameEngine {
 
             // Magnetic attraction to player
             let dist = this.distance(this.player.x, this.player.y, l.x, l.y);
-            let magnetRange = 100;
-            if (dist < magnetRange && this.player.health > 0) {
+            // Let drops land and be seen before they're pulled in
+            const landed = l.bounce >= 1 || l.age > 45;
+            let magnetRange = 90;
+            if (landed && dist < magnetRange && this.player.health > 0) {
                 let dx = this.player.x - l.x;
                 let dy = this.player.y - l.y;
                 l.x += (dx / dist) * 6;
@@ -857,8 +1111,15 @@ export class GameEngine {
 
         if (lootData.id === "loot_satchel") {
             p.gold += lootData.gold;
+            this.trackActiveGain(lootData.gold, 0);
             color = "#ffd700";
             p.signals.unshift(`Collected Satchel: Debt Gold reduced by ${lootData.gold}.`);
+        } else if (lootData.id === "blood_vial") {
+            const heal = Math.round(this.player.maxHealth * lootData.healPct);
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
+            color = "#d12a2a";
+            this.spawnFloatingText(`+${heal}`, this.player.x, this.player.y - 30, "#ff5a5a", false);
+            p.signals.unshift(`Drank a Blood Vial: Restored ${heal} Flesh.`);
         } else if (lootData.id === "sanity_shard") {
             this.player.sanity = Math.min(100, this.player.sanity + lootData.sanityRestore);
             color = "#00ffff";
@@ -882,8 +1143,16 @@ export class GameEngine {
             p.signals.unshift("Recovered a Memory Fragment. It pulses with past knowledge.");
         }
 
+        const rare = lootData.id === "memory_fragment" ||
+            (lootData.item && ["Relic", "Abyssal", "Impossible"].includes(lootData.item.rarity));
+        audioManager.play("loot_pickup", { rare });
+        if (rare) {
+            this.spawnFloatingText(lootData.item ? lootData.item.rarity.toUpperCase() + "!" : "MEMORY", lootData.x, lootData.y - 24, color, true);
+            if (this.canvasRenderer) this.canvasRenderer.triggerShake(3);
+        }
+
         // Small particle splash
-        this.createParticleExplosion(lootData.x, lootData.y, color, 5);
+        this.createParticleExplosion(lootData.x, lootData.y, color, rare ? 18 : 5);
     }
 
     updateInteractables() {
@@ -912,6 +1181,13 @@ export class GameEngine {
         }
     }
 
+    // Lifetime active-play earnings, used to cap offline gains (see idle.js)
+    trackActiveGain(gold, exp) {
+        const st = this.player.profile.stats;
+        st.activeGold = (st.activeGold || 0) + gold;
+        st.activeExp = (st.activeExp || 0) + exp;
+    }
+
     distance(x1, y1, x2, y2) {
         let dx = x2 - x1;
         let dy = y2 - y1;
@@ -919,6 +1195,11 @@ export class GameEngine {
     }
 
     spawnFloatingText(text, x, y, color, isCrit) {
+        for (let tries = 0; tries < 4; tries++) {
+            const clash = this.floatingTexts.some(ft => ft.life > 25 && Math.abs(ft.x - x) < 46 && Math.abs(ft.y - y) < 18);
+            if (!clash) break;
+            y -= 20;
+        }
         this.floatingTexts.push({
             text: text,
             x: x,
