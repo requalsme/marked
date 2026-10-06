@@ -1355,6 +1355,121 @@ function paintSarcophagus(ctx, rand, u, w, out) {
     out.flames.push(candle(ctx, rand, u + L - 6, w - D + 2, H + 6, 5, 2.2));
 }
 
+// ─── Disorder ────────────────────────────────────────────────────────────
+
+// A high-backed chair knocked over backwards: the backrest flat on the
+// stones, the seat on its edge, the legs sticking out toward the table
+function paintFallenChair(ctx, rand, u, w, out) {
+    floorShadow(out.floor, u - 22, u + 40, w - 18, w + 18, 0.45, 5);
+    // Backrest lying in the floor plane, its pointed top away from the seat
+    const S = 16;
+    const back = [P(u, w - S, 1.5), P(u + 44, w - S, 1.5), P(u + 58, w, 1.5), P(u + 44, w + S, 1.5), P(u, w + S, 1.5)];
+    pathPoly(ctx, back);
+    const g = ctx.createLinearGradient(0, back[3].y, 0, back[0].y);
+    g.addColorStop(0, rgb(shadeC(WOOD.top, 6)));
+    g.addColorStop(1, rgb(shadeC(WOOD.front, -4)));
+    ctx.fillStyle = g;
+    ctx.fill();
+    inkPoly(ctx, rand, back, 1.2);
+    // The carved trefoil, now facing the ceiling
+    const tc = P(u + 38, w, 1.6);
+    ctx.fillStyle = "#0b0605";
+    for (const [dx, dw] of [[3, 0], [-2, -3], [-2, 3]]) {
+        const p = P(u + 38 + dx, w + dw, 1.6);
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, 2.4 * tc.s, 1.2 * tc.s, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // Seat standing on its back edge, cushion turned toward us
+    box(ctx, rand, u - 4, u, w - S, w + S, 0, 2 * S, WOOD, { hatchFront: 0.15, ink: 1 });
+    const cu = [P(u - 4.2, w - S + 3, 3), P(u - 4.2, w + S - 3, 3), P(u - 4.2, w + S - 3, 2 * S - 3), P(u - 4.2, w - S + 3, 2 * S - 3)];
+    pathPoly(ctx, cu);
+    ctx.fillStyle = "#5e1410";
+    ctx.fill();
+    inkPoly(ctx, rand, cu, 0.8);
+    // Legs pointing out horizontally, toward where the table is
+    for (const [dw, h] of [[-S + 3, 3], [S - 3, 3], [-S + 3, 2 * S - 3], [S - 3, 2 * S - 3]]) {
+        const a = P(u - 4, w + dw, h), b = P(u - 22, w + dw, h + 1);
+        ctx.strokeStyle = "#5a3d24";
+        ctx.lineWidth = 3.6;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.lineCap = "butt";
+        inkLine(ctx, rand, a.x, a.y + 1.4, b.x, b.y + 1.4, 0.7, 0.7);
+    }
+}
+
+// A floor candelabrum that went over: the tripod in the air, the stem along
+// the stones, its candles snapped and rolled away through their own wax
+function paintFallenCandelabrum(ctx, rand, u, w, out) {
+    const f = out.floor;
+    // Wax splashed where it hit
+    for (let i = 0; i < 6; i++) {
+        const p = P(u + 30 + rand() * 30, w + (rand() - 0.5) * 30, 0.3);
+        f.fillStyle = `rgba(214, 202, 170, ${0.6 + rand() * 0.3})`;
+        f.beginPath();
+        f.ellipse(p.x, p.y, (3 + rand() * 6) * p.s, (1.2 + rand() * 2) * p.s, 0, 0, Math.PI * 2);
+        f.fill();
+    }
+    floorShadow(f, u - 30, u + 50, w - 10, w + 10, 0.4, 4);
+    const stem0 = P(u - 26, w, 2), stem1 = P(u + 34, w + 4, 2);
+    ctx.strokeStyle = "#0f0d0c";
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(stem0.x, stem0.y);
+    ctx.lineTo(stem1.x, stem1.y);
+    ctx.stroke();
+    // Tripod feet now raised in the air at the base end
+    for (const [dw, h] of [[-9, 6], [9, 6], [0, 12]]) {
+        const tip = P(u - 34, w + dw, h);
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(stem0.x, stem0.y);
+        ctx.lineTo(tip.x, tip.y);
+        ctx.stroke();
+    }
+    // The arm crossbar and cups at the head end
+    const a0 = P(u + 34, w - 14, 3), a1 = P(u + 34, w + 18, 2);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(a0.x, a0.y);
+    ctx.quadraticCurveTo(stem1.x + 4, stem1.y + 2, a1.x, a1.y);
+    ctx.stroke();
+    ctx.lineCap = "butt";
+    for (const c of [a0, stem1, a1]) {
+        ctx.fillStyle = "#151210";
+        ctx.beginPath();
+        ctx.ellipse(c.x + 2, c.y, 2.2, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // Candles snapped off and rolled across the floor
+    for (let i = 0; i < 3; i++) {
+        const cu = u + 44 + i * 10 + rand() * 6, cw = w - 18 + i * 14 + rand() * 6, ang = rand() * Math.PI;
+        const p0 = P(cu - Math.cos(ang) * 6, cw - Math.sin(ang) * 6, 2), p1 = P(cu + Math.cos(ang) * 6, cw + Math.sin(ang) * 6, 2);
+        ctx.strokeStyle = "#d8cba8";
+        ctx.lineWidth = 4;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(6,4,4,0.6)";
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+        ctx.lineCap = "butt";
+    }
+}
+
+// The two catalogue cabinets stood side by side as one bank
+function paintCatalogBank(ctx, rand, u, w, out) {
+    paintCatalog(ctx, rand, u - 31, w, out, { open: [9, 22, 27], candle: true });
+    paintCatalog(ctx, rand, u + 31, w, out, { open: [5, 14] });
+}
+
 // ─── Finish ──────────────────────────────────────────────────────────────
 
 let grainTile = null;
@@ -1447,33 +1562,47 @@ export function propCovers(pr, points) {
 // x, y: where the prop's footprint centre sits in the room (screen/world space).
 // du, dw: footprint half-extents in floor units (for colliders and shadows).
 // height: tallest point in floor units (for the sprite's bounds).
-const TABLE = placeAt(600, 470);
+// Laid out as the room would have been furnished (reading room, cataloguing,
+// nave and side chapels), then disturbed: a chair knocked over, a candelabrum
+// down, one pew shoved out of line.
+const TABLE = placeAt(560, 455);
 const nearTable = (du, dw) => {
     const p = P(TABLE.u + du, TABLE.w + dw);
     return { x: p.x, y: p.y };
 };
+const chair = mode => (c, r, u, w, o) => highChair(c, r, u, w, mode, o);
 export const PROP_DEFS = [
-    { id: "reading_table", x: 600, y: 470, du: 100, dw: 34, height: 70, paint: paintReadingTable },
-    // Far chair facing us across the table; near chair pulled out, its back to us
-    { id: "chair_far", ...nearTable(-30, 56), du: 16, dw: 16, height: 90, paint: (c, r, u, w, o) => highChair(c, r, u, w, "facing", o) },
-    { id: "chair_near", ...nearTable(22, -50), du: 16, dw: 16, height: 90, paint: (c, r, u, w, o) => highChair(c, r, u, w, "away", o) },
-    { id: "pew_left", x: 642, y: 735, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { candle: -1 }) },
-    { id: "pew_right", x: 958, y: 735, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { broken: true }) },
-    { id: "catalog_a", x: 995, y: 440, du: 34, dw: 18, height: 112, paint: (c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [9, 22, 27], candle: true }), extent: { dw0: 40 } },
-    { id: "catalog_b", x: 1130, y: 440, du: 34, dw: 18, height: 112, paint: (c, r, u, w, o) => paintCatalog(c, r, u, w, o, { open: [5, 14] }), extent: { dw0: 40 } },
-    { id: "lectern", x: 1268, y: 470, du: 36, dw: 20, height: 90, paint: paintLectern },
-    { id: "evidence_board", x: 333, y: 461, du: 46, dw: 14, height: 140, paint: paintEvidenceBoard },
-    { id: "statue", x: 1396, y: 428, du: 26, dw: 26, height: 180, paint: paintStatue, extent: { dw0: 40 } },
-    { id: "gibbet", x: 1268, y: 705, du: 40, dw: 18, height: 160, paint: paintGibbet },
-    { id: "sarcophagus", x: 1140, y: 612, du: 56, dw: 24, height: 60, paint: paintSarcophagus },
+    // Reading room: the table parallel to the shelves, chairs drawn up to it
+    // (one collider covers the table and the chairs tucked in behind it)
+    { id: "reading_table", x: 560, y: 455, du: 100, dw: 34, height: 70, paint: paintReadingTable, collider: { dw1: 74 } },
+    { id: "chair_far_l", solid: false, ...nearTable(-38, 56), du: 16, dw: 16, height: 90, paint: chair("facing") },
+    { id: "chair_far_r", solid: false, ...nearTable(38, 56), du: 16, dw: 16, height: 90, paint: chair("facing") },
+    { id: "chair_near", solid: false, ...nearTable(34, -50), du: 16, dw: 16, height: 90, paint: chair("away") },
+    { id: "chair_fallen", solid: false, ...nearTable(-70, -66), du: 22, dw: 16, height: 30, paint: paintFallenChair, extent: { du: 40 } },
+    { id: "evidence_board", x: 300, y: 400, du: 46, dw: 14, height: 140, paint: paintEvidenceBoard },
+    // Cataloguing: the cabinets as one bank, the lectern beside them, the angel in the corner
+    { id: "catalogs", x: 1040, y: 438, du: 64, dw: 18, height: 112, paint: paintCatalogBank, extent: { dw0: 40 } },
+    { id: "lectern", x: 1235, y: 465, du: 36, dw: 20, height: 90, paint: paintLectern },
+    { id: "statue", x: 1400, y: 405, du: 26, dw: 26, height: 180, paint: paintStatue, extent: { dw0: 40 } },
+    // The nave: two rows of pews either side of the aisle, facing the Monolith
+    { id: "pew_l1", x: 640, y: 742, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { candle: -1 }) },
+    { id: "pew_r1", x: 960, y: 742, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, { broken: true }) },
+    { id: "pew_l2", x: 626, y: 828, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, {}) },
+    { id: "pew_r2", x: 960, y: 822, du: 60, dw: 14, height: 62, paint: (c, r, u, w, o) => paintPew(c, r, u, w, o, {}) },
+    // Side chapels and the aisles: the gibbet by the ritual altar, the tomb in the right aisle
+    { id: "gibbet", x: 225, y: 705, du: 40, dw: 18, height: 160, paint: paintGibbet },
+    { id: "sarcophagus", x: 1185, y: 612, du: 56, dw: 24, height: 60, paint: paintSarcophagus },
+    { id: "candelabrum_fallen", solid: false, x: 520, y: 600, du: 40, dw: 20, height: 16, paint: paintFallenCandelabrum, extent: { du: 50 } },
+    // Storage in the front corners
     { id: "crates_left", x: 205, y: 912, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { skull: true }) },
-    { id: "crates_right", x: 1440, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) }
+    { id: "crates_right", x: 1450, y: 905, du: 54, dw: 30, height: 80, paint: (c, r, u, w, o) => paintCrates(c, r, u, w, o, { flip: true }) }
 ];
 
 // Colliders as screen-space rectangles over each footprint (engine obstacle format)
-export const PROP_COLLIDERS = PROP_DEFS.map(d => {
+export const PROP_COLLIDERS = PROP_DEFS.filter(d => d.solid !== false).map(d => {
     const { u, w } = placeAt(d.x, d.y);
-    const a = P(u - d.du, w + d.dw), b = P(u + d.du, w + d.dw), c = P(u + d.du, w - d.dw), e = P(u - d.du, w - d.dw);
+    const back = (d.collider && d.collider.dw1) || d.dw;
+    const a = P(u - d.du, w + back), b = P(u + d.du, w + back), c = P(u + d.du, w - d.dw), e = P(u - d.du, w - d.dw);
     const x0 = Math.min(a.x, e.x), x1 = Math.max(b.x, c.x);
     return { x: x0, y: a.y, w: x1 - x0, h: c.y - a.y, label: "prop", id: d.id };
 });

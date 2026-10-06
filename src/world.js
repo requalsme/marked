@@ -82,20 +82,22 @@ export const ROOM = {
     interactables: [
         { type: "blood_ritual_altar", x: 430, y: 800, data: { radius: 28 } },
         { type: "static_signal_pylon", x: 245, y: 575, data: { radius: 24 } },
-        { type: "corpse_lantern_shrine", x: 1380, y: 790, data: { radius: 25 } },
-        { type: "wax_record_chest", x: 1170, y: 905, data: { radius: 22, state: "closed" } },
+        { type: "corpse_lantern_shrine", x: 1450, y: 775, data: { radius: 25 } },
+        { type: "wax_record_chest", x: 1285, y: 918, data: { radius: 22, state: "closed" } },
         { type: "sealed_zone_door", x: 800, y: 302, data: { radius: 34, state: "closed" } }
     ],
     candles: [
-        // Floor candelabras
-        { x: 292, y: 356, intensity: 0.85 },
-        { x: 1308, y: 356, intensity: 0.85 },
-        { x: 205, y: 730, intensity: 0.75 },
-        { x: 1405, y: 650, intensity: 0.75 },
+        // Floor candelabras: a pair flanking the door steps, a pair flanking the
+        // altar, one at the head of the tomb, one at the foot of the aisle
+        { x: 650, y: 345, intensity: 0.85 },
+        { x: 950, y: 345, intensity: 0.85 },
+        { x: 335, y: 770, intensity: 0.75 },
+        { x: 525, y: 770, intensity: 0.75 },
+        { x: 1325, y: 632, intensity: 0.75 },
         { x: 800, y: 952, intensity: 0.7 },
-        // Clusters of ritual candles stood straight on the flagstones
-        { x: 470, y: 590, intensity: 0.5, kind: "floorcandles" },
-        { x: 1050, y: 570, intensity: 0.5, kind: "floorcandles" },
+        // Vigil candles stood on the flagstones either side of the Monolith
+        { x: 712, y: 668, intensity: 0.5, kind: "floorcandles" },
+        { x: 888, y: 668, intensity: 0.5, kind: "floorcandles" },
         // Iron sconces on the back-wall pillars
         ...[...SCONCE_PILLARS].map(x => ({ x, y: SCONCE_Y, intensity: 0.75, kind: "sconce", scale: 1, wall: true })),
         // Sconces on the side walls
@@ -740,8 +742,23 @@ function drawDoorSteps(ctx, rand) {
 
 function drawFloorDebris(ctx, rand) {
     // Loose parchment, lying flat in the floor plane
-    for (let i = 0; i < 46; i++) {
-        const u = (rand() - 0.5) * 1560, w = 30 + rand() * (BACK_W - 60);
+    // Most of it lies where the documents are: under the shelves, round the
+    // reading table, the catalogues, the lectern and the evidence board
+    const sources = [[-283, 1067, 120], [284, 1109, 90], [511, 1048, 70], [-600, 1200, 70]];
+    for (let i = 0; i < 70; i++) {
+        let u, w;
+        const r = rand();
+        if (r < 0.3) {
+            u = (rand() - 0.5) * 1100;
+            w = BACK_W - 30 - rand() * 110;
+        } else if (r < 0.8) {
+            const [su, sw, spread] = sources[Math.floor(rand() * sources.length)];
+            u = su + (rand() - 0.5) * spread * 2.4;
+            w = sw - rand() * spread * 1.8;
+        } else {
+            u = (rand() - 0.5) * 1560;
+            w = 30 + rand() * (BACK_W - 60);
+        }
         if (Math.abs(u) < 100 && w < BACK_W - 120) continue; // keep the runner mostly clear
         drawFloorPaper(ctx, rand, u, w);
     }
@@ -753,12 +770,23 @@ function drawFloorDebris(ctx, rand) {
         ctx.ellipse(p.x, p.y, (2 + rand() * 6) * p.s, (1 + rand() * 2.4) * p.s, 0, 0, Math.PI * 2);
         ctx.fill();
     }
-    // Old blood trails
-    for (let i = 0; i < 9; i++) {
-        let p = project((rand() - 0.5) * 1300, 80 + rand() * (BACK_W - 200));
+    // Old blood: a body dragged from the altar to the storage corner, and
+    // spatter thrown round the Monolith's foot
+    let du = -392, dw = 330;
+    for (let k = 0; k < 40; k++) {
+        du -= 4 + rand() * 2;
+        dw -= 4 + rand() * 2.5;
+        const p = project(du + Math.sin(k * 0.4) * 6, dw);
+        ctx.fillStyle = `rgba(${60 + rand() * 30}, 6, 5, ${0.18 + rand() * 0.18})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, (7 + rand() * 5) * p.s, (2.4 + rand() * 1.4) * p.s, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    for (let i = 0; i < 4; i++) {
+        let p = project((rand() - 0.5) * 220, 640 + rand() * 120);
         const a = rand() * Math.PI * 2;
-        for (let k = 0; k < 16; k++) {
-            const r = (7 - k * 0.35) * p.s;
+        for (let k = 0; k < 12; k++) {
+            const r = (6 - k * 0.4) * p.s;
             ctx.fillStyle = `rgba(${60 + rand() * 30}, 6, 5, ${0.25 + rand() * 0.2})`;
             ctx.beginPath();
             ctx.ellipse(p.x + Math.cos(a) * k * 7, p.y + Math.sin(a) * k * 2.6, Math.max(1, r), Math.max(0.6, r * 0.4), 0, 0, Math.PI * 2);
@@ -772,9 +800,9 @@ function drawFloorDebris(ctx, rand) {
     for (const [u, n] of [[-690, 5], [-430, 3], [-255, 4], [270, 4], [470, 3], [700, 5]]) {
         drawBookHeap(ctx, rand, u, BACK_W - 22, n);
     }
-    // Scattered bones by the lantern shrine
-    for (const [u, w] of [[640, 300], [600, 250], [690, 230]]) drawBone(ctx, rand, u, w);
-    drawFloorSkull(ctx, rand, 655, 275);
+    // Scattered bones in front of the lantern shrine
+    for (const [u, w] of [[650, 340], [610, 370], [690, 320]]) drawBone(ctx, rand, u, w);
+    drawFloorSkull(ctx, rand, 640, 352);
 }
 
 function drawFloorPaper(ctx, rand, u, w) {
