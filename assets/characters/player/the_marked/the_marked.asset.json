@@ -17,6 +17,7 @@
   "animations": [
     "the_marked.idle",
     "the_marked.walk",
+    "the_marked.run",
     "the_marked.basic_attack",
     "the_marked.hit_react",
     "the_marked.death_collapse",

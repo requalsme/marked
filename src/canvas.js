@@ -78,12 +78,12 @@ const ENEMY_ART = {
     "The Shape": {
         scale: 0.36, alpha: 0.6, glow: "#5b2a70", death: "the_marked.death_collapse",
         pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 50 - e.attackCooldown }
-            : { key: moving(e) ? "the_marked.walk" : "the_marked.idle" }
+            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
     },
     "Corpse Echo": {
         scale: 0.36, alpha: 0.8, glow: "#7a1010", death: "the_marked.death_collapse",
         pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 45 - e.attackCooldown }
-            : { key: moving(e) ? "the_marked.walk" : "the_marked.idle" }
+            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
     }
 };
 
@@ -993,6 +993,10 @@ export class CanvasRenderer {
         if (p.health <= 0) {
             key = "the_marked.death_collapse";
             elapsed = p.deathTimer;
+        } else if (p.dashTimer > 0) {
+            // The dash's 12 ticks play the whole dodge step (the dash grants i-frames, so test it before the hit reaction)
+            key = "the_marked.dodge_step";
+            elapsed = 12 - p.dashTimer;
         } else if (p.invulnTimer > 0) {
             key = "the_marked.hit_react";
             elapsed = 25 - p.invulnTimer;
@@ -1002,18 +1006,42 @@ export class CanvasRenderer {
         } else if (p.sanity < 40) {
             key = "the_marked.low_sanity";
         } else if (p.state === "moving") {
-            key = "the_marked.walk";
+            // 4.5 px/frame is about four body-heights a second: a sprint, so the run cycle is the one that matches
+            key = "the_marked.run";
         }
 
         const config = assetLoader.animationsMap[key];
         let idx = 0;
         if (config) {
-            const loop = key !== "the_marked.death_collapse" && key !== "the_marked.hit_react" && key !== "the_marked.basic_attack";
-            idx = loop ? Math.floor(this.frame * (config.fps / 60)) % config.frames : Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60))));
+            const oneShot = key === "the_marked.death_collapse" || key === "the_marked.hit_react" || key === "the_marked.basic_attack" || key === "the_marked.dodge_step";
+            idx = oneShot ? Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60)))) : Math.floor(this.frame * (config.fps / 60)) % config.frames;
         }
+
+        // The Shape: a dark double half a step behind, a few frames out of phase (and further out at low sanity)
+        if (config && p.health > 0) this.drawShapeEcho(ctx, p, key, config, idx);
 
         const alpha = p.invulnTimer > 0 && Math.floor(this.frame / 4) % 2 === 0 ? 0.48 : 1;
         assetLoader.drawFrame(ctx, key, idx, p.x, p.y, p.facing, 0.36 * depthScale(p.y), alpha);
+        ctx.restore();
+    }
+
+    drawShapeEcho(ctx, p, key, config, idx) {
+        const k = depthScale(p.y);
+        const lowSanity = p.sanity < 40;
+        const lag = lowSanity ? 7 : 4;
+        let echoIdx = idx;
+        if (config.loop) {
+            const n = config.frames;
+            echoIdx = (((Math.floor((this.frame - lag * 2) * (config.fps / 60))) % n) + n) % n;
+        } else {
+            echoIdx = Math.max(0, idx - 1);
+        }
+        const dir = p.facing === "left" ? 1 : -1;
+        const jitter = lowSanity ? Math.sin(this.frame * 0.9) * 2.4 : 0;
+        const obs = p.profile.observation / 100;
+        ctx.save();
+        ctx.filter = "brightness(0.32) sepia(1) hue-rotate(225deg) saturate(2.2)";
+        assetLoader.drawFrame(ctx, key, echoIdx, p.x + (dir * 26 + jitter) * k, p.y - 3 * k, p.facing, 0.36 * k, 0.24 + obs * 0.26);
         ctx.restore();
     }
 

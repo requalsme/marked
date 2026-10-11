@@ -12,7 +12,7 @@
     128,
     232
   ],
-  "frame_count": 8,
+  "frame_count": 12,
   "fps": 12,
   "loop": true,
   "mirror_x": true,
@@ -40,7 +40,11 @@
     "characters/player/the_marked/walk/the_marked_walk_04.png",
     "characters/player/the_marked/walk/the_marked_walk_05.png",
     "characters/player/the_marked/walk/the_marked_walk_06.png",
-    "characters/player/the_marked/walk/the_marked_walk_07.png"
+    "characters/player/the_marked/walk/the_marked_walk_07.png",
+    "characters/player/the_marked/walk/the_marked_walk_08.png",
+    "characters/player/the_marked/walk/the_marked_walk_09.png",
+    "characters/player/the_marked/walk/the_marked_walk_10.png",
+    "characters/player/the_marked/walk/the_marked_walk_11.png"
   ],
   "sheet": "characters/player/the_marked/the_marked_walk_sheet.png",
   "gif": "characters/player/the_marked/the_marked_walk.gif",
