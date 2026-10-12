@@ -20,6 +20,7 @@ export const CONFRONTATION_OBSERVATION = 10; // Observation added per confrontat
 export const ENEMY_SCALING_PER_LEVEL = 0.12;  // +12% enemy health/damage per player level above 1
 export const BLOOD_VIAL_CHANCE = 0.15;        // share of drops that are healing vials
 export const BLOOD_VIAL_HEAL_PCT = 0.20;      // of max health
+export const CORPSE_RISE_CHANCE = 0.25;       // an unrecovered corpse stirs as the player nears it
 
 // The Monolith counters what survives: enemies grow with the player's level
 export function enemyScale(level) {
@@ -43,6 +44,23 @@ export function playerDamage(profile, gearDamage = 0) {
 export function basePlayerCrit(classType) {
     return classType === "Static Marked" ? 0.25 : 0.10;
 }
+
+// Who fights how (counters key off this)
+const MELEE_ENEMIES = new Set(["Cabinet Indexer", "Witness Chair", "Corpse Echo", "The Shape"]);
+
+// What an enemy that shoots, shoots
+const ENEMY_SHOTS = {
+    "Ink Redactor": { type: "ink_blot", sanityDamage: 12, speed: 5.5, color: "#000000", radius: 8, life: 80 },
+    "Paper Wraith": { type: "shadow_wave", sanityDamage: 7, speed: 6, color: "#f1e2b7", radius: 13, life: 38 }
+};
+
+// The Shape fights with the player's own class: same attack, same reach, in the Monolith's colours
+const SHAPE_ATTACKS = {
+    "Signal Marked": { type: "static_spark", speed: 9, life: 45, radius: 8, color: "#7a5fd0", range: 330, cooldown: 56 },
+    "Static Marked": { type: "blade_dash", speed: 4, life: 15, radius: 15, color: "#3d1052", range: 64, cooldown: 40 },
+    "Blood Marked": { type: "blood_cleave", speed: 6, life: 20, radius: 20, color: "#6a0d2a", range: 118, cooldown: 60 },
+    "default": { type: "sword_slash", speed: 5, life: 20, radius: 14, color: "#3d1052", range: 100, cooldown: 54 }
+};
 
 // Particle colours that are liquids: they fly as drops and stain the floor
 const LIQUIDS = {
@@ -80,6 +98,10 @@ export class GameEngine {
         this.spawnDelay = 4000; // spawn every 4s
         this.bossSpawned = false;
         
+        this.tick = 0;        // frames of play, for timers that outlive an entity
+        this.counters = {};   // habit -> power: what the Monolith is currently using against the player
+        this.altarTimer = 0;
+        for (const c of ROOM.candles) { c.snuffed = false; c.relightAt = 0; }
         this.hitStop = 0; // Frames to freeze the engine
         this.bossDefeated = false;
         this.bossAnnounced = false;
@@ -356,6 +378,7 @@ export class GameEngine {
             return;
         }
 
+        this.tick++;
         this.player.currentLifeDuration += 1 / 60;
         this.player.profile.currentLifeDuration = this.player.currentLifeDuration;
         this.player.profile.stats.activeSeconds = (this.player.profile.stats.activeSeconds || 0) + 1 / 60;
@@ -392,6 +415,9 @@ export class GameEngine {
         this.updateFloatingTexts();
         this.updateLoot();
         this.updateInteractables();
+        this.updateBargainTraps(onEvent);
+        this.updateCandles(onEvent);
+        this.updateCorpses(onEvent);
 
         // Boss: the Seal Mother manifests once the Monolith has modeled the player
         if (!this.bossSpawned && !this.bossDefeated && this.player.profile.observation >= BOSS_OBSERVATION_THRESHOLD) {
@@ -516,6 +542,7 @@ export class GameEngine {
                     this.player.state = "dashing";
                     audioManager.play("dash");
                     this.note("dash");
+                    this.baitDash();
                 } else {
                     this.player.vx = dx * this.player.speed;
                     this.player.vy = dy * this.player.speed;
@@ -819,14 +846,8 @@ export class GameEngine {
 
                 if (dist < 220 && e.shootCooldown === 0) {
                     e.shootCooldown = 90;
-                    this.spawnProjectiles("enemy", e.x, e.y, this.player.x, this.player.y, "ink_blot", {
-                        damage: e.damage,
-                        sanityDamage: 12,
-                        speed: 5.5,
-                        color: "#000000",
-                        radius: 8,
-                        life: 80
-                    });
+                    const aim = this.aimAt(e, ENEMY_SHOTS["Ink Redactor"].speed);
+                    this.fireShot(e, aim.x, aim.y);
                 }
             } else if (e.type === "Paper Wraith") {
                 // Mid-range paper spirit. Drifts in, then throws a crescent of scraps.
@@ -843,14 +864,8 @@ export class GameEngine {
 
                 if (dist < 175 && e.attackCooldown === 0) {
                     e.attackCooldown = 62;
-                    this.spawnProjectiles("enemy", e.x, e.y, this.player.x, this.player.y, "shadow_wave", {
-                        damage: e.damage,
-                        sanityDamage: 7,
-                        speed: 6,
-                        color: "#f1e2b7",
-                        radius: 13,
-                        life: 38
-                    });
+                    const aim = this.aimAt(e, ENEMY_SHOTS["Paper Wraith"].speed);
+                    this.fireShot(e, aim.x, aim.y);
                 }
             } else if (e.type === "Seal Mother") {
                 // Boss movement
@@ -878,27 +893,7 @@ export class GameEngine {
                     this.createParticleExplosion(this.player.x, this.player.y, "#ffcc00", 15);
                 }
             } else if (e.type === "The Shape") {
-                // Rival copy - mimics behavior!
-                if (dist > 50) {
-                    e.vx = (dx / dist) * e.speed;
-                    e.vy = (dy / dist) * e.speed;
-                } else {
-                    e.vx = 0;
-                    e.vy = 0;
-                }
-
-                if (dist < 100 && e.attackCooldown === 0) {
-                    e.attackCooldown = 50;
-                    // Fire a shadowy sword wave
-                    this.spawnProjectiles("enemy", e.x, e.y, this.player.x, this.player.y, "shadow_wave", {
-                        damage: e.damage,
-                        sanityDamage: 5,
-                        speed: 6.5,
-                        color: "#3d1052",
-                        radius: 12,
-                        life: 40
-                    });
-                }
+                this.updateShape(e, dx, dy, dist);
             } else if (e.type === "Corpse Echo") {
                 // Highly aggressive, uses past stats
                 if (dist > 20) {
@@ -911,7 +906,8 @@ export class GameEngine {
 
                 if (dist < 120 && e.attackCooldown === 0) {
                     e.attackCooldown = 45;
-                    this.spawnProjectiles("enemy", e.x, e.y, this.player.x, this.player.y, 
+                    const aim = this.aimAt(e, 5.5);
+                    this.spawnProjectiles("enemy", e.x, e.y, aim.x, aim.y,
                         e.classType === "Blood Marked" ? "blood_cleave" : "sword_slash", {
                         damage: e.damage,
                         sanityDamage: 8,
@@ -922,6 +918,14 @@ export class GameEngine {
                     });
                 }
             }
+
+            // What the Monolith has learned of the player, turned on them
+            if (this.counters.kiter && dist > 140 && MELEE_ENEMIES.has(e.type) && !e.bait) {
+                const k = 1 + 0.3 * this.counters.kiter;     // a retreating player is run down
+                e.vx *= k; e.vy *= k;
+            }
+            if (this.counters.brawler && MELEE_ENEMIES.has(e.type)) this.trackClinch(e, dist, onEvent);
+            if (e.bait) this.applyBait(e, dx, dy, dist);
 
             if (e.detour) {
                 if (--e.detour.t <= 0) e.detour = null;
@@ -1015,7 +1019,7 @@ export class GameEngine {
                     if (e.health > 0 && this.distance(p.x, p.y, e.x, e.y) < p.radius + e.radius) {
                         // Is crit?
                         let isCrit = Math.random() < p.crit;
-                        let finalDmg = this.modifyPlayerHit(isCrit ? Math.round(p.damage * 1.7) : p.damage);
+                        let finalDmg = this.modifyPlayerHit(isCrit ? Math.round(p.damage * 1.7) : p.damage, e);
                         
                         e.health -= finalDmg;
                         this.note("hit", { crit: isCrit });
@@ -1205,6 +1209,144 @@ export class GameEngine {
         if (this.player) recordEvent(this.player.profile, kind, data);
     }
 
+    // ─── What the Monolith does with what it has learned ────────────────────────────
+
+    // Enemies that shoot lead a retreating player (Led shots)
+    aimAt(e, projSpeed) {
+        const p = this.player, power = this.counters.kiter || 0;
+        if (!power) return { x: p.x, y: p.y };
+        const t = Math.min(40, Math.hypot(p.x - e.x, p.y - e.y) / projSpeed) * Math.min(1, power);
+        return { x: p.x + p.vx * t, y: p.y + p.vy * t };
+    }
+
+    fireShot(e, tx, ty) {
+        const shot = ENEMY_SHOTS[e.type];
+        if (!shot) return;
+        this.spawnProjectiles("enemy", e.x, e.y, tx, ty, shot.type, { damage: e.damage, sanityDamage: shot.sanityDamage, speed: shot.speed, color: shot.color, radius: shot.radius, life: shot.life });
+    }
+
+    // Baited dashes: the witnesses see the dash coming. Melee enemies freeze and flash while the player is in the air,
+    // then lunge at where they land; shooters loose a shot at the landing point.
+    baitDash() {
+        const power = this.counters.dasher || 0;
+        if (!power) return;
+        const p = this.player, reach = p.speed * PLAYER_DASH_MULT * 12;
+        const ty = this.clampY(p.y + p.dashDy * reach), tx = this.clampX(p.x + p.dashDx * reach, ty);
+        let any = false;
+        for (const e of this.enemies) {
+            if (e.health <= 0 || e.type === "Seal Mother" || this.distance(p.x, p.y, e.x, e.y) > 340) continue;
+            e.bait = { wind: 12, lunge: 14 + Math.round(8 * Math.min(1, power)), power: Math.min(1, power), tx, ty, melee: MELEE_ENEMIES.has(e.type) };
+            any = true;
+        }
+        if (any) this.spawnFloatingText("!", p.x, p.y - 44, "#9a4ab8", true);
+    }
+
+    applyBait(e, dx, dy, dist) {
+        const b = e.bait;
+        if (b.wind > 0) {
+            b.wind--;
+            e.vx = 0; e.vy = 0;
+            e.hitFlash = Math.max(e.hitFlash, 2);
+            if (b.wind === 0 && !b.melee && e.attackCooldown <= 0) { this.currentActor = e.type; this.fireShot(e, b.tx, b.ty); e.attackCooldown = 30; }
+            return;
+        }
+        if (b.melee && b.lunge > 0) {
+            b.lunge--;
+            const sp = e.speed * (2 + 1.2 * b.power);
+            e.vx = (dx / dist) * sp; e.vy = (dy / dist) * sp;
+            if (b.lunge === 0) e.attackCooldown = 0;
+            return;
+        }
+        e.bait = null;
+    }
+
+    // Slams: a melee enemy the player keeps standing next to winds up a telegraphed ring and brings it down
+    trackClinch(e, dist, onEvent) {
+        const power = Math.min(1, this.counters.brawler);
+        if (e.slamCool > 0) e.slamCool--;
+        e.clinch = dist < 80 ? (e.clinch || 0) + 1 : Math.max(0, (e.clinch || 0) - 2);
+        if (e.clinch >= 70 - 30 * power && !e.slamCool) {
+            e.clinch = 0;
+            e.slamCool = 150;
+            onEvent("mark", { kind: "slam", x: e.x, y: e.y, radius: 88, frames: 32, damage: Math.round(e.damage * (1.2 + 0.6 * power)), sanity: 0, source: `${e.type}'s slam` });
+        }
+    }
+
+    // Bargain traps: whoever lingers at the altar after signing is collected from
+    updateBargainTraps(onEvent) {
+        const power = this.counters.ritualist || 0;
+        const altar = this.interactables.find(i => i.type === "blood_ritual_altar");
+        if (!power || !altar) { this.altarTimer = 0; return; }
+        const p = this.player;
+        this.altarTimer = this.distance(p.x, p.y, altar.x, altar.y) < 95 ? this.altarTimer + 1 : Math.max(0, this.altarTimer - 2);
+        if (this.altarTimer >= 360 - 150 * Math.min(1, power)) {
+            this.altarTimer = 0;
+            onEvent("mark", { kind: "bargain", x: p.x, y: p.y, radius: 42, frames: 60, damage: Math.round(10 + 14 * Math.min(1, power)), sanity: 8, source: "the ledger's collection" });
+        }
+    }
+
+    // Snuffed flames: the candles nearest a player who clings to the light go out for a while
+    updateCandles(onEvent) {
+        for (const c of ROOM.candles) {
+            if (c.snuffed && this.tick >= c.relightAt) c.snuffed = false;
+        }
+        const power = this.counters.lightBound || 0;
+        if (!power || this.tick % Math.round(900 - 300 * Math.min(1, power)) !== 0) return;
+        const p = this.player;
+        let best = null, bd = 260;
+        for (const c of ROOM.candles) {
+            const d = this.distance(p.x, p.y, c.x, c.y);
+            if (!c.snuffed && d < bd) { bd = d; best = c; }
+        }
+        if (best) {
+            best.snuffed = true;
+            best.relightAt = this.tick + Math.round(1200 + 600 * Math.min(1, power));
+            onEvent("candle_snuffed", { x: best.x, y: best.y });
+        }
+    }
+
+    // A corpse left where it fell may not stay down. The Death card makes it certain.
+    updateCorpses(onEvent) {
+        if (this.tick % 20 !== 0) return;
+        const prof = this.player.profile;
+        for (const intr of this.interactables) {
+            if (intr.type !== "fresh_marked_corpse" || !intr.data.corpse || intr.data.rolled) continue;
+            if (this.distance(this.player.x, this.player.y, intr.x, intr.y) > 260) continue;
+            intr.data.rolled = true;
+            if (tarotActive(prof, "Death") || Math.random() < CORPSE_RISE_CHANCE) this.raiseCorpse(intr, onEvent);
+        }
+    }
+
+    raiseCorpse(intr, onEvent) {
+        const corp = intr.data.corpse;
+        corp.state = "risen";
+        this.spawnCorpseEcho(corp);
+        this.interactables = this.interactables.filter(i => i !== intr);
+        onEvent("corpse_rose", { corpse: corp });
+    }
+
+    // The Shape: the Monolith's model of the player. It fights with the player's class, keeps the distance the player
+    // keeps, and dashes if the player does.
+    updateShape(e, dx, dy, dist) {
+        const atk = SHAPE_ATTACKS[this.player.profile.classType] || SHAPE_ATTACKS.default;
+        const kiter = this.counters.kiter || 0;
+        const want = kiter > 0.3 ? atk.range * 0.85 : Math.min(60, atk.range * 0.6);
+        if (e.shapeDash > 0) {
+            e.shapeDash--;
+            e.vx = (dx / dist) * e.speed * PLAYER_DASH_MULT; e.vy = (dy / dist) * e.speed * PLAYER_DASH_MULT;
+        } else {
+            if (dist > want + 15) { e.vx = (dx / dist) * e.speed; e.vy = (dy / dist) * e.speed; }
+            else if (dist < want - 25) { e.vx = -(dx / dist) * e.speed * 0.8; e.vy = -(dy / dist) * e.speed * 0.8; }
+            else { e.vx = 0; e.vy = 0; }
+            if (this.counters.dasher && e.behaviorTimer % 180 === 0 && dist > 120) e.shapeDash = 12;
+        }
+        if (dist < atk.range && e.attackCooldown === 0) {
+            e.attackCooldown = atk.cooldown;
+            const aim = this.aimAt(e, atk.speed);
+            this.spawnProjectiles("enemy", e.x, e.y, aim.x, aim.y, atk.type, { damage: e.damage, sanityDamage: 5, speed: atk.speed, color: atk.color, radius: atk.radius, life: atk.life });
+        }
+    }
+
     // What the Monolith will write on the corpse
     deathCause() {
         const src = this.lastDamageSource;
@@ -1223,8 +1365,17 @@ export class GameEngine {
     }
 
     // Reality Traits reshape what a landed hit is worth
-    modifyPlayerHit(dmg) {
+    modifyPlayerHit(dmg, enemy = null) {
         const prof = this.player.profile;
+        // Burst armour: a player who lives on a few decisive crits finds no single blow can take more than a share
+        const power = this.counters.critReliant || 0;
+        if (power && enemy) {
+            const cap = Math.max(1, Math.round(enemy.maxHealth * (0.5 - 0.25 * Math.min(1, power))));
+            if (dmg > cap) {
+                dmg = cap;
+                this.spawnFloatingText("ABSORBED", enemy.x, enemy.y - 34, "#9a4ab8", false);
+            }
+        }
         if (traitActive(prof, "Blood Rain")) dmg *= TUNING.bloodRainDamage;
         if (traitActive(prof, "Mirror Rot")) {
             const arm = this.player.stats.armor || 0;

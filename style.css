@@ -3043,3 +3043,26 @@ body.drawer-open .watcher-whisper {
     font-style: italic;
     margin-top: 6px;
 }
+
+.dossier-used {
+    border: 1px solid #7c0d0a;
+    color: #7c0d0a;
+    flex: none;
+    font-family: var(--font-fell-sc);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 0 5px;
+}
+
+/* While a boss bar crosses the top of the screen the Watcher speaks from the left margin instead */
+body.boss-active .watcher-whisper {
+    left: 24px;
+    max-width: 330px;
+    text-align: left;
+    top: 232px;
+    transform: none;
+}
+
+body.boss-active .watcher-whisper.false-whisper.show {
+    animation: whisperLife 8.5s ease-out forwards;
+}

@@ -175,6 +175,7 @@ export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     let nearLight = false;
     // Check player distance to candles
     for (const c of engine.canvasRenderer.candles) {
+        if (c.snuffed) continue;     // a flame the Monolith has put out gives no comfort
         let dist = engine.distance(engine.player.x, engine.player.y, c.x, c.y);
         if (dist < 90 * c.intensity) {
             nearLight = true;

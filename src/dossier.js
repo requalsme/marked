@@ -84,6 +84,7 @@ export function sampleDossier(profile, engine, dt) {
     // Light: the same test the sanity system uses
     let lit = false;
     for (const c of engine.canvasRenderer ? engine.canvasRenderer.candles : []) {
+        if (c.snuffed) continue;
         if (Math.hypot(p.x - c.x, p.y - c.y) < 90 * c.intensity) { lit = true; break; }
     }
     if (lit) d.lit += dt; else d.dark += dt;

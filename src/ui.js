@@ -6,6 +6,7 @@ import { audioManager } from "./audio.js";
 import { recordEvent, habits, favoriteZone, ensureDossier, obfuscationMask } from "./dossier.js";
 import { SIGNAL_TYPES, TRANSMISSION_TYPES, signalText, signalType } from "./signals.js";
 import { tierOf } from "./watcher.js";
+import { COUNTER_INFO } from "./adapt.js";
 
 // Ritual terms worsen with each bargain signed in the current descent
 // (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
@@ -276,6 +277,7 @@ export class GameUI {
 
         const san = profile.sanity;
         const body = document.body;
+        body.classList.toggle("boss-active", !!engine.bossSpawned);
 
         // Reset sanity classes
         body.classList.remove("sanity-strained", "sanity-fractured", "sanity-broken");
@@ -747,18 +749,19 @@ export class GameUI {
         profile.corpses.forEach((corp, idx) => {
             const isBurned = corp.state === "burned";
             const isBroadcasted = corp.state === "broadcasted";
+            const isRisen = corp.state === "risen";
 
             const card = document.createElement("div");
             card.className = "corpse-card";
             card.innerHTML = `
                 <div>Location: <strong>${corp.zone} [x:${Math.round(corp.x)}, y:${Math.round(corp.y)}]</strong></div>
-                <div>Status: <strong style="color: ${isBurned ? '#d4a343' : isBroadcasted ? '#3b82f6' : '#b01212'}">${isBurned ? 'BURNED' : isBroadcasted ? 'BROADCASTED' : 'FRESH'}</strong></div>
+                <div>Status: <strong style="color: ${isBurned ? '#d4a343' : isBroadcasted ? '#3b82f6' : isRisen ? '#6a6a6a' : '#b01212'}">${isBurned ? 'BURNED' : isBroadcasted ? 'BROADCASTED' : isRisen ? 'RISEN' : 'FRESH'}</strong></div>
                 <div>Death Cause: <span style="color:#b51919">${corp.cause || "Sanity collapse"}</span></div>
                 <div class="corpse-actions" style="margin-top: 10px;">
-                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Recover (Gold + Echo)</button>
-                    <button class="game-btn corpse-btn" data-action="burn" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Burn (Sanity)</button>
-                    <button class="game-btn corpse-btn" data-action="broadcast" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Broadcast (Clarity)</button>
-                    <button class="game-btn corpse-btn" data-action="devour" data-idx="${idx}" ${isBurned || isBroadcasted ? 'disabled' : ''}>Devour (Damage)</button>
+                    <button class="game-btn corpse-btn" data-action="recover" data-idx="${idx}" ${isBurned || isBroadcasted || isRisen ? 'disabled' : ''}>Recover (Gold + Echo)</button>
+                    <button class="game-btn corpse-btn" data-action="burn" data-idx="${idx}" ${isBurned || isBroadcasted || isRisen ? 'disabled' : ''}>Burn (Sanity)</button>
+                    <button class="game-btn corpse-btn" data-action="broadcast" data-idx="${idx}" ${isBurned || isBroadcasted || isRisen ? 'disabled' : ''}>Broadcast (Clarity)</button>
+                    <button class="game-btn corpse-btn" data-action="devour" data-idx="${idx}" ${isBurned || isBroadcasted || isRisen ? 'disabled' : ''}>Devour (Damage)</button>
                 </div>
             `;
 
@@ -852,9 +855,11 @@ export class GameUI {
         } else {
             const hs = habits(profile, mask);
             const fav = favoriteZone(profile);
-            const rows = hs.length ? hs.map(h => `<div class="dossier-habit" title="${h.blurb}">
+            const used = (this.orch.engine && this.orch.engine.counters) || {};
+            const rows = hs.length ? hs.map(h => `<div class="dossier-habit" title="${h.blurb}${used[h.id] ? " " + COUNTER_INFO[h.id].blurb : ""}">
                     <span class="dossier-name">${h.label}</span>
                     <span class="dossier-bar"><i style="width:${Math.round(h.strength * 100)}%"></i></span>
+                    ${used[h.id] ? `<span class="dossier-used" title="${COUNTER_INFO[h.id].blurb}">${COUNTER_INFO[h.id].name}</span>` : ""}
                 </div>`).join("") : `<div class="dossier-quiet">No pattern the Monolith trusts. Keep varying.</div>`;
             body = `${rows}${fav.share > 0.3 && fav.id ? `<div class="dossier-note">Most often found at ${fav.label}.</div>` : ""}`;
         }

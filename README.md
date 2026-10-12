@@ -37,6 +37,12 @@ Any static file server works; the game is plain ES modules with no build step.
   light, sanity, bargains and the dead. It is shown on the Monolith panel (U) and as the Diagnosis under your name.
 - The **Watcher** speaks rarely and only about what it has actually seen: your habits, a corpse you burned, the way you died
   last time. A Fractured mind is lied to; a Broken one is spoken to by name. Whispers are filed under Signals (J).
+- From **Studied (50%)** the Monolith starts using what it has learned, with a telegraph for each: *baited dashes* (witnesses
+  wind up as you dash, then lunge where you land), *led shots* (they aim where you are going), *slams* (stand at arm's length
+  and a ring closes), *burst armour* (no single crit can take more than a share), *bargain traps* (linger at the altar),
+  *snuffed flames* (the candles around you go out). One counter at Studied, two at Modeled, three at Known.
+- **The Shape** fights with your class, keeps your distance and dashes when you do. A corpse you leave behind may stand up as you
+  approach it (always, under the Death card).
 - Habits survive death with decay (you are remembered across lives) and are weakened by Obfuscation, so a player who varies
   their play, or hides, reads as Inconclusive.
 

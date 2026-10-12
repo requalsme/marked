@@ -7,6 +7,7 @@ import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
 import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS, traitActive } from "./systems.js";
 import { Watcher } from "./watcher.js";
+import { activeCounters, COUNTER_INFO } from "./adapt.js";
 import { ensureDossier, sampleDossier, diagnose, closeLife, recordDeath, obfuscationMask } from "./dossier.js";
 import { addSignal, SIGNAL_LOG_LIMIT } from "./signals.js";
 import { assetLoader } from "./assets.js";
@@ -41,6 +42,7 @@ class GameOrchestrator {
         this.waxTraps = []; // active boss traps
         this.watcher = new Watcher();
         this.lifeFlags = {}; // one-shot remarks armed for this descent (sanity, low health)
+        this.knownCounters = new Set(); // counters already announced this life
 
         this.init();
     }
@@ -458,6 +460,7 @@ class GameOrchestrator {
         this.engine.setPlayer(this.activeProfile, combinedStats);
         ensureDossier(this.activeProfile);
         this.lifeFlags = {};
+        this.knownCounters = new Set();
         this.canvasRenderer.resize();
         this.canvasRenderer.snapCamera(this.engine);
         this.ui.closeDrawer();
@@ -469,6 +472,7 @@ class GameOrchestrator {
         
         // Place previous corpses where they fell
         this.activeProfile.corpses.forEach(corp => {
+            if (corp.state === "risen") return; // it walked away
             const type = corp.state === "burned" ? "burned_corpse_remains"
                 : corp.state === "broadcasted" ? "broadcast_corpse" : "fresh_marked_corpse";
             const cy = this.engine.clampY(corp.y);
@@ -692,8 +696,25 @@ class GameOrchestrator {
                     y: data.y,
                     radius: 35,
                     timer: 60, // frames to trigger
+                    life: 60,
+                    kind: "wax",
+                    damage: 25,
+                    sanity: 15,
+                    source: "Seal Mother's wax trap",
                     active: true
                 });
+            } else if (event === "mark") {
+                // Something the Monolith has learned to do to you: a telegraphed ring that resolves after `frames`
+                audioManager.play("wax_trap");
+                this.waxTraps.push({ x: data.x, y: data.y, radius: data.radius, timer: data.frames, life: data.frames, kind: data.kind, damage: data.damage, sanity: data.sanity || 0, source: data.source, active: true });
+            } else if (event === "candle_snuffed") {
+                this.engine.createParticleExplosion(data.x, data.y - 30, "#aaa8a4", 8);
+                audioManager.play("candle_snuff");
+            } else if (event === "corpse_rose") {
+                this.canvasRenderer.triggerShake(10);
+                this.canvasRenderer.showBanner("A BODY RISES", `${data.corpse.cause || "What you left behind"}. It remembers.`, "#6a6a6a", 200);
+                addSignal(this.activeProfile, `The body you left stands again. ${data.corpse.cause ? data.corpse.cause + "." : ""} It carries what you carried.`, "corpse");
+                this.watcher.notify("corpse_rose");
             } else if (event === "watcher_confrontation") {
                 audioManager.play("observation_threshold", { tier: Math.min(4, data.wave) });
                 this.canvasRenderer.triggerShake(16);
@@ -761,6 +782,9 @@ class GameOrchestrator {
         const mask = obfuscationMask(prof, p.stats);
         if (this.simTick % 60 === 0) prof.activeDiagnosis = diagnose(prof, mask);
 
+        // the Monolith decides what to use against you (every two seconds)
+        if (this.simTick % 120 === 0) this.refreshCounters(prof, mask);
+
         // one-shot remarks about the body and mind
         if (p.sanity < 40 && !this.lifeFlags.fractured) { this.lifeFlags.fractured = true; this.watcher.notify("sanity_fractured"); }
         if (p.sanity >= 60) this.lifeFlags.fractured = false;
@@ -773,6 +797,19 @@ class GameOrchestrator {
         const gapMult = (prof.activeTarot === "The Moon" ? 0.5 : 1) * (traitActive(prof, "Static Sky") ? 0.7 : 1);
         const w = this.watcher.update(prof, { life: p.currentLifeDuration, observation: prof.observation, sanity: p.sanity, mask, gapMult, nearCorpse });
         if (w) this.deliverWhisper(w);
+    }
+
+    refreshCounters(prof, mask) {
+        const counters = activeCounters(prof, prof.observation, mask);
+        this.engine.counters = counters;
+        for (const id of Object.keys(counters)) {
+            if (this.knownCounters.has(id)) continue;
+            this.knownCounters.add(id);
+            const info = COUNTER_INFO[id];
+            this.canvasRenderer.showBanner("THE MONOLITH ADAPTS", `${info.name}: ${info.blurb}`, "#9a4ab8", 220);
+            addSignal(prof, `Your habit has been put to work. ${info.name}: ${info.blurb}`, "warning");
+            if (this.knownCounters.size === 1) this.watcher.notify("adapt");
+        }
     }
 
     deliverWhisper(w) {
@@ -792,8 +829,8 @@ class GameOrchestrator {
                     audioManager.play("wax_trap_trigger");
                     let dist = this.engine.distance(p.x, p.y, trap.x, trap.y);
                     if (dist < trap.radius + p.radius) {
-                        this.engine.damagePlayer(25, 15, trap.x, trap.y, "Seal Mother's wax trap");
-                        this.canvasRenderer.triggerShake(15);
+                        this.engine.damagePlayer(trap.damage ?? 25, trap.sanity ?? 15, trap.x, trap.y, trap.source || "a wax trap");
+                        this.canvasRenderer.triggerShake(trap.kind === "slam" ? 10 : 15);
                         
                         // Stall player velocity/action (stun effect)
                         p.vx = 0;
@@ -810,7 +847,7 @@ class GameOrchestrator {
     drawWaxTraps(ctx) {
         ctx.save();
         for (const trap of this.waxTraps) {
-            const pct = 1.0 - trap.timer / 60;
+            const pct = 1.0 - trap.timer / (trap.life || 60);
             const pulse = 0.35 + (Math.sin(trap.timer * 0.18) * 0.25 + 0.25);
             const frame = Math.floor(this.canvasRenderer.frame * 0.18) % 6;
 
@@ -825,6 +862,8 @@ class GameOrchestrator {
             ctx.arc(trap.x, trap.y, trap.radius * pct, 0, Math.PI * 2);
             ctx.fill();
 
+            // A slam is a plain red ring closing in; wax traps and bargains carry the seal art
+            if (trap.kind === "slam") continue;
             assetLoader.drawFrame(ctx, "archive_curse_sigil.play", frame, trap.x, trap.y + 4, "right", 0.25 + pct * 0.12, 0.45 + pct * 0.45);
             if (trap.timer < 18) {
                 assetLoader.drawFrame(ctx, "wax_stamp_impact.play", frame, trap.x, trap.y + 2, "right", 0.28, 0.75);

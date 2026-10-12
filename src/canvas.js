@@ -394,10 +394,12 @@ export class CanvasRenderer {
             }
         }
         for (const c of this.candles) {
+            this.flameOut = !!c.snuffed;     // the Monolith can put a flame out (see engine.updateCandles)
             if (c.kind === "sconce") this.drawSconceFlames(ctx, c);
             else if (c.kind === "floorcandles") this.drawFloorCandles(ctx, c);
             else this.drawCandle(ctx, c);
         }
+        this.flameOut = false;
     }
 
     // Flames for the iron sconces baked into the room texture
@@ -408,7 +410,25 @@ export class CanvasRenderer {
         }
     }
 
+    // A snuffed wick: a thin thread of smoke that curls and fades
+    drawSmoke(ctx, x, top, s, seed) {
+        const t = this.frame;
+        ctx.save();
+        ctx.strokeStyle = "rgba(176, 170, 164, 0.32)";
+        ctx.lineWidth = 1.1 * s;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        for (let i = 1; i <= 8; i++) {
+            const k = i / 8;
+            ctx.lineTo(x + Math.sin(t * 0.05 + seed + i * 0.7) * 3.2 * k * s, top - 22 * k * s);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
     drawFlame(ctx, x, top, s, seed) {
+        if (this.flameOut) { this.drawSmoke(ctx, x, top, s, seed); return; }
         const t = this.frame;
         const sway = (Math.sin(t * 0.18 + seed) * 1.2 + (Math.random() - 0.5) * 0.6) * s;
         const fh = (7 + Math.sin(t * 0.27 + seed) * 1.2) * s;
@@ -1307,6 +1327,7 @@ export class CanvasRenderer {
         lights.push({ x: p.x, y: p.y - 24, r: 210 + sanity * 90, color: [255, 228, 190], a: 1.1 });
         lights.push({ x: p.x, y: p.y - 24, r: 70, color: [255, 240, 215], a: 0.5 });
         for (const c of this.candles) {
+            if (c.snuffed) continue;
             const f = 1 + Math.sin(t * 0.21 + c.x) * 0.05 + (Math.random() - 0.5) * 0.08;
             if (c.kind === "floorcandles") {
                 lights.push({ x: c.x, y: c.y - 20, r: 150 * c.intensity * f, color: [255, 170, 95], a: 0.85 * f });

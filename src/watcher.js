@@ -126,6 +126,8 @@ const EVENTS = {
     boss_down: ["The seal is broken. The record is not."],
     confrontation: [c => `Ten minutes alive. That is long enough to be read. Witnesses are sent.`],
     sanity_fractured: ["Your hands are not steady."],
+    adapt: ["What you do most, we have taught the room to expect.", "Your habits have been put to work."],
+    corpse_rose: ["Your body stands. We did not make it stand; we only declined to stop it."],
     tier1: ["There. The outline of you. I see you now."],
     tier2: ["Your habits have begun to rhyme. The room has noticed."],
     tier3: ["A working model. Imperfect, but it walks."],

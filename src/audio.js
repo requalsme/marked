@@ -453,6 +453,10 @@ const SFX = {
         a.tone(lie ? 233 : 220, { type: "sine", dur: 1.9, gain: 0.05, attack: 0.7 });
         a.tone(lie ? 246.9 : 330, { type: "sine", dur: 1.9, gain: 0.03, attack: 0.9, delay: 0.1 });
     },
+    candle_snuff: (a) => {
+        a.noise({ dur: 0.35, filter: "highpass", freq: 2400, gain: 0.08, attack: 0.02 });
+        a.tone(180, { type: "sine", dur: 0.25, gain: 0.04, slideTo: 90 });
+    },
     ritual_perform: (a, o) => {
         if (o.kind === "static_comm") {
             a.noise({ dur: 0.8, filter: "bandpass", freq: 2200, slideTo: 900, q: 3, gain: 0.25 });
