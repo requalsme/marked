@@ -4,6 +4,7 @@ import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
 import { PROP_COLLIDERS } from "./props.js";
 import { FIXTURE_COLLIDERS } from "./fixtures.js";
 import { traitActive, tarotActive, TUNING } from "./systems.js";
+import { recordEvent } from "./dossier.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -514,6 +515,7 @@ export class GameEngine {
                     this.player.dashDy = dy;
                     this.player.state = "dashing";
                     audioManager.play("dash");
+                    this.note("dash");
                 } else {
                     this.player.vx = dx * this.player.speed;
                     this.player.vy = dy * this.player.speed;
@@ -642,6 +644,7 @@ export class GameEngine {
         if (shouldAttack && this.player.attackCooldown === 0) {
             this.player.attackCooldown = this.player.attackDelay;
             this.player.profile.stats.attacks++;
+            this.note("attack");
             this.player.state = "attacking";
             audioManager.play("attack_swing");
 
@@ -717,6 +720,7 @@ export class GameEngine {
             if (e.health <= 0) {
                 // Reward and remove
                 this.player.profile.exp += 15;
+                this.note("kill", { type: e.type });
                 
                 // Roll loot
                 this.spawnLoot(e.x, e.y, e.lootRarity);
@@ -952,6 +956,7 @@ export class GameEngine {
         const reduced = Math.max(1, Math.round(amount * (20 / (20 + arm))));
         
         this.player.health -= reduced;
+        this.note("hurt", { amount: reduced, source: this.lastDamageSource });
         this.player.invulnTimer = 25; // frames of safety
         
         this.spawnFloatingText(reduced, this.player.x, this.player.y - 20, "#b01212", false);
@@ -1013,6 +1018,7 @@ export class GameEngine {
                         let finalDmg = this.modifyPlayerHit(isCrit ? Math.round(p.damage * 1.7) : p.damage);
                         
                         e.health -= finalDmg;
+                        this.note("hit", { crit: isCrit });
                         this.createParticleExplosion(e.x, e.y, isCrit ? "#ffdd00" : "#aaaaaa", 6);
                         this.spawnFloatingText(finalDmg, e.x, e.y - 20, isCrit ? "#ffdd00" : "#ffffff", isCrit);
                         
@@ -1192,6 +1198,11 @@ export class GameEngine {
                 }
             }
         }
+    }
+
+    // The Monolith takes notes: everything the player does is recorded in their dossier
+    note(kind, data) {
+        if (this.player) recordEvent(this.player.profile, kind, data);
     }
 
     // What the Monolith will write on the corpse

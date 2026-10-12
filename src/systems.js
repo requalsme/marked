@@ -83,16 +83,6 @@ export const TUNING = {
     minSanityDecayRate: 0.15
 };
 
-const WATCHER_QUOTES = [
-    "Subject remains mobile. Velocity profile updated.",
-    "A strange preference for blade strikes. Recorded.",
-    "Bargains accepted. They exchange flesh for fleeting authority.",
-    "Evidence was destroyed. The records remain incomplete.",
-    "Sanity levels collapsing. The Subject's vision fractures.",
-    "They returned to the same room. A predictable search vector.",
-    "Observation threshold surpassed. Preparing the mirror Shape."
-];
-
 export function corruptText(text, sanity) {
     if (sanity >= 70) return text;
     
@@ -150,29 +140,12 @@ export function updateObservation(profile, engine, dt = 1 / 60) {
 
     profile.observation = Math.min(100, profile.observation + totalGain);
 
-    // Diagnostics calculation
-    const attacks = profile.stats.attacks || 0;
-    const moves = profile.stats.movements || 0;
-    const sanityLost = profile.stats.sanityLost || 0;
-
-    let style = "Aggressive";
-    if (moves > attacks * 15) style = "Evasive";
-    else if (sanityLost > attacks * 2) style = "Neglectful";
-
-    let systemsReliance = "Gear-dependent";
-    const corpseActs = profile.corpses.length;
-    if (corpseActs > 3) systemsReliance = "Corpse-preserving";
-    else if (profile.upgrades.ritual > 2) systemsReliance = "Ritual-dependent";
-
-    profile.activeDiagnosis = `Diagnosis: ${style} / ${systemsReliance}`;
-
     // Threshold Event check (Watcher signals). Returns the tier crossed this tick, if any,
     // so the orchestrator can show an alert.
     const prevObs = profile.observation - totalGain;
     for (const t of OBSERVATION_TIERS) {
         if (prevObs < t.at && profile.observation >= t.at) {
             profile.signals.unshift(`Watcher Signal: Observation ${t.at}%. Target is ${t.name.toUpperCase()}. ${t.detail}`);
-            triggerWatcherWhisper(profile);
             return t;
         }
     }
@@ -186,17 +159,6 @@ export const OBSERVATION_TIERS = [
     { at: 75, tier: 3, name: "Modeled", detail: "Behavior archives sync to entities. The Seal Mother stirs." },
     { at: 100, tier: 4, name: "Known", detail: "Shape replication complete. Maximum surveillance." }
 ];
-
-export function triggerWatcherWhisper(profile) {
-    const rIdx = Math.floor(Math.random() * WATCHER_QUOTES.length);
-    const whisper = `Watcher Whisper: "${WATCHER_QUOTES[rIdx]}"`;
-    
-    // Add to signals
-    profile.signals.unshift(whisper);
-    if (profile.signals.length > 50) {
-        profile.signals.pop();
-    }
-}
 
 export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     // Decay sanity slowly over time

@@ -445,6 +445,14 @@ const SFX = {
         a.tone(98 / tier * 1.414, { type: "sine", dur: 1.5 + tier * 0.4, gain: 0.12, attack: 0.3 });
         a.noise({ dur: 1.2, filter: "lowpass", freq: 300, gain: 0.25, attack: 0.2 });
     },
+    // The Watcher speaking: breath through a thin room. A lie (Fractured mind) is slightly out of tune.
+    watcher_whisper: (a, o) => {
+        const lie = o && o.kind === "false";
+        a.noise({ dur: 1.8, filter: "bandpass", freq: 1900, slideTo: 650, q: 2.2, gain: 0.1, attack: 0.5 });
+        a.noise({ dur: 1.2, filter: "bandpass", freq: 3400, slideTo: 2100, q: 5, gain: 0.04, attack: 0.3, delay: 0.25 });
+        a.tone(lie ? 233 : 220, { type: "sine", dur: 1.9, gain: 0.05, attack: 0.7 });
+        a.tone(lie ? 246.9 : 330, { type: "sine", dur: 1.9, gain: 0.03, attack: 0.9, delay: 0.1 });
+    },
     ritual_perform: (a, o) => {
         if (o.kind === "static_comm") {
             a.noise({ dur: 0.8, filter: "bandpass", freq: 2200, slideTo: 900, q: 3, gain: 0.25 });

@@ -5,14 +5,16 @@ import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit } from "./eng
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
-import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
+import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS, traitActive } from "./systems.js";
+import { Watcher } from "./watcher.js";
+import { ensureDossier, sampleDossier, diagnose, closeLife, recordDeath, obfuscationMask } from "./dossier.js";
+import { addSignal, SIGNAL_LOG_LIMIT } from "./signals.js";
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
 import { ROOM } from "./world.js";
 import { installUiTextures } from "./uitextures.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
-const SIGNAL_LOG_LIMIT = 80;
 
 const CLASS_COLORS = {
     "Blood Marked": "#c4231b",
@@ -37,6 +39,8 @@ class GameOrchestrator {
 
         this.gameState = "title"; // title, offline_report, active, game_over
         this.waxTraps = []; // active boss traps
+        this.watcher = new Watcher();
+        this.lifeFlags = {}; // one-shot remarks armed for this descent (sanity, low health)
 
         this.init();
     }
@@ -452,6 +456,8 @@ class GameOrchestrator {
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
+        ensureDossier(this.activeProfile);
+        this.lifeFlags = {};
         this.canvasRenderer.resize();
         this.canvasRenderer.snapCamera(this.engine);
         this.ui.closeDrawer();
@@ -541,6 +547,8 @@ class GameOrchestrator {
         const p = this.activeProfile;
         const life = this.engine.player ? this.engine.player.currentLifeDuration : 0;
         p.longestLife = Math.max(p.longestLife || 0, life);
+        closeLife(p);
+        this.watcher.resetLife(p);
         p.currentLifeDuration = 0;
         p.ritualsThisDescent = 0;
         p.lastRitualTime = 0;
@@ -558,10 +566,14 @@ class GameOrchestrator {
         document.getElementById("death-cause-text").textContent = `Consequence: ${cause}`;
         
         // Save Corpse
+        const killer = this.engine.lastDamageSource || null;
+        recordDeath(this.activeProfile, { cause, killer, seconds: this.engine.player.currentLifeDuration, observation: this.activeProfile.observation, level: this.activeProfile.level });
         const corpseData = {
             x: this.engine.player.x,
             y: this.engine.player.y,
             cause: cause,
+            killer: killer,
+            seconds: Math.round(this.engine.player.currentLifeDuration),
             gear: JSON.parse(JSON.stringify(this.activeProfile.gear)),
             zone: "The Keeping House",
             level: this.activeProfile.level,
@@ -685,15 +697,18 @@ class GameOrchestrator {
             } else if (event === "watcher_confrontation") {
                 audioManager.play("observation_threshold", { tier: Math.min(4, data.wave) });
                 this.canvasRenderer.triggerShake(16);
+                this.watcher.notify("confrontation");
                 this.canvasRenderer.showBanner(`WATCHER CONFRONTATION ${data.wave}`, `${data.count} witness${data.count === 1 ? "" : "es"} descend${data.count === 1 ? "s" : ""}. Survival is being studied.`, "#9a4ab8", 200);
             } else if (event === "boss_spawned") {
                 this.canvasRenderer.triggerShake(25);
                 this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
                 this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
+                this.watcher.notify("boss_wake");
             } else if (event === "boss_defeated") {
                 this.canvasRenderer.triggerShake(40);
                 this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
                 this.activeProfile.exp += 300;
+                this.watcher.notify("boss_down");
             }
         });
 
@@ -705,11 +720,13 @@ class GameOrchestrator {
         if (crossed) {
             audioManager.play("observation_threshold", { tier: crossed.tier });
             this.canvasRenderer.triggerShake(6 + crossed.tier * 3);
+            this.watcher.notify("tier" + crossed.tier);
             this.canvasRenderer.showBanner(`YOU ARE ${crossed.name.toUpperCase()}`, `Observation ${crossed.at}% — ${crossed.detail}`, "#c4231b", 200);
             this.ui.flashObservation();
         }
         handleSanityDecay(this.activeProfile, this.engine, dt);
         const p = this.engine.player;
+        this.studyPlayer(dt);
         audioManager.update({
             sanity: p.sanity,
             observation: this.activeProfile.observation,
@@ -735,6 +752,33 @@ class GameOrchestrator {
         if (this.simTick % 180 === 0) {
             this.saveActiveProfile();
         }
+    }
+
+    // The Monolith takes notes, and the Watcher decides whether any of it is worth saying
+    studyPlayer(dt) {
+        const prof = this.activeProfile, p = this.engine.player;
+        sampleDossier(prof, this.engine, dt);
+        const mask = obfuscationMask(prof, p.stats);
+        if (this.simTick % 60 === 0) prof.activeDiagnosis = diagnose(prof, mask);
+
+        // one-shot remarks about the body and mind
+        if (p.sanity < 40 && !this.lifeFlags.fractured) { this.lifeFlags.fractured = true; this.watcher.notify("sanity_fractured"); }
+        if (p.sanity >= 60) this.lifeFlags.fractured = false;
+        if (p.health < p.maxHealth * 0.25 && !this.lifeFlags.lowHealth) { this.lifeFlags.lowHealth = true; this.watcher.notify("low_health"); }
+        if (p.health > p.maxHealth * 0.5) this.lifeFlags.lowHealth = false;
+
+        if (this.simTick % 30 !== 15) return;
+        const nearCorpse = this.engine.interactables.some(i => i.type === "fresh_marked_corpse" && this.engine.distance(p.x, p.y, i.x, i.y) < 320);
+        // The Moon makes signals come twice as fast; Static Sky makes the Watcher chatty
+        const gapMult = (prof.activeTarot === "The Moon" ? 0.5 : 1) * (traitActive(prof, "Static Sky") ? 0.7 : 1);
+        const w = this.watcher.update(prof, { life: p.currentLifeDuration, observation: prof.observation, sanity: p.sanity, mask, gapMult, nearCorpse });
+        if (w) this.deliverWhisper(w);
+    }
+
+    deliverWhisper(w) {
+        addSignal(this.activeProfile, w.text, "watcher", w.kind === "false" ? { falseSignal: true } : {});
+        this.ui.showWhisper(w.text, w.kind);
+        audioManager.play("watcher_whisper", { kind: w.kind });
     }
 
     updateWaxTraps() {

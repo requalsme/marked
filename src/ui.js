@@ -3,6 +3,9 @@
 import { getEquipmentStats, CLASSES } from "./state.js";
 import { corruptText, TAROT_DECK, REALITY_TRAITS, TUNING, traitActive } from "./systems.js";
 import { audioManager } from "./audio.js";
+import { recordEvent, habits, favoriteZone, ensureDossier, obfuscationMask } from "./dossier.js";
+import { SIGNAL_TYPES, TRANSMISSION_TYPES, signalText, signalType } from "./signals.js";
+import { tierOf } from "./watcher.js";
 
 // Ritual terms worsen with each bargain signed in the current descent
 // (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
@@ -55,6 +58,23 @@ export class GameUI {
         }
 
         this.bindEvents();
+    }
+
+    // The Watcher speaks beneath its eye and fades; the same words are filed in the Signals log
+    showWhisper(text, kind = "watcher") {
+        let el = document.getElementById("watcher-whisper");
+        if (!el) {
+            el = document.createElement("div");
+            el.id = "watcher-whisper";
+            el.className = "watcher-whisper";
+            el.setAttribute("role", "status");
+            (document.getElementById("game-layout") || document.body).appendChild(el);
+        }
+        el.textContent = text;
+        el.classList.remove("show", "false-whisper");
+        void el.offsetWidth; // restart the fade
+        el.classList.add("show");
+        if (kind === "false") el.classList.add("false-whisper");
     }
 
     bindEvents() {
@@ -646,6 +666,9 @@ export class GameUI {
         }
 
         if (ritualSuccess) {
+            recordEvent(profile, "ritual");
+            this.orch.watcher.notify("ritual");
+            if (type === "static_comm") recordEvent(profile, "signal");
             profile.lastRitualTime = now;
             profile.ritualsThisDescent = (profile.ritualsThisDescent || 0) + 1;
             audioManager.play("ritual_perform", { kind: type });
@@ -661,15 +684,45 @@ export class GameUI {
 
     renderSignals(profile) {
         const panel = document.getElementById("panel-signals");
+        const filter = this.signalFilter || "transmissions";
+        const clarity = getEquipmentStats(profile).signalClarity;
+        const typed = profile.signals.map(e => ({ e, type: signalType(e) }));
+        const chips = [["transmissions", "Transmissions"], ...TRANSMISSION_TYPES.map(t => [t, SIGNAL_TYPES[t].label]), ["log", "Log"]];
+        const count = id => typed.filter(x => id === "transmissions" ? x.type !== "log" : x.type === id).length;
         panel.innerHTML = `<h3>Signals Feed & Transmissions</h3>
-            <p class="tab-desc">Static radio logs intercepted by your lantern receiver. Text clarity deteriorates as sanity drops.</p>
+            <p class="tab-desc">Static intercepted by your lantern receiver. The Watcher's remarks, memories of the house, warnings and the voices of the dead. Text clarity deteriorates as sanity drops.</p>
+            <div class="signal-filters" role="tablist">${chips.map(([id, label]) =>
+                `<button type="button" class="sig-chip${id === filter ? " active" : ""}" data-filter="${id}">${label}<span>${count(id)}</span></button>`).join("")}</div>
             <div class="signal-list" id="signals-log-container"></div>`;
+        panel.querySelectorAll(".sig-chip").forEach(btn => btn.addEventListener("click", () => {
+            this.signalFilter = btn.dataset.filter;
+            this.renderSignals(profile);
+        }));
 
         const container = document.getElementById("signals-log-container");
-        for (const sig of profile.signals) {
+        const shown = typed.filter(x => filter === "transmissions" ? x.type !== "log" : x.type === filter);
+        if (!shown.length) {
+            container.innerHTML = `<div class="empty-msg">${filter === "log" ? "Nothing logged." : "Nothing intercepted yet. The Watcher is quiet, for now."}</div>`;
+            return;
+        }
+        for (const { e, type } of shown) {
             const row = document.createElement("div");
-            row.className = "signal-row";
-            row.textContent = corruptText(sig, profile.sanity);
+            row.className = `signal-row sig-${type}`;
+            const tag = document.createElement("span");
+            tag.className = "sig-tag";
+            tag.textContent = SIGNAL_TYPES[type].label;
+            const body = document.createElement("span");
+            body.className = "sig-text";
+            body.textContent = corruptText(signalText(e), profile.sanity);
+            row.append(tag, body);
+            // Clear receivers can tell a lie when they hear one
+            if (typeof e !== "string" && e.falseSignal && clarity >= 0.2) {
+                row.classList.add("sig-false");
+                const flag = document.createElement("span");
+                flag.className = "sig-flag";
+                flag.textContent = "unreliable";
+                row.appendChild(flag);
+            }
             container.appendChild(row);
         }
     }
@@ -738,6 +791,8 @@ export class GameUI {
 
         let removeCorpse = false;
         audioManager.play("corpse_interact", { kind: action });
+        recordEvent(profile, "corpse", { action });
+        this.orch.watcher.notify(action);
         // Bone Bloom: the room feeds on the dead and pays out more for tending them
         const bloom = traitActive(profile, "Bone Bloom") ? TUNING.boneBloomCorpse : 1;
 
@@ -784,9 +839,37 @@ export class GameUI {
         this.renderActiveTab();
     }
 
+    // What the Monolith has learned, as it would write it down. Strength is how loudly the pattern reads.
+    dossierCard(profile) {
+        const dos = ensureDossier(profile);
+        const live = this.orch.engine && this.orch.engine.player;
+        const mask = obfuscationMask(profile, live ? live.stats : {});
+        const tier = tierOf(profile.observation);
+        const lives = dos.lives + 1;
+        let body;
+        if (tier < 1) {
+            body = `<div class="dossier-quiet">The Monolith has not yet learned enough to write a word about you. It is watching how you move.</div>`;
+        } else {
+            const hs = habits(profile, mask);
+            const fav = favoriteZone(profile);
+            const rows = hs.length ? hs.map(h => `<div class="dossier-habit" title="${h.blurb}">
+                    <span class="dossier-name">${h.label}</span>
+                    <span class="dossier-bar"><i style="width:${Math.round(h.strength * 100)}%"></i></span>
+                </div>`).join("") : `<div class="dossier-quiet">No pattern the Monolith trusts. Keep varying.</div>`;
+            body = `${rows}${fav.share > 0.3 && fav.id ? `<div class="dossier-note">Most often found at ${fav.label}.</div>` : ""}`;
+        }
+        const hidden = mask > 0.05 ? `<div class="dossier-note">Obfuscation hides ${Math.round(mask * 100)}% of what it would read.</div>` : "";
+        return `<div class="dossier-card">
+            <div class="dossier-title">The Dossier</div>
+            <div class="dossier-diag">${corruptText(profile.activeDiagnosis || "Diagnosis: Unread / Fresh", profile.sanity)}</div>
+            ${body}${hidden}
+            <div class="dossier-note">Lives on record: ${lives} · Deaths: ${(profile.stats && profile.stats.deaths) || 0}. From 75% Observation the Monolith turns what it has learned against you.</div>
+        </div>`;
+    }
+
     renderMonolithUpgrades(profile) {
         const panel = document.getElementById("panel-monolith");
-        panel.innerHTML = `<h3>Monolith Upgrades</h3>
+        panel.innerHTML = `${this.dossierCard(profile)}<h3>Monolith Upgrades</h3>
             <p class="tab-desc">Expend index cards and seals collected in the archives to build permanent body obfuscations.</p>
             <div class="upgrade-list">
                 <div class="upgrade-row">

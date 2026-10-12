@@ -31,6 +31,21 @@ Any static file server works; the game is plain ES modules with no build step.
 - **Sanity** drains faster in the dark. Stay near candles and collect sanity shards. Blood vials restore Flesh.
 - Rituals grow hungrier with every bargain signed in a descent, and offline progress can never outpace active play.
 
+## The Monolith learns
+
+- The Monolith keeps a **dossier**: how you fight (close, evasive, dash-reliant, burst-reliant), where you linger, how you treat
+  light, sanity, bargains and the dead. It is shown on the Monolith panel (U) and as the Diagnosis under your name.
+- The **Watcher** speaks rarely and only about what it has actually seen: your habits, a corpse you burned, the way you died
+  last time. A Fractured mind is lied to; a Broken one is spoken to by name. Whispers are filed under Signals (J).
+- Habits survive death with decay (you are remembered across lives) and are weakened by Obfuscation, so a player who varies
+  their play, or hides, reads as Inconclusive.
+
+## Tests
+
+```bash
+npm test      # headless unit tests: the real engine and systems, no browser needed
+```
+
 ## Simulation harness
 
 `tools/simulation` contains a Python model of the game's systems for balance passes and a static visual/QOL review. See `PLAYTEST_AGENT_INSTRUCTIONS.md` and `tools/simulation/README.md`.
