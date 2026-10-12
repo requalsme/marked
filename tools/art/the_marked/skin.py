@@ -15,6 +15,9 @@ import sys
 import cv2
 import numpy as np
 
+from geometry import fist_centre  # noqa: E402
+
+FIST = fist_centre()          # the sword hand's fist (rest pose), where the ritual sigil is held
 SC = 4
 W = 256 * SC
 SKIN_OBJECTS = {"leg-l", "leg-r", "arm-l", "arm-r", "cloak", "tunic-back", "tunic-front"}
@@ -264,7 +267,7 @@ def frame(R, i, textures, rest=False):
     fxs = R.clip.get("fx")
     if fxs and fxs[i % len(fxs)].get("sigil"):
         fxd = fxs[i % len(fxs)]
-        pr = world["hand-r"] @ np.array([148.0, 152.0, 1.0])
+        pr = world["hand-r"] @ np.array([FIST[0], FIST[1], 1.0])
         pl = world["hand-l"] @ np.array([125.0, 152.0, 1.0])
         cx, cy = (pr[0] + pl[0]) / 2 + 2, (pr[1] + pl[1]) / 2 - 14
         canvas = draw_sigil(canvas, cx * SC, cy * SC, fxd["sigil"], fxd.get("spin", 0.0))

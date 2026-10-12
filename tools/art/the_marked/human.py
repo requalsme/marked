@@ -182,7 +182,7 @@ A_ = (127.0, 214.0)       # ankle
 SH = (133.0, 88.0)        # shoulder joint
 NECK = (134.0, 80.0)
 HEAD = (136.0, 72.0)      # atlas / head pivot
-EL_N, WR_N = (134.0, 125.0), (143.0, 150.0)
+from geometry import EL_N, WR_N, GRIP_REL, FIST_DROP  # noqa: E402  (the near arm and the grip, shared with the pose code)
 EL_F, WR_F = (128.0, 124.0), (124.0, 149.0)
 
 THIGH = [(0, 11.5, 10.5), (0.28, 13.5, 12.5), (0.62, 11, 9.5), (1, 8.4, 8.0)]
@@ -480,42 +480,67 @@ t.append(L([(brc[0][0] + uxf * 4, brc[0][1] + uyf * 4), (brc[1][0] + uxf * 4, br
 t.append(F("M100,110 H170 V170 H100 Z", C["deep"], 0.12))
 part("forearm-r", dfn, C["bone"], clipped="".join(t), outline=1.0)
 
-# sword: hilt in the fist, blade angled forward-down
-G = (150.5, 152.0)
-ang = math.radians(50.0)
+# ═══ sword and fist ═══════════════════════════════════════════════════════════════════════════════
+# A hammer grip: the grip crosses the palm about 80 degrees from the forearm, so on a forearm running down-forward the
+# blade points forward and a little up (the wrist, not the arm, decides where the point goes). The fist wraps the grip:
+# only the pommel and the guard show either side of it. Local frame (t, s): t along the blade, s toward the fingers.
+FA = math.atan2(WR_N[1] - EL_N[1], WR_N[0] - EL_N[0])
+ang = FA - math.radians(GRIP_REL)
 ux, uy = math.cos(ang), math.sin(ang)
 px_, py_ = -uy, ux
+fdx, fdy = math.cos(FA), math.sin(FA)                 # forearm direction (elbow to wrist)
+nfx, nfy = -fdy, fdx
+G = (WR_N[0] + fdx * FIST_DROP, WR_N[1] + fdy * FIST_DROP)       # centre of the fist, on the grip's axis
 
 
 def sat(t_, s_):
     return (G[0] + ux * t_ + px_ * s_, G[1] + uy * t_ + py_ * s_)
 
 
-Lb = 54
-blade = [sat(0, -4.6), sat(Lb * 0.55, -5.2), sat(Lb * 0.85, -4.4), sat(Lb, 0), sat(Lb * 0.9, 3.5), sat(Lb * 0.5, 5.4), sat(0, 4.6)]
+B0, Lb = 4.8, 54.0                                    # blade starts under the guard; ~50 cm of steel at 0.92 cm per unit
+blade = [sat(B0, -3.3), sat(B0 + Lb * 0.66, -2.9), sat(B0 + Lb * 0.92, -1.8), sat(B0 + Lb, 0), sat(B0 + Lb * 0.92, 1.8), sat(B0 + Lb * 0.66, 3.0), sat(B0, 3.4)]
 blade_d = poly(blade)
 b = [F("M100,120 H230 V230 H100 Z", C["steel"]),
-     F(poly([sat(-2, -6), sat(Lb + 4, -6), sat(Lb + 4, -0.4), sat(-2, -0.4)]), C["steel_lt"]),
-     F(poly([sat(-2, -0.4), sat(Lb + 4, -0.4), sat(Lb + 4, 6), sat(-2, 6)]), C["steel_dk"]),
-     L([sat(2, -0.4), sat(Lb * 0.9, -0.2)], 1.1, INK, 0.8), L([sat(3, -4.2), sat(Lb * 0.84, -3.5)], 0.9, C["white"], 0.95),
-     F(poly([sat(8, 4), sat(18, 4.6), sat(14, 6)]), C["lea_lt"], 0.7)]
-for tt in (22, 32, 42):
-    b.append(F(poly([sat(tt - 1.5, 6), sat(tt, 3.8), sat(tt + 1.5, 6)]), INK))
-part("blade", blade_d, C["steel"], clipped="".join(b), outline=1.0, halo_w=3.6)
-guard = poly([sat(0.5, -8.6), sat(3.2, -8.6), sat(4.2, 8.6), sat(1.5, 8.6)])
-parts["guard"] = f'<g id="guard">{F(guard, C["bone"])}{F(poly([sat(0.5, -8.6), sat(3.2, -8.6), sat(3.5, -3), sat(0.8, -3)]), C["bone_lt"])}{P(guard, "none", 1.0)}</g>'
+     F(poly([sat(B0 - 2, -5), sat(B0 + Lb + 4, -5), sat(B0 + Lb + 4, -0.3), sat(B0 - 2, -0.3)]), C["steel_lt"]),
+     F(poly([sat(B0 - 2, -0.3), sat(B0 + Lb + 4, -0.3), sat(B0 + Lb + 4, 5), sat(B0 - 2, 5)]), C["steel_dk"]),
+     L([sat(B0 + 2, -0.2), sat(B0 + Lb * 0.88, -0.1)], 0.9, INK, 0.75), L([sat(B0 + 2, -2.5), sat(B0 + Lb * 0.8, -2.1)], 0.8, C["white"], 0.95)]
+for tt in (B0 + 18, B0 + 29, B0 + 38):
+    b.append(F(poly([sat(tt - 1.3, 3.7), sat(tt, 2.3), sat(tt + 1.3, 3.7)]), INK))
+part("blade", blade_d, C["steel"], clipped="".join(b), outline=1.0, halo_w=3.4)
+guard = poly([sat(3.4, -7.6), sat(5.6, -7.9), sat(6.1, -3.6), sat(6.1, 3.6), sat(5.6, 7.9), sat(3.4, 7.6), sat(3.0, 3.0), sat(3.0, -3.0)])
+parts["guard"] = (f'<g id="guard">{F(guard, C["bone"])}{F(poly([sat(3.4, -7.6), sat(5.6, -7.9), sat(6.1, -3.6), sat(6.1, -0.2), sat(3.0, -0.2), sat(3.0, -3.0)]), C["bone_lt"])}'
+                  f'{P(guard, "none", 1.0)}{L([sat(4.8, -6.4), sat(4.9, -3.8)], 0.7, C["white"], 0.8)}</g>')
 halos["guard"] = f'<g id="halo-guard"><path d="{guard}" fill="{INK}" stroke="{INK}" stroke-width="{2 * 3.2}" stroke-linejoin="round"/></g>'
-grip = poly([sat(-20, -2.3), sat(2, -2.7), sat(2, 2.7), sat(-20, 2.3)])
-g = [F("M120,120 H180 V180 H120 Z", C["lea_dk"])] + [L([sat(tt, -3), sat(tt - 2, 3)], 0.8, C["lea_lt"], 0.8) for tt in (-17, -12, -7, -2)]
-part("grip", grip, C["lea_dk"], clipped="".join(g), outline=0.95, halo_w=3.2)
-pm = sat(-23, 0)
-parts["pommel"] = (f'<g id="pommel"><circle cx="{f(pm[0])}" cy="{f(pm[1])}" r="3.4" fill="{C["brass"]}" stroke="{INK}" stroke-width="1"/>'
-                   f'<path d="M{f(pm[0] - 1.8)},{f(pm[1] - 0.8)} Q{f(pm[0])},{f(pm[1] - 2.4)} {f(pm[0] + 1.4)},{f(pm[1] - 1.3)}" fill="none" stroke="{C["brass_lt"]}" stroke-width="0.9" stroke-linecap="round"/></g>')
-halos["pommel"] = f'<g id="halo-pommel"><circle cx="{f(pm[0])}" cy="{f(pm[1])}" r="{3.4 + 3.2}" fill="{INK}"/></g>'
-hand = smooth([(WR_N[0] - 5.5, WR_N[1] + 1), (WR_N[0] + 2, WR_N[1] - 2.5), (WR_N[0] + 9, WR_N[1] + 1), (WR_N[0] + 9.5, WR_N[1] + 9), (WR_N[0] + 2, WR_N[1] + 11), (WR_N[0] - 4.5, WR_N[1] + 7)])
-hd = [F(poly([(WR_N[0] - 7, WR_N[1] - 4), (WR_N[0] + 12, WR_N[1] - 4), (WR_N[0] + 12, WR_N[1] + 14), (WR_N[0] - 7, WR_N[1] + 14)]), grad(C["lea"], C["lea_dk"], (WR_N[0] + 8, WR_N[1]), (WR_N[0] - 4, WR_N[1] + 10))),
-      L([(WR_N[0] + 0.5, WR_N[1] + 2), (WR_N[0] - 0.5, WR_N[1] + 9)], 0.8, INK, 0.9), L([(WR_N[0] + 4.5, WR_N[1] + 1.5), (WR_N[0] + 4.5, WR_N[1] + 9.5)], 0.8, INK, 0.9)]
-part("hand-r", hand, C["lea_dk"], clipped="".join(hd), outline=1.0, halo_w=3.4)
+grip = poly([sat(-9.6, -2.2), sat(3.4, -2.3), sat(3.4, 2.3), sat(-9.6, 2.2)])
+g = [F("M120,120 H190 V190 H120 Z", C["lea_dk"])] + [L([sat(tt, -2.6), sat(tt - 1.8, 2.6)], 0.8, C["lea_lt"], 0.8) for tt in (-8, -5, -2, 1)]
+part("grip", grip, C["lea_dk"], clipped="".join(g), outline=0.95, halo_w=3.0)
+pm = sat(-11.0, 0)
+parts["pommel"] = (f'<g id="pommel"><circle cx="{f(pm[0])}" cy="{f(pm[1])}" r="3.0" fill="{C["brass"]}" stroke="{INK}" stroke-width="1"/>'
+                   f'<path d="M{f(pm[0] - 1.6)},{f(pm[1] - 0.8)} Q{f(pm[0])},{f(pm[1] - 2.2)} {f(pm[0] + 1.3)},{f(pm[1] - 1.2)}" fill="none" stroke="{C["brass_lt"]}" stroke-width="0.9" stroke-linecap="round"/></g>')
+halos["pommel"] = f'<g id="halo-pommel"><circle cx="{f(pm[0])}" cy="{f(pm[1])}" r="{3.0 + 3.0}" fill="{INK}"/></g>'
+
+# the fist: back of the hand, four fingers stacked along the grip (index nearest the guard), a thumb laid over the knuckles
+hand = smooth([sat(-7.0, -3.6), sat(-8.4, -0.4), sat(-7.7, 3.4), sat(-5.8, 5.0), sat(-3.2, 5.7), sat(-0.5, 6.0), sat(1.9, 5.5), sat(3.4, 3.5), sat(3.6, 0.0),
+               sat(3.3, -3.0), (WR_N[0] - nfx * 4.0 + fdx * 0.5, WR_N[1] - nfy * 4.0 + fdy * 0.5), (WR_N[0] + nfx * 4.0 + fdx * 0.5, WR_N[1] + nfy * 4.0 + fdy * 0.5)])
+bounds = [2.7, 0.125, -2.45, -5.03, -7.6]
+hd = [F("M100,100 H200 V200 H100 Z", grad(C["lea_lt"], C["lea_dk"], sat(0, -4), sat(0, 6.5), mid=C["lea"]))]
+for i in range(4):
+    a_, b_ = bounds[i + 1], bounds[i]
+    hd.append(F(poly([sat(a_, 0.9), sat(b_, 0.9), sat(b_, 8), sat(a_, 8)]), C["lea_dk"] if i % 2 else C["lea"], 0.5))
+    hd.append(L([sat(a_ - 0.3, -0.7), sat((a_ + b_) / 2, -1.2), sat(b_ + 0.3, -0.7)], 0.9, C["lea_lt"], 0.9))              # knuckle
+    hd.append(L([sat(a_ + 0.5, 3.8), sat((a_ + b_) / 2, 4.3), sat(b_ - 0.5, 3.8)], 0.7, INK, 0.55))                         # the bend of the finger
+for d_ in bounds[1:4]:
+    hd.append(L([sat(d_, 0.5), sat(d_ - 0.25, 6.8)], 0.9, INK, 0.95))
+hd.append(F("M100,100 H200 V200 H100 Z", C["deep"], 0.10))
+thumb = smooth([sat(-3.9, -2.7), sat(-1.0, -3.5), sat(2.2, -2.6), sat(3.5, -1.2), sat(2.2, 0.1), sat(-1.0, -0.6), sat(-3.6, -0.7)])
+hd.append(F(thumb, grad(C["lea_lt"], C["lea"], sat(0, -3.5), sat(0, 0)), 1.0))
+hd.append(P(thumb, "none", 0.9))
+hd.append(L([sat(2.3, -2.6), sat(2.9, -1.3)], 0.6, INK, 0.6))                                                          # the nail
+cuff = poly([(WR_N[0] + nfx * 4.9 - fdx * 3.2, WR_N[1] + nfy * 4.9 - fdy * 3.2), (WR_N[0] - nfx * 4.9 - fdx * 3.2, WR_N[1] - nfy * 4.9 - fdy * 3.2),
+             (WR_N[0] - nfx * 4.7 + fdx * 1.8, WR_N[1] - nfy * 4.7 + fdy * 1.8), (WR_N[0] + nfx * 4.7 + fdx * 1.8, WR_N[1] + nfy * 4.7 + fdy * 1.8)])
+cuff_g = (F(cuff, grad(C["lea_lt"], C["lea_dk"], (WR_N[0] + nfx * 5, WR_N[1]), (WR_N[0] - nfx * 5, WR_N[1]), mid=C["lea"])) + P(cuff, "none", 0.9)
+          + f'<circle cx="{f(WR_N[0] - fdx * 0.6)}" cy="{f(WR_N[1] - fdy * 0.6)}" r="0.9" fill="{C["brass"]}"/>')
+part("hand-r", hand, C["lea_dk"], clipped="".join(hd), extras=cuff_g, outline=1.0, halo_w=3.4)
 
 ORDER = ["cloak-c", "cloak-b", "cloak-a", "upperarm-l", "forearm-l", "hand-l", "thigh-l", "shin-l", "foot-l", "tunic-back",
          "thigh-r", "shin-r", "foot-r", "tunic-front", "torso", "mantle", "head", "upperarm-r", "forearm-r", "pommel", "grip", "blade", "guard", "hand-r"]

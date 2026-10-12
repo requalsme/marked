@@ -19,6 +19,9 @@ import sys
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from geometry import BLADE_REST  # noqa: E402
+
 L1, L2 = 46.0, 36.0
 HX, HY0 = 127.0, 132.0
 GROUND = 222.0
@@ -29,13 +32,13 @@ GAITS = {
         N=12, fps=12, duty=0.62, stride=100.0, fwd=0.5, lean=4.0, apex=0.0, clear=9.0,
         psi=[(0, -18), (6, -4), (12, 0), (30, 0), (40, 6), (50, 22), (58, 42), (62, 50), (68, 38), (75, 18), (85, -4), (95, -16), (100, -18)],
         kst=[(0, 5), (0.13, 17), (0.25, 19), (0.4, 10), (0.57, 6), (0.73, 14), (0.9, 26), (1.0, 32)],
-        arm_f=22.0, elb_f=(18.0, 38.0), arm_n=7.0, elb_n=(26.0, 34.0),
+        arm_f=22.0, elb_f=(18.0, 38.0), arm_n=7.0, elb_n=(15.0, 25.0), wr=26.0, follow=0.55,
         cloak=(4.0, 6.0, 8.0), tun=(0.5, 0.35), wind=0.0),
     "run": dict(
         N=8, fps=17, duty=0.26, stride=310.0, fwd=0.42, lean=11.0, apex=6.0, clear=29.0,
         psi=[(0, -12), (5, -2), (12, 4), (18, 16), (25, 40), (30, 56), (38, 52), (50, 30), (65, 6), (80, -8), (92, -12), (100, -12)],
         kst=[(0, 18), (0.3, 38), (0.5, 44), (0.75, 32), (1.0, 20)],
-        arm_f=40.0, elb_f=(78.0, 100.0), arm_n=15.0, elb_n=(52.0, 70.0),
+        arm_f=40.0, elb_f=(78.0, 100.0), arm_n=15.0, elb_n=(52.0, 70.0), wr=30.0, follow=0.5,
         cloak=(14.0, 22.0, 30.0), tun=(0.45, 0.3), wind=1.0),
 }
 
@@ -141,6 +144,28 @@ def spring_follow(target, fps, hz, zeta, loops=6):
     return out
 
 
+WRIST_LIMITS = (-40.0, 50.0)      # range of the wrist about the neutral grip: up (cocked) is negative, down (flexed) positive
+
+
+def second_diff(x, loop=True):
+    x = np.asarray(x, float)
+    if loop:
+        return np.roll(x, -1) - 2 * x + np.roll(x, 1)
+    return np.concatenate([[0.0], x[2:] - 2 * x[1:-1] + x[:-2], [0.0]])
+
+
+def wrist_series(forearm, wr_target, fps, loop=True, inertia=0.8, limits=WRIST_LIMITS, slack=None):
+    """Wrist angle relative to the forearm. It aims at wr_target, but a weighted sword lags the forearm's angular
+    acceleration: the blade trails behind a hand that is speeding up and carries on as it slows. forearm = the forearm's
+    world rotation per frame (degrees, rotate convention). `slack` (0..1 per frame) widens the range as the grip lets go.
+    Returns (wrist angles, number of frames that hit a limit)."""
+    tgt = np.asarray(wr_target, float) - inertia * second_diff(forearm, loop)
+    out = np.array(spring_follow(list(tgt), fps, 3.0, 0.45, loops=6 if loop else 1))
+    sl = np.zeros(len(out)) if slack is None else np.asarray(slack, float)
+    clipped = np.clip(out, limits[0] - 90.0 * sl, limits[1] + 90.0 * sl)
+    return clipped, int(np.sum(np.abs(clipped - out) > 1e-6))
+
+
 def hermite(p0, p1, m0, m1, u):
     return (2 * u**3 - 3 * u**2 + 1) * p0 + (u**3 - 2 * u**2 + u) * m0 + (-2 * u**3 + 3 * u**2) * p1 + (u**3 - u**2) * m1
 
@@ -231,7 +256,10 @@ def generate(name):
     hf = np.array([-t for t in th["l"]])
     tun_f = spring_follow([-G["tun"][0] * hn[i] + G["wind"] * 10.0 for i in range(N)], fps, 2.4, 0.4)
     tun_b = spring_follow([-G["tun"][1] * 0.5 * (hn[i] + hf[i]) + G["wind"] * 14.0 + 3 for i in range(N)], fps, 2.0, 0.4)
-    sword = spring_follow([0.35 * (elb_n[i] - np.mean(elb_n)) for i in range(N)], fps, 2.6, 0.35)
+    # the sword hand: the forearm's world rotation is -(upper arm flexion + elbow flexion); the blade follows part of it
+    fore = -(arm_n + 4.0 + elb_n)
+    sword, sword_clipped = wrist_series(fore, G["wr"] - (1.0 - G["follow"]) * (fore - np.mean(fore)), fps, True)
+    info_blade = BLADE_REST + fore + sword
 
     def keys(vals):
         vv = [float(x) for x in vals]
@@ -255,7 +283,7 @@ def generate(name):
     ch["tunic-front"] = {"rotate": {"keys": keys(tun_f), "ease": "linear"}}
     ch["tunic-back"] = {"rotate": {"keys": keys(tun_b), "ease": "linear"}}
     clip = {"clip": name, "fps": fps, "frames": N, "loop": True, "root_motion": False, "channels": ch}
-    info = dict(S=S, D=D, hy=hy, ank=ank, in_st=in_st, th=th, kn=kn, ft=ft, psi=psi, worst=worst, speed=S * fps / N)
+    info = dict(blade=info_blade, wrist=sword, wrist_clipped=sword_clipped, S=S, D=D, hy=hy, ank=ank, in_st=in_st, th=th, kn=kn, ft=ft, psi=psi, worst=worst, speed=S * fps / N)
     return clip, info
 
 
@@ -267,6 +295,7 @@ if __name__ == "__main__":
     N = clip["frames"]
     print(f"{name}: {N} frames @ {clip['fps']} fps | stride {info['S']:.0f} u/cycle | ground speed {info['speed']:.0f} u/s "
           f"= {info['speed'] * 0.36:.0f} px/s at game scale (engine: 270 px/s) | worst IK reach error {info['worst']:.2f} u")
+    print("blade world angle:", [int(round(v)) for v in info["blade"]], "| wrist:", [int(round(v)) for v in info["wrist"]], "| clipped frames:", info["wrist_clipped"])
     print("pelvis y :", [round(float(v), 1) for v in info["hy"]])
     for leg in ("r", "l"):
         print(f"leg {leg} stance:", [int(x) for x in info["in_st"][leg]])
