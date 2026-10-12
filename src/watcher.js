@@ -11,7 +11,7 @@ import { habits, favoriteZone, formatClock, ensureDossier, perMinute } from "./d
 
 // Seconds of life between whispers, by Observation tier (0 Unseen, 1 Noticed, 2 Studied, 3 Modeled, 4 Known).
 // Tier 0 only ever speaks of what the Monolith already remembers from earlier lives.
-export const TIER_GAPS = [120, 110, 85, 65, 50];
+export const TIER_GAPS = [150, 135, 105, 80, 60];
 export const EVENT_GRACE = 6;          // no two whispers closer than this, even for events
 export const EVENT_PATIENCE = 40;      // a queued event that has waited this long is no longer worth saying
 export const CONTINUITY_FROM = 18;     // seconds into a life before the Watcher mentions the last one

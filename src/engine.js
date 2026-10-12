@@ -20,6 +20,8 @@ export const CONFRONTATION_OBSERVATION = 10; // Observation added per confrontat
 export const ENEMY_SCALING_PER_LEVEL = 0.12;  // +12% enemy health/damage per player level above 1
 export const BLOOD_VIAL_CHANCE = 0.15;        // share of drops that are healing vials
 export const BLOOD_VIAL_HEAL_PCT = 0.20;      // of max health
+// The Seal Mother is measured against the player (see spawnEnemy): her flesh in blows, and her strike in the player's flesh.
+export const BOSS = { healthPerDamage: 80, hitShare: 0.045, sealShare: 0.045 };
 export const CORPSE_RISE_CHANCE = 0.25;       // an unrecovered corpse stirs as the player nears it
 
 // The Monolith counters what survives: enemies grow with the player's level
@@ -45,13 +47,20 @@ export function basePlayerCrit(classType) {
     return classType === "Static Marked" ? 0.25 : 0.10;
 }
 
+// Sanity is spent by being shot at and recovered by shards. tools/playtest measures that these values hold up for a
+// player with basic reflexes (Stable for ~10 minutes, Fractured late and in about half of descents), while a player who
+// never dodges or stands still is Broken inside a minute: the sanity-pressure enemies punish bad play on purpose.
+// Do not tune these to a bot that cannot dodge (run the playtest with --skill 1 and --skill 0 and compare).
+export const SANITY_HIT = { inkBlot: 12, paperWave: 7, shape: 5, echo: 8, waxTrap: 15 };
+export const SANITY_SHARD_RESTORE = 15;
+
 // Who fights how (counters key off this)
 const MELEE_ENEMIES = new Set(["Cabinet Indexer", "Witness Chair", "Corpse Echo", "The Shape"]);
 
 // What an enemy that shoots, shoots
 const ENEMY_SHOTS = {
-    "Ink Redactor": { type: "ink_blot", sanityDamage: 12, speed: 5.5, color: "#000000", radius: 8, life: 80 },
-    "Paper Wraith": { type: "shadow_wave", sanityDamage: 7, speed: 6, color: "#f1e2b7", radius: 13, life: 38 }
+    "Ink Redactor": { type: "ink_blot", sanityDamage: SANITY_HIT.inkBlot, speed: 5.5, color: "#000000", radius: 8, life: 80 },
+    "Paper Wraith": { type: "shadow_wave", sanityDamage: SANITY_HIT.paperWave, speed: 6, color: "#f1e2b7", radius: 13, life: 38 }
 };
 
 // The Shape fights with the player's own class: same attack, same reach, in the Monolith's colours
@@ -174,7 +183,7 @@ export class GameEngine {
                 item = stateMod.generateLootItem(rarityLimit, tower ? 2 : 1);
             } else if (rand < BLOOD_VIAL_CHANCE + 0.40) {
                 lootType = "sanity_shard";
-                sanityRestore = 15;
+                sanityRestore = SANITY_SHARD_RESTORE;
             } else if (rand < BLOOD_VIAL_CHANCE + 0.60) {
                 lootType = "signal_fragment";
                 parchment = 1;
@@ -267,8 +276,12 @@ export class GameEngine {
             const scale = enemyScale(this.player.profile.level);
             e.health = e.maxHealth = Math.round(e.health * scale);
             e.damage = Math.round(e.damage * scale);
-            if (type === "Seal Mother" && tarotActive(this.player.profile, "The Tower")) {
-                e.damage = Math.round(e.damage * TUNING.towerBossDamage);
+            if (type === "Seal Mother") {
+                // The lock on the House is measured against the strongest blow you carry and the flesh you carry it with;
+                // fixed numbers made her a five-second formality for anyone with gear (tools/playtest)
+                e.health = e.maxHealth = Math.round(Math.max(e.health, this.player.damage * BOSS.healthPerDamage));
+                e.damage = Math.round(Math.max(e.damage, this.player.maxHealth * BOSS.hitShare));
+                if (tarotActive(this.player.profile, "The Tower")) e.damage = Math.round(e.damage * TUNING.towerBossDamage);
             }
         }
 
@@ -895,17 +908,18 @@ export class GameEngine {
                 if (e.behaviorTimer % every === 0) {
                     this.createParticleExplosion(e.x, e.y, "#9a1616", 10);
                     const px = this.player.x, py = this.player.y;
-                    onEvent("boss_wax_trap", { x: px, y: py });
+                    const seal = this.sealDamage();
+                    onEvent("boss_wax_trap", { x: px, y: py, damage: seal });
                     if (e.phase >= 2) {
                         const ang = Math.atan2(py - e.y, px - e.x) + Math.PI / 2;
                         for (const off of [-72, 72]) {
                             const ty = this.clampY(py + Math.sin(ang) * off);
-                            onEvent("boss_wax_trap", { x: this.clampX(px + Math.cos(ang) * off, ty), y: ty });
+                            onEvent("boss_wax_trap", { x: this.clampX(px + Math.cos(ang) * off, ty), y: ty, damage: seal });
                         }
                     }
                     if (e.phase === 3) {
                         const ahead = this.aimAtFrames(45);
-                        onEvent("boss_wax_trap", { x: ahead.x, y: ahead.y });
+                        onEvent("boss_wax_trap", { x: ahead.x, y: ahead.y, damage: seal });
                     }
                 }
 
@@ -935,7 +949,7 @@ export class GameEngine {
                     this.spawnProjectiles("enemy", e.x, e.y, aim.x, aim.y,
                         e.classType === "Blood Marked" ? "blood_cleave" : "sword_slash", {
                         damage: e.damage,
-                        sanityDamage: 8,
+                        sanityDamage: SANITY_HIT.echo,
                         speed: 5.5,
                         color: e.classType === "Blood Marked" ? "#9a1616" : "#3d1052",
                         radius: 14,
@@ -1243,6 +1257,11 @@ export class GameEngine {
         return { x: this.clampX(p.x + p.vx * frames, y), y };
     }
 
+    // A seal hurts a share of the player's flesh, never less than it always did
+    sealDamage() {
+        return Math.max(25, Math.round(this.player.maxHealth * BOSS.sealShare));
+    }
+
     // 1 above two thirds of her flesh, 2 above one third, 3 below
     sealMotherPhase(e) {
         const f = e.health / e.maxHealth;
@@ -1381,7 +1400,7 @@ export class GameEngine {
         if (dist < atk.range && e.attackCooldown === 0) {
             e.attackCooldown = atk.cooldown;
             const aim = this.aimAt(e, atk.speed);
-            this.spawnProjectiles("enemy", e.x, e.y, aim.x, aim.y, atk.type, { damage: e.damage, sanityDamage: 5, speed: atk.speed, color: atk.color, radius: atk.radius, life: atk.life });
+            this.spawnProjectiles("enemy", e.x, e.y, aim.x, aim.y, atk.type, { damage: e.damage, sanityDamage: SANITY_HIT.shape, speed: atk.speed, color: atk.color, radius: atk.radius, life: atk.life });
         }
     }
 

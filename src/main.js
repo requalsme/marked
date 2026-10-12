@@ -1,7 +1,7 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
 import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats, CLASSES } from "./state.js";
-import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit } from "./engine.js";
+import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit, SANITY_HIT } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
 import { calculateOfflineProgress } from "./idle.js";
@@ -719,8 +719,8 @@ class GameOrchestrator {
                     timer: 60, // frames to trigger
                     life: 60,
                     kind: "wax",
-                    damage: 25,
-                    sanity: 15,
+                    damage: data.damage ?? 25,
+                    sanity: SANITY_HIT.waxTrap,
                     source: "Seal Mother's wax trap",
                     active: true
                 });

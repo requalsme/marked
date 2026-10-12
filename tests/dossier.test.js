@@ -134,3 +134,30 @@ test("old saves without a dossier are upgraded in place", () => {
     ensureDossier(w.profile);
     assert.ok(w.profile.dossier.life && w.profile.deathHistory);
 });
+
+test("walking in at the enemy reads as Aggressive; being walked at does not", () => {
+    // the player keeps walking toward a witness 200px away
+    const w = makeWorld();
+    const e = witness(760, 520);
+    w.engine.enemies = [e];
+    play(w, 40, () => { w.engine.player.x = 560; w.engine.player.y = 520; w.engine.player.vx = 4.5; w.engine.player.vy = 0; });
+    const brawler = habits(w.profile).find(h => h.id === "brawler");
+    assert.ok(brawler && brawler.strength > 0.8, "closing in is a choice the Monolith can read");
+
+    // ...but a witness that walks up to a player who is standing still tells it nothing
+    const still = makeWorld();
+    const walker = witness(780, 520);
+    still.engine.enemies = [walker];
+    play(still, 40, (i) => { still.engine.player.x = 560; still.engine.player.y = 520; still.engine.player.vx = 0; still.engine.player.vy = 0; walker.x = Math.max(670, 780 - i * 0.6); });
+    assert.equal(habits(still.profile).find(h => h.id === "brawler"), undefined);
+});
+
+test("records from before a counter existed are filled in rather than poisoned", () => {
+    const w = makeWorld();
+    ensureDossier(w.profile);
+    delete w.profile.dossier.life.approach; delete w.profile.dossier.memory.approach;
+    ensureDossier(w.profile);
+    assert.equal(w.profile.dossier.life.approach, 0);
+    play(w, 5, () => {});
+    assert.ok(Number.isFinite(w.profile.dossier.life.approach));
+});

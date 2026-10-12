@@ -19,10 +19,12 @@ export const DEATH_HISTORY_LIMIT = 12;
 export const MELEE_RANGE = 70;
 export const MID_RANGE = 170;
 const NEAR_ENEMY_FOR_RETREAT = 160;
+export const MOVE_TOWARD = 1.5;     // px/tick of the player's own motion toward or away from the nearest enemy
+export const ENGAGE_RANGE = 260;   // an enemy farther than this is not part of the fight
 const ZONE_RADIUS = 230;
 
 const SCALARS = [
-    "secs", "engaged", "melee", "mid", "far", "retreat", "lit", "dark", "lowSanity",
+    "secs", "engaged", "melee", "mid", "far", "retreat", "approach", "lit", "dark", "lowSanity",
     "dashes", "attacks", "hits", "crits", "rituals", "signalsRead",
     "recover", "burn", "broadcast", "devour", "damageTaken"
 ];
@@ -64,6 +66,11 @@ export function zoneLabel(id) {
 
 export function ensureDossier(profile) {
     if (!profile.dossier) profile.dossier = { life: blank(), memory: blank(), lives: 0 };
+    // records written before a counter existed gain it at zero
+    for (const rec of [profile.dossier.life, profile.dossier.memory]) {
+        for (const k of SCALARS) if (typeof rec[k] !== "number") rec[k] = 0;
+        for (const k of MAPS) if (!rec[k]) rec[k] = {};
+    }
     if (!profile.deathHistory) profile.deathHistory = [];
     return profile.dossier;
 }
@@ -93,21 +100,25 @@ export function sampleDossier(profile, engine, dt) {
     d.zone[z] = (d.zone[z] || 0) + dt;
 
     // Engagement: where the player stands relative to the nearest living enemy
-    let nearest = Infinity;
+    let nearest = Infinity, target = null;
     for (const e of engine.enemies) {
-        if (e.health > 0) nearest = Math.min(nearest, Math.hypot(e.x - p.x, e.y - p.y));
+        if (e.health <= 0) continue;
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d < nearest) { nearest = d; target = e; }
     }
-    const t = transient.get(profile) || {};
-    if (nearest < Infinity) {
+    const t = transient.get(profile) || {};   // (kept for future per-profile sampling state)
+    if (nearest < ENGAGE_RANGE) {
         d.engaged += dt;
         if (nearest < MELEE_RANGE) d.melee += dt;
         else if (nearest < MID_RANGE) d.mid += dt;
         else d.far += dt;
-        // Backing away from a witness that is close: the shape of kiting
-        const moving = p.vx !== 0 || p.vy !== 0;
-        if (moving && nearest < NEAR_ENEMY_FOR_RETREAT && t.nearest !== undefined && nearest - t.nearest > 0.4) d.retreat += dt;
+        // Choosing to close in or to back away is the habit; where the enemies happen to hover (or walk) is not.
+        // So read the player's own velocity along the line to the nearest enemy.
+        const toward = ((p.vx * (target.x - p.x)) + (p.vy * (target.y - p.y))) / Math.max(1, nearest);
+        if (toward > MOVE_TOWARD && nearest > MELEE_RANGE * 0.6) d.approach += dt;
+        else if (toward < -MOVE_TOWARD && nearest < NEAR_ENEMY_FOR_RETREAT) d.retreat += dt;
     }
-    t.nearest = nearest < Infinity ? nearest : undefined;
+    t.nearest = nearest < ENGAGE_RANGE ? nearest : undefined;
     transient.set(profile, t);
 }
 
@@ -181,7 +192,8 @@ export const HABITS = {
 
 const READERS = {
     dasher: t => t.secs >= 45 ? ramp(t.dashes / (t.secs / 60), 0.5, 3.5) : 0,
-    brawler: t => t.engaged >= 25 ? ramp(t.melee / t.engaged, 0.30, 0.70) : 0,
+    // Fights up close, or keeps walking in to do it
+    brawler: t => t.engaged >= 25 ? Math.max(ramp(t.melee / t.engaged, 0.25, 0.65), ramp(t.approach / t.engaged, 0.30, 0.60)) : 0,
     kiter: t => t.engaged >= 25 ? ramp(t.retreat / t.engaged, 0.05, 0.25) : 0,
     critReliant: t => t.hits >= 25 ? ramp(t.crits / t.hits, 0.12, 0.42) : 0,
     lightBound: t => t.lit + t.dark >= 40 ? ramp(t.lit / (t.lit + t.dark), 0.5, 0.9) : 0,

@@ -16,7 +16,8 @@
     "sim:sanity": "uv run tools/simulation/run_sim.py --preset sanity_stress",
     "sim:lore": "uv run tools/simulation/run_sim.py --preset lore_coverage",
     "sim:verbose": "uv run tools/simulation/run_sim.py --preset quick --verbose",
-    "test": "node --test \"tests/*.test.js\""
+    "test": "node --test \"tests/*.test.js\"",
+    "playtest": "node tools/playtest/run.js"
   },
   "keywords": [
     "horror",

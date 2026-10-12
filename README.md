@@ -64,6 +64,11 @@ from the Register. See [docs/STORY.md](docs/STORY.md).
 npm test      # headless unit tests: the real engine and systems, no browser needed
 ```
 
+## Playtesting
+
+`npm run playtest` plays the real engine for simulated hours with five bots and reports pacing, deaths, which counters meet which
+style, boss fights and Ledger progress. See [docs/PLAYTEST.md](docs/PLAYTEST.md) for how it was used to tune the game.
+
 ## Simulation harness
 
 `tools/simulation` contains a Python model of the game's systems for balance passes and a static visual/QOL review. See `PLAYTEST_AGENT_INSTRUCTIONS.md` and `tools/simulation/README.md`.
