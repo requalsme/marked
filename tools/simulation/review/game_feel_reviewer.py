@@ -192,7 +192,8 @@ class GameFeelReviewer:
         engine = self._engine_src
 
         # Check if attack animation exists for player
-        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas:
+        # (the player has no sprite right now: the stand-in marker shows an attack as a lunge, see canvas.drawMarker)
+        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas or "o.lunge" in canvas:
             pass  # good — attack animation exists
         else:
             self._add("high", "feel", "no_player_attack_animation",
@@ -201,7 +202,7 @@ class GameFeelReviewer:
                 "and ensure it's triggered on every attack.")
 
         # Check hit react animation for player
-        if "the_marked.hit_react" in canvas:
+        if "the_marked.hit_react" in canvas or "o.flash" in canvas:
             pass  # good
         else:
             self._add("high", "feel", "no_player_hit_react_animation",
@@ -329,7 +330,7 @@ class GameFeelReviewer:
             "Paper Wraith":     "paper_wraith" in canvas,
             "Witness Chair":    "witness_chair" in canvas,
             "Seal Mother":      "seal_mother" in canvas,
-            "The Shape":        "the_marked.idle" in canvas,  # clone uses player sprite
+            "The Shape":        "the_marked.idle" in canvas or "marker:" in canvas,  # clone: the player's sprite, or the stand-in marker
         }
 
         missing_visuals = [k for k, v in enemy_types.items() if not v]
@@ -340,8 +341,8 @@ class GameFeelReviewer:
                 "Players need to instantly identify what they're fighting to respond appropriately.")
 
         # The Shape uses the player's sprite — this is intentional but needs a distinction
-        if "the_marked.idle" in canvas and "The Shape" in canvas:
-            if "0.55" in canvas:  # alpha reduction for The Shape
+        if ("the_marked.idle" in canvas or "marker:" in canvas) and "The Shape" in canvas:
+            if "0.55" in canvas or "tint:" in canvas:  # alpha reduction or its own tint
                 pass  # has a distinction
             else:
                 self._add("medium", "feel", "the_shape_indistinguishable",

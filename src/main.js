@@ -291,7 +291,7 @@ class GameOrchestrator {
             card.className = "profile-card";
             card.style.setProperty("--sigil", CLASS_COLORS[prof.classType] || "#c79a42");
             card.innerHTML = `
-                <div class="profile-sigil"><div class="sprite-idle"></div></div>
+                <div class="profile-sigil"><div class="sigil-glyph"></div></div>
                 <div class="profile-info">
                     <div class="profile-name"></div>
                     <div class="profile-meta"></div>
@@ -368,7 +368,7 @@ class GameOrchestrator {
             card.dataset.cls = sheet.name;
             card.setAttribute("role", "radio");
             card.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
-            card.innerHTML = `<div class="sprite-idle"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
+            card.innerHTML = `<div class="sigil-glyph"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
             card.addEventListener("click", () => choose(sheet));
             picker.appendChild(card);
         }
@@ -467,6 +467,9 @@ class GameOrchestrator {
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
+        // The HUD plate carries the class's sigil (there is no portrait art installed; see archive/player_character)
+        const plate = document.querySelector(".portrait-frame");
+        if (plate) plate.style.setProperty("--sigil", CLASS_COLORS[this.activeProfile.classType] || "#c79a42");
         ensureDossier(this.activeProfile);
         this.lifeFlags = {};
         this.knownCounters = new Set();

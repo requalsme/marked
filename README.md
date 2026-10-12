@@ -76,6 +76,12 @@ from the Register. See [docs/STORY.md](docs/STORY.md).
 npm test      # headless unit tests: the real engine and systems, no browser needed
 ```
 
+## Archive
+
+The player character's art (sprites, HUD portrait, the art pipeline) lives in [archive/player_character](archive/player_character/README.md).
+The game currently draws a plain stand-in marker for The Marked, The Shape and Corpse Echoes, and a CSS sigil for the HUD and
+lineage cards; the archive's README says how to bring the character back.
+
 ## Playtesting
 
 `npm run playtest` plays the real engine for simulated hours with five bots and reports pacing, deaths, which counters meet which

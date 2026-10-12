@@ -75,15 +75,13 @@ const ENEMY_ART = {
             : e.hitFlash > 0 ? { key: "seal_mother.hit_react", elapsed: 6 - e.hitFlash }
             : { key: "seal_mother.combat_idle" }
     },
+    // The Shape and Corpse Echoes were the player's own animations tinted; with no character art installed they are drawn
+    // as the stand-in marker (see drawMarker). `swing` is the attack cooldown the swing starts from.
     "The Shape": {
-        scale: 0.36, alpha: 0.6, glow: "#5b2a70", death: "the_marked.death_collapse",
-        pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 50 - e.attackCooldown }
-            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
+        alpha: 0.6, glow: "#5b2a70", swing: 50, marker: { tint: "#9a4ab8", core: "#9a4ab8" }
     },
     "Corpse Echo": {
-        scale: 0.36, alpha: 0.8, glow: "#7a1010", death: "the_marked.death_collapse",
-        pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 45 - e.attackCooldown }
-            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
+        alpha: 0.8, glow: "#7a1010", swing: 45, marker: { tint: "#b3402f", core: "#b81d14" }
     }
 };
 
@@ -994,11 +992,77 @@ export class CanvasRenderer {
         ctx.restore();
     }
 
+    // ─── The Marked has no sprite ───────────────────────────────────────────────────────────────────────
+    // The character's art (sprites, portrait, art pipeline) is archived under archive/player_character. Until new art is
+    // installed, the Marked, The Shape and Corpse Echoes are drawn as this plain marker: a lozenge with a bar for the
+    // direction it faces. Every state the sprite had still reads: lunge (attack), flash (hit), trail (dash), sink (death).
+    // To install new art, replace drawPlayer and the `marker` specs in ENEMY_ART with sprite drawing.
+    drawMarker(ctx, x, y, facing, o = {}) {
+        const k = depthScale(y);
+        const dir = facing === "left" ? -1 : 1;
+        const t = this.frame;
+        const sink = o.sink ?? 0;
+        const h = 36 * k * (1 - 0.8 * sink) * (o.stretchY ?? 1);
+        const w = 11 * k * (1 + 0.6 * sink) * (o.stretchX ?? 1);
+        const bob = o.moving ? Math.sin(t * 0.4) * 1.6 * k : 0;
+        const cx = x + (o.jitter ? Math.sin(t * 0.9) * 2.2 * k : 0);
+        const cy = y - 4 * k - h / 2 - bob;
+        const tint = o.tint || "#d8cdb2";
+        const base = (o.alpha ?? 1) * (1 - sink * 0.85);
+
+        const lozenge = (px, alpha) => {
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.moveTo(px, cy - h / 2);
+            ctx.lineTo(px + w, cy);
+            ctx.lineTo(px, cy + h / 2);
+            ctx.lineTo(px - w, cy);
+            ctx.closePath();
+            ctx.fillStyle = o.flash ? "rgba(150, 24, 18, 0.9)" : "rgba(12, 11, 14, 0.86)";
+            ctx.fill();
+            ctx.lineWidth = Math.max(1.2, 1.6 * k);
+            ctx.strokeStyle = o.flash ? "#ff6a5a" : tint;
+            ctx.stroke();
+        };
+
+        ctx.save();
+        if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = 14; }
+        if (o.trail) for (let i = 3; i >= 1; i--) lozenge(cx - dir * i * 14 * k, base * 0.16 * (4 - i) / 3);
+        lozenge(cx, base);
+
+        // the bar it faces along; a lunge throws it forward and rings the air
+        ctx.globalAlpha = base;
+        ctx.strokeStyle = tint;
+        ctx.lineCap = "round";
+        ctx.lineWidth = Math.max(1.6, 2.4 * k);
+        const reach = (7 + (o.lunge ? 20 * Math.sin(Math.PI * o.lunge) : 0)) * k;
+        ctx.beginPath();
+        ctx.moveTo(cx + dir * w, cy);
+        ctx.lineTo(cx + dir * (w + reach), cy);
+        ctx.stroke();
+        if (o.lunge > 0) {
+            ctx.globalAlpha = base * (1 - o.lunge) * 0.7;
+            ctx.lineWidth = Math.max(1, 1.4 * k);
+            ctx.beginPath();
+            ctx.arc(cx + dir * w, cy, (14 + 26 * o.lunge) * k, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        // a core that glows when the Monolith is watching
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = base * (0.55 + (o.core_glow ?? 0.25) + Math.sin(t * 0.08) * 0.12);
+        ctx.fillStyle = o.core || "#b81d14";
+        ctx.beginPath();
+        ctx.arc(cx, cy - h * 0.08, 2.6 * k, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     drawPlayer(ctx, p) {
         ctx.save();
         const k = depthScale(p.y);
         this.drawGroundShadow(ctx, p.x, p.y + 4, 22 * k, 7 * k, 0.6);
 
+        // the Monolith's brand: a red glow at the feet that deepens as Observation rises
         const obsMult = p.profile.observation / 100;
         const brandGrad = ctx.createRadialGradient(p.x, p.y - 10, 2, p.x, p.y - 10, 30);
         brandGrad.addColorStop(0, `rgba(180, 20, 20, ${0.16 + obsMult * 0.3})`);
@@ -1008,66 +1072,33 @@ export class CanvasRenderer {
         ctx.arc(p.x, p.y - 10, 30, 0, Math.PI * 2);
         ctx.fill();
 
-        let key = "the_marked.idle";
-        let elapsed = this.frame;
-        if (p.health <= 0) {
-            key = "the_marked.death_collapse";
-            elapsed = p.deathTimer;
+        const alive = p.health > 0;
+        const o = { moving: p.state === "moving", jitter: alive && p.sanity < 40, core_glow: obsMult * 0.2 };
+        if (!alive) {
+            o.sink = Math.min(1, p.deathTimer / 60);
         } else if (p.dashTimer > 0) {
-            // The dash's 12 ticks play the whole dodge step (the dash grants i-frames, so test it before the hit reaction)
-            key = "the_marked.dodge_step";
-            elapsed = 12 - p.dashTimer;
+            o.trail = true; o.stretchX = 1.5; o.stretchY = 0.8;          // the dash (it also grants i-frames, so test it before the hit)
         } else if (p.invulnTimer > 0) {
-            key = "the_marked.hit_react";
-            elapsed = 25 - p.invulnTimer;
-        } else if (p.attackCooldown > p.attackDelay - 20) {
-            key = "the_marked.basic_attack";
-            elapsed = p.attackDelay - p.attackCooldown;
-        } else if (p.sanity < 40) {
-            key = "the_marked.low_sanity";
-        } else if (p.state === "moving") {
-            // 4.5 px/frame is about four body-heights a second: a sprint, so the run cycle is the one that matches
-            key = "the_marked.run";
+            o.flash = true;                                              // hit
+            if (Math.floor(this.frame / 4) % 2 === 0) o.alpha = 0.48;
         }
-
-        const config = assetLoader.animationsMap[key];
-        let idx = 0;
-        if (config) {
-            const oneShot = key === "the_marked.death_collapse" || key === "the_marked.hit_react" || key === "the_marked.basic_attack" || key === "the_marked.dodge_step";
-            idx = oneShot ? Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60)))) : Math.floor(this.frame * (config.fps / 60)) % config.frames;
-        }
-
-        // The Shape: a dark double half a step behind, a few frames out of phase (and further out at low sanity)
-        if (config && p.health > 0) this.drawShapeEcho(ctx, p, key, config, idx);
-
-        const alpha = p.invulnTimer > 0 && Math.floor(this.frame / 4) % 2 === 0 ? 0.48 : 1;
-        assetLoader.drawFrame(ctx, key, idx, p.x, p.y, p.facing, 0.36 * depthScale(p.y), alpha);
-        ctx.restore();
-    }
-
-    drawShapeEcho(ctx, p, key, config, idx) {
-        const k = depthScale(p.y);
-        const lowSanity = p.sanity < 40;
-        const lag = lowSanity ? 7 : 4;
-        let echoIdx = idx;
-        if (config.loop) {
-            const n = config.frames;
-            echoIdx = (((Math.floor((this.frame - lag * 2) * (config.fps / 60))) % n) + n) % n;
-        } else {
-            echoIdx = Math.max(0, idx - 1);
-        }
-        const dir = p.facing === "left" ? 1 : -1;
-        const jitter = lowSanity ? Math.sin(this.frame * 0.9) * 2.4 : 0;
-        const obs = p.profile.observation / 100;
-        ctx.save();
-        ctx.filter = "brightness(0.32) sepia(1) hue-rotate(225deg) saturate(2.2)";
-        assetLoader.drawFrame(ctx, key, echoIdx, p.x + (dir * 26 + jitter) * k, p.y - 3 * k, p.facing, 0.36 * k, 0.24 + obs * 0.26);
+        if (alive && p.attackCooldown > p.attackDelay - 20) o.lunge = (p.attackDelay - p.attackCooldown) / 20;
+        this.drawMarker(ctx, p.x, p.y, p.facing, o);
         ctx.restore();
     }
 
     // Enemy death: play the art's death animation, then let the remains fade
     drawDeathFx(ctx, fx) {
         const spec = ENEMY_ART[fx.type] || ENEMY_ART["Cabinet Indexer"];
+        if (spec.marker) {
+            // a marker has no death animation: it sinks and fades
+            const f = Math.min(1, fx.t / 50);
+            ctx.save();
+            this.drawGroundShadow(ctx, fx.x, fx.y + 2, 20, 7, 0.4 * (1 - f));
+            this.drawMarker(ctx, fx.x, fx.y + 6, fx.facing, { ...spec.marker, alpha: spec.alpha ?? 1, glow: spec.glow, sink: f });
+            ctx.restore();
+            return;
+        }
         const config = assetLoader.animationsMap[spec.death];
         if (!config) return;
         const playFrames = config.frames * (60 / config.fps);
@@ -1087,6 +1118,15 @@ export class CanvasRenderer {
 
         // Face the player rather than the velocity, so knockback doesn't flip the sprite
         const facing = this.playerX < e.x ? "left" : "right";
+        if (spec.marker) {
+            const swinging = e.attackCooldown > 30;
+            this.drawMarker(ctx, e.x, e.y + 6, facing, {
+                ...spec.marker, alpha: spec.alpha ?? 1, glow: spec.glow, moving: moving(e), flash: e.hitFlash > 0,
+                lunge: swinging ? Math.min(1, (spec.swing - e.attackCooldown) / (spec.swing - 30)) : 0
+            });
+            ctx.restore();
+            return;
+        }
         const pick = spec.pick(e);
         const key = pick.key;
         const config = assetLoader.animationsMap[key];

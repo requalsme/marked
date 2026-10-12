@@ -459,12 +459,6 @@ body.sanity-broken::after {
     padding: 6px 12px 6px 6px;
 }
 
-.avatar-img {
-    height: 100%;
-    object-fit: cover;
-    width: 100%;
-}
-
 .hud-profile-info {
     min-width: 0;
 }
@@ -1440,16 +1434,16 @@ body.sanity-broken::after {
     text-transform: uppercase;
 }
 
-/* Sprite: The Marked idle loop (8 frames) */
-.sprite-idle {
-    animation: idle-frames 0.9s steps(8) infinite;
-    background: url("assets/characters/player/the_marked/the_marked_idle_sheet.png") 0 0 / 800% 100% no-repeat;
-    filter: drop-shadow(0 0 8px var(--sigil, #c79a42)) drop-shadow(0 4px 4px #000);
-}
-
-/* 8 frames: stepping 0 → 8/7 of the scroll range lands exactly on each frame */
-@keyframes idle-frames {
-    to { background-position: calc(100% * 8 / 7) 0; }
+/* The class's sigil: a lozenge in its colour. It stands in for the character's figure, which has no art installed
+   (the sprites and portrait are archived under archive/player_character). */
+.sigil-glyph {
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--sigil, #c79a42) 75%, #fff), color-mix(in srgb, var(--sigil, #c79a42) 55%, #000) 70%);
+    border: 2px solid var(--sigil, #c79a42);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--sigil, #c79a42) 55%, transparent), inset 0 0 6px rgba(0, 0, 0, 0.6);
+    flex: none;
+    height: 26px;
+    transform: rotate(45deg);
+    width: 26px;
 }
 
 .profile-list {
@@ -1496,12 +1490,10 @@ body.sanity-broken::after {
     right: 6px;
 }
 
-.profile-sigil .sprite-idle {
-    bottom: -4px;
-    height: 76px;
-    left: 0;
+.profile-sigil .sigil-glyph {
+    left: calc(50% - 13px);
     position: absolute;
-    width: 76px;
+    top: calc(50% - 13px);
 }
 
 .profile-info {
@@ -1540,10 +1532,11 @@ body.sanity-broken::after {
     transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.class-card .sprite-idle {
-    height: 92px;
-    width: 92px;
-    filter: grayscale(0.6) brightness(0.75) drop-shadow(0 4px 4px #000);
+.class-card .sigil-glyph {
+    filter: grayscale(0.6) brightness(0.75);
+    height: 38px;
+    margin: 26px 0 24px;
+    width: 38px;
 }
 
 .class-card:hover {
@@ -1557,9 +1550,9 @@ body.sanity-broken::after {
     transform: translateY(-3px);
 }
 
-.class-card.selected .sprite-idle,
-.class-card:hover .sprite-idle {
-    filter: drop-shadow(0 0 8px var(--sigil)) drop-shadow(0 4px 4px #000);
+.class-card.selected .sigil-glyph,
+.class-card:hover .sigil-glyph {
+    filter: none;
 }
 
 .class-card-name {
@@ -1710,9 +1703,10 @@ body.sanity-broken::after {
         overflow-x: auto;
     }
 
-    .class-card .sprite-idle {
-        height: 60px;
-        width: 60px;
+    .class-card .sigil-glyph {
+        height: 28px;
+        margin: 14px 0;
+        width: 28px;
     }
 }
 
@@ -1767,11 +1761,15 @@ body.sanity-broken::after {
     width: 50px;
 }
 
-.portrait-frame .avatar-img {
-    filter: grayscale(0.35) contrast(1.15) brightness(0.85) sepia(0.2);
-    height: 100%;
-    object-fit: cover;
-    width: 100%;
+.portrait-frame {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+}
+
+.portrait-frame .sigil-glyph {
+    height: 22px;
+    width: 22px;
 }
 
 .hud-name {

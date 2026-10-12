@@ -7,7 +7,7 @@
 # only to rasterise the rest-pose textures through headless Chromium).
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-REPO="$(cd "$HERE/../../.." && pwd)"
+REPO="$(git -C "$HERE" rev-parse --show-toplevel)"   # the repo root, whether this folder is here or restored to tools/art
 WORK="${WORK:-$(mktemp -d)}"
 PY="${PY:-python3}"
 export VEKTRA="${VEKTRA:?set VEKTRA to the vektra skill folder}"

@@ -10,6 +10,7 @@ import { recordEvent } from "./dossier.js";
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
 export const PLAYER_DASH_MULT = 2.5;
+export const HIT_IFRAMES = 25;              // frames of safety after a blow lands (or passes through the Static Marked)
 export const DEATH_ANIMATION_FRAMES = 75;    // collapse + slow fade before game over
 export const PLAYER_KNOCKBACK = 5;           // initial px/frame push when the player is hit
 export const ENEMY_KNOCKBACK = 6;            // initial px/frame push when an enemy is hit
@@ -998,7 +999,7 @@ export class GameEngine {
         if (this.player.health <= 0 || this.player.invulnTimer > 0) return;
         if (this.isStatic() && Math.random() < PASSIVES.staticPhase) {
             // Unstable: the blow passes through
-            this.player.invulnTimer = 12;
+            this.player.invulnTimer = HIT_IFRAMES;
             this.spawnFloatingText("PHASED", this.player.x, this.player.y - 30, "#16d8a4", false);
             this.createParticleExplosion(this.player.x, this.player.y, "#16d8a4", 6);
             return;
@@ -1011,7 +1012,7 @@ export class GameEngine {
         
         this.player.health -= reduced;
         this.note("hurt", { amount: reduced, source: this.lastDamageSource });
-        this.player.invulnTimer = 25; // frames of safety
+        this.player.invulnTimer = HIT_IFRAMES; // frames of safety
         
         this.spawnFloatingText(reduced, this.player.x, this.player.y - 20, "#b01212", false);
         this.hitStop = 2; // mini freeze on getting hit

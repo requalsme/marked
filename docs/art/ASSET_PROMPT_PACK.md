@@ -7,6 +7,10 @@ and `17_ui_ux_crossplatform.md`) with the **technical spec** the engine needs.
 
 Reference images to attach live in `docs/art/reference/`.
 
+> **The player's art is archived.** The Marked's sprites, portrait and art pipeline were moved to `archive/player_character/`
+> and the game draws a stand-in marker. Section 4 and the portrait spec below remain as the brief for new character art; the
+> reference sheet `current_characters.png` shows the old sprite beside the enemies.
+
 ---
 
 ## 0. Workflow
