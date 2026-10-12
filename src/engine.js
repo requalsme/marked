@@ -4,6 +4,7 @@ import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
 import { PROP_COLLIDERS } from "./props.js";
 import { FIXTURE_COLLIDERS } from "./fixtures.js";
 import { traitActive, tarotActive, TUNING } from "./systems.js";
+import { PASSIVES } from "./state.js";
 import { recordEvent } from "./dossier.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
@@ -532,7 +533,7 @@ export class GameEngine {
             this.player.vx = this.player.dashDx * (this.player.speed * PLAYER_DASH_MULT);
             this.player.vy = this.player.dashDy * (this.player.speed * PLAYER_DASH_MULT);
             this.player.state = "dashing";
-            this.player.invulnTimer = Math.max(this.player.invulnTimer, 5); // i-frames
+            this.player.invulnTimer = Math.max(this.player.invulnTimer, this.isStatic() ? PASSIVES.staticDashIframes : 5); // i-frames
             
             // Visual feedback: emit small particles during dash
             if (this.player.dashTimer % 3 === 0) {
@@ -549,7 +550,7 @@ export class GameEngine {
                 // Dash initiation
                 if (this.keys["shift"] && this.player.dashCooldown <= 0) {
                     this.player.dashTimer = 12; // dash duration frames
-                    this.player.dashCooldown = 60; // 1s cooldown
+                    this.player.dashCooldown = this.isStatic() ? PASSIVES.staticDashCooldown : 60; // 1s cooldown (less for the Static Marked)
                     this.player.dashDx = dx;
                     this.player.dashDy = dy;
                     this.player.state = "dashing";
@@ -761,6 +762,9 @@ export class GameEngine {
                 // Reward and remove
                 this.player.profile.exp += 15;
                 this.note("kill", { type: e.type });
+                if (this.player.profile.classType === "Blood Marked") {
+                    this.player.health = Math.min(this.player.maxHealth, this.player.health + this.player.maxHealth * PASSIVES.bloodKillHeal * this.healingMult());
+                }
                 
                 // Roll loot
                 this.spawnLoot(e.x, e.y, e.lootRarity);
@@ -992,6 +996,13 @@ export class GameEngine {
 
     damagePlayer(amount, sanityAmount = 0, sourceX = null, sourceY = null, source = this.currentActor) {
         if (this.player.health <= 0 || this.player.invulnTimer > 0) return;
+        if (this.isStatic() && Math.random() < PASSIVES.staticPhase) {
+            // Unstable: the blow passes through
+            this.player.invulnTimer = 12;
+            this.spawnFloatingText("PHASED", this.player.x, this.player.y - 30, "#16d8a4", false);
+            this.createParticleExplosion(this.player.x, this.player.y, "#16d8a4", 6);
+            return;
+        }
         this.lastDamageSource = source || "the dark";
 
         // Apply armor formula
@@ -1241,6 +1252,10 @@ export class GameEngine {
                 }
             }
         }
+    }
+
+    isStatic() {
+        return !!this.player && this.player.profile.classType === "Static Marked";
     }
 
     // The Monolith takes notes: everything the player does is recorded in their dossier

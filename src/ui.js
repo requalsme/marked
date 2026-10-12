@@ -1,6 +1,6 @@
 // UI Orchestrator, DOM Manager, and Tooltips
 
-import { getEquipmentStats, CLASSES } from "./state.js";
+import { getEquipmentStats, CLASSES, PASSIVES } from "./state.js";
 import { corruptText, TAROT_DECK, REALITY_TRAITS, TUNING, traitActive } from "./systems.js";
 import { audioManager } from "./audio.js";
 import { recordEvent, habits, favoriteZone, ensureDossier, obfuscationMask } from "./dossier.js";
@@ -15,13 +15,14 @@ import { addSignal } from "./signals.js";
 // The Devil (passed as profile) sharpens both edges: rewards ×1.5, sanity costs ×2.
 export function ritualTerms(n, profile = null) {
     const devil = !!profile && profile.activeTarot === "The Devil";
-    const boon = devil ? TUNING.devilRitualBoon : 1;
-    const cost = devil ? TUNING.devilSanityCost : 1;
+    const maker = !!profile && profile.classType === "Ritual Marked";      // the Bargain-maker
+    const boon = (devil ? TUNING.devilRitualBoon : 1) * (maker ? PASSIVES.ritualReward : 1);
+    const cost = (devil ? TUNING.devilSanityCost : 1) * (maker ? PASSIVES.ritualSanity : 1);
     return {
-        cooldownMs: Math.round(120000 * (1 + 0.5 * n)),
+        cooldownMs: Math.round(120000 * (1 + 0.5 * n) * (maker ? PASSIVES.ritualCooldown : 1)),
         titheDamage: Math.round(Math.max(2, Math.round(8 / (1 + 0.35 * n))) * boon),
-        titheSanity: 10 * cost,
-        commSanity: (10 + 5 * n) * cost,
+        titheSanity: Math.round(10 * cost),
+        commSanity: Math.round((10 + 5 * n) * cost),
         eraseGold: 80 * (n + 1),
         eraseObservation: Math.round(25 * boon)
     };
@@ -411,6 +412,7 @@ export class GameUI {
 
         document.getElementById("stats-summary").innerHTML = `
             <div>Base Class: <strong>${corruptText(profile.classType, san)}</strong></div>
+            <div title="${baseClass.passive.desc}">Passive: <strong>${corruptText(baseClass.passive.name, san)}</strong></div>
             <div>Attack Power: <strong>${corruptText(dmgTotal.toString(), san)}</strong></div>
             <div>Max Health: <strong>${corruptText(hpTotal.toString(), san)}</strong></div>
             <div>Critical Chance: <strong>${corruptText(critPct + "%", san)}</strong></div>

@@ -12,6 +12,7 @@ import { createProfile, getEquipmentStats, RARITY_MULTIPLIERS } from "../../src/
 import { updateObservation, handleSanityDecay, TAROT_DECK, REALITY_TRAITS, traitActive } from "../../src/systems.js";
 import { sampleDossier, obfuscationMask, closeLife, recordDeath, ensureDossier, diagnose, habits } from "../../src/dossier.js";
 import { Watcher } from "../../src/watcher.js";
+import { ritualTerms } from "../../src/ui.js";
 import { activeCounters } from "../../src/adapt.js";
 import { unlockFor, ensureLedger, chooseWarning } from "../../src/lore.js";
 import { ROOM } from "../../src/world.js";
@@ -234,7 +235,14 @@ class Session {
             }
             this.manage();
         }
-        if (this.simTick % 600 === 0) engine.player.dashCooldown = Math.min(engine.player.dashCooldown, 60);
+        // A player with a clear head spends it at the altar every few minutes: Static Communion decodes the next page
+        if (this.simTick % 60 === 0 && p.currentLifeDuration > 120 && p.sanity > 55) {
+            const n = prof.ritualsThisDescent || 0, terms = ritualTerms(n, prof);
+            if (Date.now() - (prof.lastRitualTime || 0) > 1e12 || !prof.lastRitualAt || p.currentLifeDuration - prof.lastRitualAt > terms.cooldownMs / 1000) {
+                p.sanity -= terms.commSanity; prof.ritualsThisDescent = n + 1; prof.lastRitualAt = p.currentLifeDuration;
+                this.unlock("communion");
+            }
+        }
         return result;
     }
 
@@ -327,7 +335,7 @@ class Session {
         }
         closeLife(prof);
         this.watcher.resetLife(prof);
-        prof.currentLifeDuration = 0; prof.ritualsThisDescent = 0; prof.lastRitualTime = 0;
+        prof.currentLifeDuration = 0; prof.ritualsThisDescent = 0; prof.lastRitualTime = 0; prof.lastRitualAt = 0;
         prof.observation = 0; prof.sanity = 100; prof.health = prof.maxHealth;
         this.startLife();
         // corpses are placed where they fell, as in the game

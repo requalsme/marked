@@ -31,6 +31,18 @@ Any static file server works; the game is plain ES modules with no build step.
 - **Sanity** drains faster in the dark. Stay near candles and collect sanity shards. Blood vials restore Flesh.
 - Rituals grow hungrier with every bargain signed in a descent, and offline progress can never outpace active play.
 
+## Classes
+
+Each class has a passive that plugs into a system the game already has:
+
+| Class | Passive |
+| --- | --- |
+| Blood Marked | **Bloodletting**: every kill restores 4% of max flesh, paying for the cleave's cost. |
+| Signal Marked | **Clear Reception**: lies in the static are marked, the pylon recharges twice as fast, the Monolith reads you a little less well. |
+| Bone Marked | **Corpse Armor**: +2 armor for each body of yours on record (up to +10). Leave them too long and they stand. |
+| Static Marked | **Unstable**: shorter dash cooldown, longer i-frames, and a 12% chance a blow simply does not land. |
+| Ritual Marked | **Bargain-maker**: rituals pay 25% more, cost 20% less sanity, and the altar recovers sooner. |
+
 ## The Monolith learns
 
 - The Monolith keeps a **dossier**: how you fight (close, evasive, dash-reliant, burst-reliant), where you linger, how you treat

@@ -161,3 +161,16 @@ test("records from before a counter existed are filled in rather than poisoned",
     play(w, 5, () => {});
     assert.ok(Number.isFinite(w.profile.dossier.life.approach));
 });
+
+test("the offline report is concluded from what the Monolith knows of the player", async () => {
+    const { calculateOfflineProgress } = await import("../src/idle.js");
+    const w = makeWorld();
+    w.profile.lastTimestamp = Date.now() - 15 * 60 * 1000;
+    assert.equal(calculateOfflineProgress(w.profile).conclusion, "Subject shows static patterns.", "a stranger reads as a stranger");
+
+    const d = makeWorld();
+    d.profile.lastTimestamp = Date.now() - 15 * 60 * 1000;
+    for (let i = 0; i < 90 * 60; i++) sampleDossier(d.profile, d.engine, DT);
+    for (let i = 0; i < 6; i++) recordEvent(d.profile, "dash");
+    assert.match(calculateOfflineProgress(d.profile).conclusion, /^Subject remains dash-reliant\./);
+});

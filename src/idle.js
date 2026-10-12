@@ -1,4 +1,5 @@
 // Offline Progress Simulation Engine
+import { habits } from "./dossier.js";
 
 // Offline earnings can never outpace playing: the per-second offline rate is capped
 // at this fraction of the player's own lifetime active rate.
@@ -100,6 +101,9 @@ export function calculateOfflineProgress(profile) {
 
     // Watcher offline evaluation
     let offlineConclusion = "Subject shows static patterns.";
+    // The absence is read against what the Monolith already knows of the subject (GDD 06)
+    const known = habits(profile)[0];
+    if (known) offlineConclusion = `Subject remains ${known.label.toLowerCase()}. The absence did not change the model.`;
     if (goldGained > 100) offlineConclusion = "High resource extraction detected. Re-evaluating threat.";
     if (actualSanityLost > 40) offlineConclusion = "Mind fracturing under absence pressure. Model fragile.";
     if (survivedMin > 200) offlineConclusion = "Prolonged survival event observed. Shape replication accelerated.";

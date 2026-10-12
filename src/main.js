@@ -1,6 +1,6 @@
 // Main Game Orchestrator, Inputs, Loop, and Screen Controllers
 
-import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats, CLASSES } from "./state.js";
+import { loadProfiles, saveProfiles, createProfile, getEquipmentStats, getArchiveStats, CLASSES, PASSIVES } from "./state.js";
 import { GameEngine, basePlayerSpeed, playerDamage, basePlayerCrit, SANITY_HIT } from "./engine.js";
 import { CanvasRenderer } from "./canvas.js";
 import { GameUI } from "./ui.js";
@@ -326,6 +326,7 @@ class GameOrchestrator {
             return {
                 name,
                 desc: CLASSES[name].desc,
+                passive: CLASSES[name].passive,
                 health: prof.maxHealth + eq.health,
                 damage: playerDamage(prof, eq.damage),
                 speed: basePlayerSpeed(name) + eq.speed,
@@ -350,6 +351,7 @@ class GameOrchestrator {
             detail.innerHTML = `
                 <div class="class-detail-name font-cinzel">${sheet.name}</div>
                 <div class="class-detail-desc">${sheet.desc}</div>
+                <div class="class-passive"><b>${sheet.passive.name}.</b> ${sheet.passive.desc}</div>
                 <div class="class-stats">
                     <span>Flesh</span><span class="pips">${pips(sheet.health, max.health)}</span><b>${sheet.health}</b>
                     <span>Damage</span><span class="pips">${pips(sheet.damage, max.damage)}</span><b>${sheet.damage}</b>
@@ -873,7 +875,7 @@ class GameOrchestrator {
     useSignalPylon() {
         const prof = this.activeProfile, p = this.engine.player;
         const moon = prof.activeTarot === "The Moon";
-        const cool = PYLON_COOLDOWN * (moon ? 0.5 : 1);
+        const cool = PYLON_COOLDOWN * (moon ? 0.5 : 1) * (prof.classType === "Signal Marked" ? PASSIVES.signalPylonCooldown : 1);
         const since = p.currentLifeDuration - (prof.lastPylonLife ?? -999);
         this.ui.signalFilter = "warning";
         this.ui.switchTab("signals");

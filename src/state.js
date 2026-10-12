@@ -1,5 +1,21 @@
 // State Management and Persistence
 
+// Class passives (GDD 09): each plugs into a system the game already has. Numbers live here so they can be tuned in one place.
+export const PASSIVES = {
+    bloodKillHeal: 0.04,          // Blood Marked: each kill restores this share of max flesh (the cleave costs 2 flesh a swing)
+    boneArmorPerCorpse: 2,        // Bone Marked: armor for each body on record...
+    boneArmorMax: 10,             // ...up to this much
+    signalClarity: 0.25,          // Signal Marked: reception clear enough to mark the lies
+    signalMask: 0.10,             // ...and a record that is a little harder to read
+    signalPylonCooldown: 0.5,     // ...and a pylon that recharges twice as fast
+    staticDashCooldown: 40,       // Static Marked: dash again after 40 frames (60 for everyone else)
+    staticDashIframes: 8,         // ...with longer invulnerability (5 for everyone else)
+    staticPhase: 0.12,            // ...and a chance to phase through a blow
+    ritualReward: 1.25,           // Ritual Marked: bargains pay 25% more,
+    ritualSanity: 0.8,            // cost 20% less sanity,
+    ritualCooldown: 0.75          // and the altar needs 25% less time to dry
+};
+
 export const CLASSES = {
     "Blood Marked": {
         name: "Blood Marked",
@@ -8,6 +24,7 @@ export const CLASSES = {
         baseDamage: 25,
         baseCrit: 0.15,
         baseSpeed: 3.5,
+        passive: { name: "Bloodletting", desc: "Every kill restores a little flesh, to pay for the cost of the cleave." },
         initialGear: {
             weapon: { name: "Rusted Cleaver", type: "weapon", rarity: "Worn", damage: 10, crit: 0.05, icon: "assets/gear/blood_axe/blood_axe_base.png", desc: "A heavy, notch-marked blade, smelling faintly of old iron." },
             armor: { name: "Tattered Bloodband", type: "armor", rarity: "Worn", health: 20, armor: 2, icon: "assets/gear/blood_talisman/blood_talisman_base.png", desc: "Cloth stiffened with dried, ancient fluids." },
@@ -21,6 +38,7 @@ export const CLASSES = {
         baseDamage: 18,
         baseCrit: 0.10,
         baseSpeed: 3.8,
+        passive: { name: "Clear Reception", desc: "Lies in the static are marked as lies, the pylon recharges twice as fast, and the Monolith reads you a little less well." },
         initialGear: {
             weapon: { name: "Static Rod", type: "weapon", rarity: "Worn", damage: 8, crit: 0.05, signalClarity: 0.20, icon: "assets/gear/signal_staff/signal_staff_base.png", desc: "A metal antenna that hums when close to the Monolith." },
             armor: { name: "Redacted Cloak", type: "armor", rarity: "Worn", health: 15, armor: 1, sanityResist: 0.10, icon: "assets/gear/obfuscation_cloak/obfuscation_cloak_base.png", desc: "Faded fabric with lines of text ink-brushed out." },
@@ -34,6 +52,7 @@ export const CLASSES = {
         baseDamage: 15,
         baseCrit: 0.05,
         baseSpeed: 3.0,
+        passive: { name: "Corpse Armor", desc: "Each body of yours on record hardens you: +2 armor, up to +10. Leave them too long and they stand." },
         initialGear: {
             weapon: { name: "Splintered Rib", type: "weapon", rarity: "Worn", damage: 6, healthRegen: 1, icon: "assets/gear/bone_mask/bone_mask_base.png", desc: "A heavy bone sharpened to a crude point." },
             armor: { name: "Cage Mail", type: "armor", rarity: "Worn", health: 40, armor: 6, icon: "assets/gear/bone_plate_armor/bone_plate_armor_base.png", desc: "Iron rings bound together with animal sinew." },
@@ -47,6 +66,7 @@ export const CLASSES = {
         baseDamage: 20,
         baseCrit: 0.25,
         baseSpeed: 4.5,
+        passive: { name: "Unstable", desc: "Dash again sooner, stay untouchable longer, and sometimes a blow simply does not land." },
         initialGear: {
             weapon: { name: "Flickering Stiletto", type: "weapon", rarity: "Worn", damage: 12, crit: 0.10, icon: "assets/gear/static_dagger/static_dagger_base.png", desc: "A slender spike that seems to vibrate between dimensions." },
             armor: { name: "Scraped Shroud", type: "armor", rarity: "Worn", health: 15, armor: 2, speed: 0.5, icon: "assets/gear/hollow_gravity_boots/hollow_gravity_boots_base.png", desc: "Lightweight leather wraps allowing silent step." },
@@ -60,6 +80,7 @@ export const CLASSES = {
         baseDamage: 22,
         baseCrit: 0.08,
         baseSpeed: 3.4,
+        passive: { name: "Bargain-maker", desc: "Rituals pay 25% more, cost 20% less sanity, and the altar recovers sooner." },
         initialGear: {
             weapon: { name: "Hanging Ledger", type: "weapon", rarity: "Worn", damage: 14, ritualSuccess: 0.15, icon: "assets/gear/red_ledger_offhand/red_ledger_offhand_base.png", desc: "A heavy, metal-bound book detailing debt structures." },
             armor: { name: "Wax-Sealed Vest", type: "armor", rarity: "Worn", health: 25, armor: 3, icon: "assets/gear/black_offering_bowl/black_offering_bowl_base.png", desc: "Lined with holy symbols melted in red wax." },
@@ -200,6 +221,16 @@ export function getEquipmentStats(profile) {
         if (item.affix) {
             stats[item.affix.key] = (stats[item.affix.key] || 0) + item.affix.val;
         }
+    }
+
+    // Class passives that are plain numbers
+    if (profile.classType === "Bone Marked") {
+        // The dead are kept: a body that has risen is no longer armor
+        const kept = (profile.corpses || []).filter(c => c.state !== "risen").length;
+        stats.armor += Math.min(PASSIVES.boneArmorMax, kept * PASSIVES.boneArmorPerCorpse);
+    } else if (profile.classType === "Signal Marked") {
+        stats.signalClarity += PASSIVES.signalClarity;
+        stats.obfuscation += PASSIVES.signalMask;
     }
 
     return stats;
