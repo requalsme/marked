@@ -3169,20 +3169,18 @@ body.boss-active .matron-voice {
 }
 
 
-/* A class's passive, under its description on the lineage screen */
+/* A class's passive, under its description on the lineage screen (the card is parchment: dark ink) */
 .class-passive {
-    color: #d8c9a0;
+    color: #3a2614;
     font-family: var(--font-fell);
     font-size: 15px;
-    font-style: italic;
     line-height: 1.4;
     margin: 6px 0 10px;
 }
 
 .class-passive b {
-    color: var(--sigil, #c79a42);
+    color: #7c0d0a;
     font-family: var(--font-fell-sc);
-    font-style: normal;
     font-weight: normal;
     letter-spacing: 0.04em;
 }
