@@ -46,6 +46,18 @@ Any static file server works; the game is plain ES modules with no build step.
 - Habits survive death with decay (you are remembered across lives) and are weakened by Obfuscation, so a player who varies
   their play, or hides, reads as Inconclusive.
 
+## The story
+
+The Keeping House was a cathedral that turned confession into debt. The Monolith answers ledgers by writing the rest of the person.
+The story is not told, it is found: thirteen Ledger pages unlock from what you do (decoding at the altar, being noticed, meeting
+the Seal Mother, putting down your own dead, escaping), and a last entry lets a player who has read it all strike their own name
+from the Register. See [docs/STORY.md](docs/STORY.md).
+
+- The signal pylon (E) gives a free warning every so often. Your mind decides whether it is true: Fractured and Broken receivers
+  are lied to, and The Moon makes it worse. High Signal Clarity marks the lies.
+- The Seal Mother is the Registrar-Matron, who sealed the House to keep the Register from walking out. She fights in three phases
+  and speaks at each turn.
+
 ## Tests
 
 ```bash

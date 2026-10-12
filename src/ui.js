@@ -7,6 +7,8 @@ import { recordEvent, habits, favoriteZone, ensureDossier, obfuscationMask } fro
 import { SIGNAL_TYPES, TRANSMISSION_TYPES, signalText, signalType } from "./signals.js";
 import { tierOf } from "./watcher.js";
 import { COUNTER_INFO } from "./adapt.js";
+import { LEDGER, LAST_ENTRY, ensureLedger, ledgerCount, ledgerComplete, markRead, unlockFor, chooseWarning, corpseTransmission } from "./lore.js";
+import { addSignal } from "./signals.js";
 
 // Ritual terms worsen with each bargain signed in the current descent
 // (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
@@ -63,11 +65,12 @@ export class GameUI {
 
     // The Watcher speaks beneath its eye and fades; the same words are filed in the Signals log
     showWhisper(text, kind = "watcher") {
-        let el = document.getElementById("watcher-whisper");
+        const id = kind === "matron" ? "matron-voice" : "watcher-whisper";
+        let el = document.getElementById(id);
         if (!el) {
             el = document.createElement("div");
-            el.id = "watcher-whisper";
-            el.className = "watcher-whisper";
+            el.id = id;
+            el.className = kind === "matron" ? "watcher-whisper matron-voice" : "watcher-whisper";
             el.setAttribute("role", "status");
             (document.getElementById("game-layout") || document.body).appendChild(el);
         }
@@ -573,7 +576,7 @@ export class GameUI {
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Static Communion</div>
-                    <div class="ritual-deal">Spend ${r.commSanity} Sanity. Immediately intercept and decode a hidden Warning Signal.</div>
+                    <div class="ritual-deal">Spend ${r.commSanity} Sanity. Decode the next page of the Register; once it is read through, a hidden warning instead.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="static_comm">Consume Sanity</button>
                 </div>
                 <div class="ritual-card">
@@ -582,6 +585,7 @@ export class GameUI {
                     <button class="game-btn ritual-exec-btn" data-ritual="name_erase">Erase Registry</button>
                 </div>
             </div>
+            ${this.lastEntryCard(profile)}
             <div class="ritual-meta">Bargains signed this descent: <strong>${n}</strong> · Altar cooldown: <strong>${Math.round(r.cooldownMs / 1000)}s</strong>${cooldownLeft > 0 ? ` · <span class="ritual-wait">ready in ${cooldownLeft}s</span>` : ""}<br>Each bargain hungers more: cooldowns lengthen and rewards thin until you die or escape.</div>`;
 
         // Check distance to altar
@@ -608,7 +612,30 @@ export class GameUI {
         });
     }
 
+    // The last line of the Register: offered only to one who holds every page
+    lastEntryCard(profile) {
+        const n = ledgerCount(profile);
+        if (ledgerComplete(profile)) {
+            return `<div class="ritual-card last-entry">
+                <div class="ritual-name">${LAST_ENTRY.num}. ${LAST_ENTRY.title}</div>
+                <div class="ritual-deal">${LAST_ENTRY.prompt}</div>
+                <button class="game-btn ritual-exec-btn" data-ritual="last_entry">Strike your name</button>
+            </div>`;
+        }
+        if (n >= 7) {
+            return `<div class="ritual-card last-entry locked">
+                <div class="ritual-name">The Last Entry</div>
+                <div class="ritual-deal">One line of the Register is still blank. You do not yet hold the whole of it. (${n} of ${LEDGER.length} pages)</div>
+            </div>`;
+        }
+        return "";
+    }
+
     executeRitual(profile, type) {
+        if (type === "last_entry") {
+            if (confirm("Strike your name from the Register? The record closes and this character is retired. This cannot be undone.")) this.orch.triggerAbsolution();
+            return;
+        }
         const now = Date.now();
         const terms = ritualTerms(profile.ritualsThisDescent || 0, profile);
         if (profile.lastRitualTime && now - profile.lastRitualTime < terms.cooldownMs) {
@@ -641,14 +668,15 @@ export class GameUI {
         } else if (type === "static_comm") {
             if (this.orch.engine.player.sanity >= terms.commSanity) {
                 this.orch.engine.player.sanity -= terms.commSanity;
-                // Add a warning signal
-                const warnings = [
-                    "Memory Signal: The Keeping House was once a cathedral. We filed names under index tags.",
-                    "Warning Signal: Seal Mother senses weapon configurations. Equip armor to absorb her heavy slams.",
-                    "Memory Signal: The Monolith does not construct. It mirrors what survives."
-                ];
-                const msg = warnings[Math.floor(Math.random() * warnings.length)];
-                profile.signals.unshift(`[Decoded Comm] ${msg}`);
+                // The altar decodes the Register in order; once it is read through, it offers warnings instead
+                const page = unlockFor(profile, "communion");
+                if (page) {
+                    this.orch.announcePage(page);
+                } else {
+                    const pl = this.orch.engine.player;
+                    const w = chooseWarning({ sanity: pl.sanity, moon: profile.activeTarot === "The Moon", clarity: pl.stats.signalClarity || 0, topics: Object.keys(this.orch.engine.counters), boss: this.orch.engine.bossSpawned });
+                    addSignal(profile, w.text, "warning", w.falseSignal ? { falseSignal: true } : {});
+                }
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#3075c7", 20);
                 ritualSuccess = true;
             } else {
@@ -689,8 +717,8 @@ export class GameUI {
         const filter = this.signalFilter || "transmissions";
         const clarity = getEquipmentStats(profile).signalClarity;
         const typed = profile.signals.map(e => ({ e, type: signalType(e) }));
-        const chips = [["transmissions", "Transmissions"], ...TRANSMISSION_TYPES.map(t => [t, SIGNAL_TYPES[t].label]), ["log", "Log"]];
-        const count = id => typed.filter(x => id === "transmissions" ? x.type !== "log" : x.type === id).length;
+        const chips = [["transmissions", "Transmissions"], ["ledger", "Ledger"], ...TRANSMISSION_TYPES.map(t => [t, SIGNAL_TYPES[t].label]), ["log", "Log"]];
+        const count = id => id === "ledger" ? ledgerCount(profile) : typed.filter(x => id === "transmissions" ? x.type !== "log" : x.type === id).length;
         panel.innerHTML = `<h3>Signals Feed & Transmissions</h3>
             <p class="tab-desc">Static intercepted by your lantern receiver. The Watcher's remarks, memories of the house, warnings and the voices of the dead. Text clarity deteriorates as sanity drops.</p>
             <div class="signal-filters" role="tablist">${chips.map(([id, label]) =>
@@ -702,6 +730,10 @@ export class GameUI {
         }));
 
         const container = document.getElementById("signals-log-container");
+        if (filter === "ledger") {
+            this.renderLedger(profile, container);
+            return;
+        }
         const shown = typed.filter(x => filter === "transmissions" ? x.type !== "log" : x.type === filter);
         if (!shown.length) {
             container.innerHTML = `<div class="empty-msg">${filter === "log" ? "Nothing logged." : "Nothing intercepted yet. The Watcher is quiet, for now."}</div>`;
@@ -727,6 +759,42 @@ export class GameUI {
             }
             container.appendChild(row);
         }
+    }
+
+    // The Ledger of the Keeping House: pages found so far, and where the rest are to be found
+    renderLedger(profile, container) {
+        const have = new Set(ensureLedger(profile).pages);
+        const fresh = new Set(profile.ledger.unread);
+        container.classList.add("ledger-list");
+        for (const page of LEDGER) {
+            const row = document.createElement("div");
+            const owned = have.has(page.id);
+            row.className = `ledger-page${owned ? "" : " locked"}${fresh.has(page.id) ? " fresh" : ""}`;
+            const num = document.createElement("div"); num.className = "ledger-num"; num.textContent = page.num;
+            const body = document.createElement("div"); body.className = "ledger-body";
+            const title = document.createElement("div"); title.className = "ledger-title"; title.textContent = owned ? page.title : "\u2591\u2591\u2591\u2591\u2591\u2591\u2591\u2591";
+            body.appendChild(title);
+            if (owned) {
+                const text = document.createElement("div"); text.className = "ledger-text"; text.textContent = page.text;
+                const by = document.createElement("div"); by.className = "ledger-by"; by.textContent = page.byline;
+                body.append(text, by);
+            } else {
+                const hint = document.createElement("div"); hint.className = "ledger-hint"; hint.textContent = page.hint;
+                body.appendChild(hint);
+            }
+            row.append(num, body);
+            container.appendChild(row);
+        }
+        markRead(profile);
+        this.updateLedgerBadge(profile);
+    }
+
+    // A small count of unread pages on the Signals button
+    updateLedgerBadge(profile) {
+        const btn = document.querySelector('.tab-btn[data-tab="signals"]');
+        if (!btn) return;
+        const n = ensureLedger(profile).unread.length;
+        if (n > 0) btn.dataset.badge = String(n); else delete btn.dataset.badge;
     }
 
     renderCorpses(profile) {
@@ -820,6 +888,7 @@ export class GameUI {
             const seals = Math.round(2 * bloom);
             profile.waxSeals += seals;
             profile.signals.unshift(`Corpse Broadcasted: transmitted telemetry details. Earned +${seals} Wax Seals.`);
+            addSignal(profile, corpseTransmission(corp), "corpse");
             corp.state = "broadcasted";
 
             if (intr) intr.type = "broadcast_corpse";

@@ -8,14 +8,17 @@ import { calculateOfflineProgress } from "./idle.js";
 import { updateObservation, handleSanityDecay, corruptText, TAROT_DECK, REALITY_TRAITS, traitActive } from "./systems.js";
 import { Watcher } from "./watcher.js";
 import { activeCounters, COUNTER_INFO } from "./adapt.js";
-import { ensureDossier, sampleDossier, diagnose, closeLife, recordDeath, obfuscationMask } from "./dossier.js";
+import { ensureDossier, sampleDossier, diagnose, closeLife, recordDeath, obfuscationMask, recordEvent } from "./dossier.js";
 import { addSignal, SIGNAL_LOG_LIMIT } from "./signals.js";
+import { unlockFor, ensureLedger, MATRON_LINES, LAST_ENTRY, chooseWarning } from "./lore.js";
 import { assetLoader } from "./assets.js";
 import { audioManager } from "./audio.js";
 import { ROOM } from "./world.js";
 import { installUiTextures } from "./uitextures.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
+const PYLON_COOLDOWN = 45; // seconds of life between intercepts at the signal pylon (halved under The Moon)
+const STATIC_SKY_DECODE = 120; // seconds of life between free decodes under Static Sky
 
 const CLASS_COLORS = {
     "Blood Marked": "#c4231b",
@@ -153,7 +156,7 @@ class GameOrchestrator {
                 if (intr.type === "blood_ritual_altar") {
                     this.ui.switchTab("rituals");
                 } else if (intr.type === "static_signal_pylon") {
-                    this.ui.switchTab("signals");
+                    this.useSignalPylon();
                 } else if (intr.type === "corpse_lantern_shrine") {
                     this.ui.switchTab("corpses");
                 } else if (intr.type === "fresh_marked_corpse" || intr.type === "burned_corpse_remains" || intr.type === "broadcast_corpse") {
@@ -301,8 +304,10 @@ class GameOrchestrator {
             // User-entered names go in via textContent, never as HTML
             card.querySelector(".profile-name").textContent = prof.name;
             const deaths = prof.stats && prof.stats.deaths ? ` · ${prof.stats.deaths} death${prof.stats.deaths === 1 ? "" : "s"}` : "";
-            card.querySelector(".profile-meta").textContent = `Level ${prof.level} ${prof.classType}${deaths}`;
-            card.querySelector(".load-profile-btn").addEventListener("click", () => this.selectProfile(prof.id));
+            card.querySelector(".profile-meta").textContent = prof.absolved ? `Absolved · Level ${prof.level} ${prof.classType} · record closed` : `Level ${prof.level} ${prof.classType}${deaths}`;
+            const descend = card.querySelector(".load-profile-btn");
+            if (prof.absolved) { descend.disabled = true; descend.textContent = "Absolved"; card.classList.add("absolved"); }
+            descend.addEventListener("click", () => this.selectProfile(prof.id));
             card.querySelector(".delete-profile-btn").addEventListener("click", () => this.deleteProfile(prof.id));
             container.appendChild(card);
         }
@@ -371,6 +376,8 @@ class GameOrchestrator {
     selectProfile(id) {
         this.saveData.activeProfileId = id;
         this.activeProfile = this.saveData.profiles.find(p => p.id === id);
+        if (this.activeProfile.absolved) return; // the record is closed
+        ensureLedger(this.activeProfile);
         
         // Save timestamp update
         saveProfiles(this.saveData);
@@ -556,6 +563,18 @@ class GameOrchestrator {
         p.currentLifeDuration = 0;
         p.ritualsThisDescent = 0;
         p.lastRitualTime = 0;
+        p.lastPylonLife = -999;
+        this.lifeFlags.autoDecode = 0;
+    }
+
+    // The end-of-descent card: death, escape and absolution each say something different
+    setEndCopy({ intro, name, outro, corpseHint }) {
+        const d = document.getElementById("death-desc");
+        const strong = document.createElement("strong");
+        strong.id = "death-char-name";
+        strong.textContent = name;
+        d.replaceChildren(intro, strong, outro);
+        document.getElementById("death-corpse-hint").style.display = corpseHint ? "" : "none";
     }
 
     triggerGameOver(cause = "Combat defeat") {
@@ -566,7 +585,7 @@ class GameOrchestrator {
         const deathTitle = document.getElementById("death-title");
         deathTitle.textContent = "SIGIL COLLAPSED";
         deathTitle.style.color = "";
-        document.getElementById("death-char-name").textContent = this.activeProfile.name;
+        this.setEndCopy({ intro: "The wanderer shape ", name: this.activeProfile.name, outro: " was noticed and overwhelmed. The Monolith has cataloged their bones, adding to its behavior matrices.", corpseHint: true });
         document.getElementById("death-cause-text").textContent = `Consequence: ${cause}`;
         
         // Save Corpse
@@ -622,7 +641,7 @@ class GameOrchestrator {
         
         document.getElementById("death-title").textContent = "RECORD SECURED";
         document.getElementById("death-title").style.color = "#d4a343";
-        document.getElementById("death-char-name").textContent = this.activeProfile.name;
+        this.setEndCopy({ intro: "The wanderer shape ", name: this.activeProfile.name, outro: " crossed the threshold. The Monolith has logged the way out, and learns a little from it.", corpseHint: false });
         document.getElementById("death-cause-text").textContent = "Success: Descent completed, observation records synced with Monolith.";
         
         // Reset descent stats, preserving gold and inventory items
@@ -631,6 +650,8 @@ class GameOrchestrator {
         this.activeProfile.observation = 0;
         if (!this.activeProfile.stats.escapes) this.activeProfile.stats.escapes = 0;
         this.activeProfile.stats.escapes++;
+        const learned = this.unlockAndAnnounce("escape");
+        if (learned) document.getElementById("death-cause-text").textContent += ` Ledger page ${learned.num}, "${learned.title}", recovered.`;
 
         // Transfer memory fragments to global archive
         if (this.activeProfile.memoryFragments > 0) {
@@ -725,11 +746,22 @@ class GameOrchestrator {
                 this.canvasRenderer.showBanner("THE SEAL MOTHER WAKES", "Break her seal to open the door.", "#c4231b", 240);
                 this.activeProfile.signals.unshift("Warning Signal: The Seal Mother has been unsealed. Defeat her to open the exit.");
                 this.watcher.notify("boss_wake");
+                this.unlockAndAnnounce("boss_wake");
+                this.matronSpeaks(MATRON_LINES.wake);
             } else if (event === "boss_defeated") {
                 this.canvasRenderer.triggerShake(40);
                 this.activeProfile.signals.unshift("Warning Signal: Curse Seal Mother dissolved. High-tier artifact dropped.");
                 this.activeProfile.exp += 300;
                 this.watcher.notify("boss_down");
+                this.unlockAndAnnounce("boss_down");
+                this.matronSpeaks(MATRON_LINES.down);
+            } else if (event === "boss_phase") {
+                this.canvasRenderer.triggerShake(14);
+                this.canvasRenderer.showBanner(data.phase === 2 ? "THE MATRON TIGHTENS HER GRIP" : "THE REGISTER ANSWERS HER",
+                    data.phase === 2 ? "Her seals fall in threes." : "Loose pages rise, and her seals fall where you are going.", "#c4231b", 200);
+                this.matronSpeaks(data.phase === 2 ? MATRON_LINES.phase2 : MATRON_LINES.phase3);
+            } else if (event === "echo_down") {
+                this.unlockAndAnnounce("echo_down");
             }
         });
 
@@ -742,6 +774,7 @@ class GameOrchestrator {
             audioManager.play("observation_threshold", { tier: crossed.tier });
             this.canvasRenderer.triggerShake(6 + crossed.tier * 3);
             this.watcher.notify("tier" + crossed.tier);
+            this.unlockAndAnnounce("tier" + crossed.tier);
             this.canvasRenderer.showBanner(`YOU ARE ${crossed.name.toUpperCase()}`, `Observation ${crossed.at}% — ${crossed.detail}`, "#c4231b", 200);
             this.ui.flashObservation();
         }
@@ -791,6 +824,15 @@ class GameOrchestrator {
         if (p.health < p.maxHealth * 0.25 && !this.lifeFlags.lowHealth) { this.lifeFlags.lowHealth = true; this.watcher.notify("low_health"); }
         if (p.health > p.maxHealth * 0.5) this.lifeFlags.lowHealth = false;
 
+        // Static Sky: intercepted signals decode themselves
+        if (traitActive(prof, "Static Sky")) {
+            const slot = Math.floor(p.currentLifeDuration / STATIC_SKY_DECODE);
+            if (slot > (this.lifeFlags.autoDecode || 0)) {
+                this.lifeFlags.autoDecode = slot;
+                this.unlockAndAnnounce("communion");
+            }
+        }
+
         if (this.simTick % 30 !== 15) return;
         const nearCorpse = this.engine.interactables.some(i => i.type === "fresh_marked_corpse" && this.engine.distance(p.x, p.y, i.x, i.y) < 320);
         // The Moon makes signals come twice as fast; Static Sky makes the Watcher chatty
@@ -810,6 +852,83 @@ class GameOrchestrator {
             addSignal(prof, `Your habit has been put to work. ${info.name}: ${info.blurb}`, "warning");
             if (this.knownCounters.size === 1) this.watcher.notify("adapt");
         }
+    }
+
+    // A page of the Ledger, earned by something the player did
+    unlockAndAnnounce(trigger) {
+        const page = unlockFor(this.activeProfile, trigger);
+        if (page) this.announcePage(page);
+        return page;
+    }
+
+    announcePage(page) {
+        const prof = this.activeProfile;
+        addSignal(prof, `Memory Signal: Ledger page ${page.num}, "${page.title}", intercepted.`, "memory");
+        this.canvasRenderer.showBanner(`LEDGER PAGE ${page.num}`, `${page.title}. Filed under Signals, Ledger.`, "#c2a35e", 220);
+        audioManager.play("signal_decode");
+        this.ui.updateLedgerBadge(prof);
+    }
+
+    // The signal pylon: a free intercept every so often. What it says depends on the state of your mind.
+    useSignalPylon() {
+        const prof = this.activeProfile, p = this.engine.player;
+        const moon = prof.activeTarot === "The Moon";
+        const cool = PYLON_COOLDOWN * (moon ? 0.5 : 1);
+        const since = p.currentLifeDuration - (prof.lastPylonLife ?? -999);
+        this.ui.signalFilter = "warning";
+        this.ui.switchTab("signals");
+        if (since < cool) {
+            audioManager.play("error_sound");
+            this.ui.showToast(`The pylon is still hissing. Ready in ${Math.ceil(cool - since)}s.`);
+            return;
+        }
+        prof.lastPylonLife = p.currentLifeDuration;
+        const w = chooseWarning({ sanity: p.sanity, moon, clarity: p.stats.signalClarity || 0, topics: Object.keys(this.engine.counters), boss: this.engine.bossSpawned });
+        addSignal(prof, w.text, "warning", w.falseSignal ? { falseSignal: true } : {});
+        recordEvent(prof, "signal");
+        audioManager.play("signal_decode");
+        this.ui.renderActiveTab();
+    }
+
+    // The Seal Mother's few words, in her own voice
+    matronSpeaks(text) {
+        this.ui.showWhisper(text, "matron");
+        addSignal(this.activeProfile, `The Seal Mother: "${text}"`, "memory");
+    }
+
+    // The last entry: the player's own name, struck out. The record closes and the profile is retired.
+    triggerAbsolution() {
+        const p = this.activeProfile;
+        p.absolved = true;
+        p.stats.absolvedAt = Date.now();
+        this.saveData.archive.memoryFragments += 20;
+        this.gameState = "game_over";
+        audioManager.setMusicState("silent");
+        audioManager.play("victory");
+        document.getElementById("game-layout").style.display = "none";
+        document.getElementById("game-over-screen").style.display = "flex";
+        const title = document.getElementById("death-title");
+        title.textContent = LAST_ENTRY.title_card;
+        title.style.color = "#c2a35e";
+        this.setEndCopy({ intro: "", name: p.name, outro: ", absolved.", corpseHint: false });
+        const cause = document.getElementById("death-cause-text");
+        cause.textContent = "";
+        for (const line of LAST_ENTRY.epilogue) {
+            const row = document.createElement("div");
+            row.textContent = line;
+            row.style.margin = "0.6em 0";
+            cause.appendChild(row);
+        }
+        this.endLife();
+        this.saveActiveProfile();
+        const btn = document.getElementById("respawn-btn");
+        btn.textContent = "Return to the Ledger";
+        btn.onclick = () => {
+            title.textContent = "SIGIL COLLAPSED";
+            title.style.color = "";
+            btn.textContent = "Return to Hub";
+            this.renderTitleScreen();
+        };
     }
 
     deliverWhisper(w) {

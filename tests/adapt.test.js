@@ -274,3 +274,55 @@ test("The Shape keeps the player's distance, and dashes if the player does", () 
     tick(w, 2);
     assert.ok(shape.shapeDash > 0, "it dashes at you");
 });
+
+// ─── the Seal Mother ────────────────────────────────────────────────────────
+
+function mother(w) {
+    quiet(w);
+    w.engine.spawnEnemy("Seal Mother", 800, 470);
+    const m = w.engine.enemies[0];
+    m.speed = 0;                                     // hold her still so only her seals are measured
+    return m;
+}
+const traps = (w, from = 0) => w.events.slice(from).filter(x => x.event === "boss_wax_trap");
+
+test("Seal Mother, first phase: one seal at the player's feet", () => {
+    const w = makeWorld(); const m = mother(w);
+    tick(w, 190);
+    assert.equal(traps(w).length, 1);
+    assert.equal(w.events.filter(x => x.event === "boss_phase").length, 0);
+    assert.equal(w.engine.sealMotherPhase(m), 1);
+});
+
+test("Seal Mother, second phase: a fan of three seals, announced once", () => {
+    const w = makeWorld(); const m = mother(w);
+    m.health = m.maxHealth * 0.6;
+    tick(w, 160);
+    assert.equal(w.events.filter(x => x.event === "boss_phase").length, 1);
+    assert.deepEqual(w.events.find(x => x.event === "boss_phase").data, { phase: 2 });
+    assert.ok(traps(w).length >= 3, "the first volley is three seals");
+    tick(w, 400);
+    assert.equal(w.events.filter(x => x.event === "boss_phase").length, 1, "announced once");
+});
+
+test("Seal Mother, third phase: loose pages come to her aid, and a seal falls where you are heading", () => {
+    const w = makeWorld(); const m = mother(w);
+    m.health = m.maxHealth * 0.2;
+    w.engine.keys["d"] = true;                       // running right, so the third phase has somewhere to aim
+    tick(w, 135);
+    assert.equal(w.engine.enemies.filter(e => e.type === "Paper Wraith").length, 2);
+    const ahead = traps(w);
+    assert.ok(ahead.length >= 4, `fan + a seal ahead (${ahead.length})`);
+    assert.ok(ahead.some(t => t.data.x > w.engine.player.x + 60), "one lands in front of the player's motion");
+    tick(w, 600);
+    assert.equal(w.engine.enemies.filter(e => e.type === "Paper Wraith").length >= 2, true);
+    assert.equal(w.events.filter(x => x.event === "boss_phase").length, 1, "straight to phase 3: announced once");
+});
+
+test("a risen corpse that is put down is reported (it carries a memory)", () => {
+    const w = makeWorld(); quiet(w);
+    w.engine.spawnCorpseEcho({ x: 700, y: 600, level: 1, classType: "Blood Marked" });
+    w.engine.enemies[0].health = 0;
+    tick(w, 2);
+    assert.ok(w.events.some(x => x.event === "echo_down"));
+});

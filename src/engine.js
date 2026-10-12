@@ -785,6 +785,7 @@ export class GameEngine {
                         grav: 0.25
                     });
                 } else if (e.type === "Corpse Echo") {
+                    onEvent("echo_down", e);
                     this.loot.push({
                         id: "memory_fragment",
                         x: e.x,
@@ -868,20 +869,44 @@ export class GameEngine {
                     this.fireShot(e, aim.x, aim.y);
                 }
             } else if (e.type === "Seal Mother") {
-                // Boss movement
+                const phase = this.sealMotherPhase(e);
+                if (phase > (e.phase || 1)) {
+                    e.phase = phase;
+                    onEvent("boss_phase", { phase });
+                    // Loose pages answer her at the last: the Register's own paper, fighting for her
+                    if (phase === 3) {
+                        for (const side of [-1, 1]) this.spawnEnemy("Paper Wraith", this.clampX(e.x + side * 90, e.y), this.clampY(e.y + 30));
+                    }
+                }
+                e.phase = e.phase || 1;
+                // Boss movement: she tires of waiting as the fight goes on
+                const pace = [1, 1, 1.15, 1.25][e.phase];
                 if (dist > 30) {
-                    e.vx = (dx / dist) * e.speed;
-                    e.vy = (dy / dist) * e.speed;
+                    e.vx = (dx / dist) * e.speed * pace;
+                    e.vy = (dy / dist) * e.speed * pace;
                 } else {
                     e.vx = 0;
                     e.vy = 0;
                 }
 
-                // Cast traps every 3 seconds
-                if (e.behaviorTimer % 180 === 0) {
+                // Wax seals: one at the player's feet; a fan of three in the second phase;
+                // in the third they also fall where the player is *going*
+                const every = [0, 180, 150, 130][e.phase];
+                if (e.behaviorTimer % every === 0) {
                     this.createParticleExplosion(e.x, e.y, "#9a1616", 10);
-                    // Spawn warning circle under player
-                    onEvent("boss_wax_trap", { x: this.player.x, y: this.player.y });
+                    const px = this.player.x, py = this.player.y;
+                    onEvent("boss_wax_trap", { x: px, y: py });
+                    if (e.phase >= 2) {
+                        const ang = Math.atan2(py - e.y, px - e.x) + Math.PI / 2;
+                        for (const off of [-72, 72]) {
+                            const ty = this.clampY(py + Math.sin(ang) * off);
+                            onEvent("boss_wax_trap", { x: this.clampX(px + Math.cos(ang) * off, ty), y: ty });
+                        }
+                    }
+                    if (e.phase === 3) {
+                        const ahead = this.aimAtFrames(45);
+                        onEvent("boss_wax_trap", { x: ahead.x, y: ahead.y });
+                    }
                 }
 
                 // Melee strike
@@ -1210,6 +1235,19 @@ export class GameEngine {
     }
 
     // ─── What the Monolith does with what it has learned ────────────────────────────
+
+    // Where the player will be in `frames` if they keep going (the boss's third-phase seals)
+    aimAtFrames(frames) {
+        const p = this.player;
+        const y = this.clampY(p.y + p.vy * frames);
+        return { x: this.clampX(p.x + p.vx * frames, y), y };
+    }
+
+    // 1 above two thirds of her flesh, 2 above one third, 3 below
+    sealMotherPhase(e) {
+        const f = e.health / e.maxHealth;
+        return f > 2 / 3 ? 1 : f > 1 / 3 ? 2 : 3;
+    }
 
     // Enemies that shoot lead a retreating player (Led shots)
     aimAt(e, projSpeed) {
