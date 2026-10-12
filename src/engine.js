@@ -3,6 +3,7 @@ import { audioManager } from "./audio.js";
 import { WORLD_WIDTH, WORLD_HEIGHT, ROOM, walkableX } from "./world.js";
 import { PROP_COLLIDERS } from "./props.js";
 import { FIXTURE_COLLIDERS } from "./fixtures.js";
+import { traitActive, tarotActive, TUNING } from "./systems.js";
 
 // ─── Tuning constants ────────────────────────────────────────────────────────
 export const PLAYER_BASE_SPEED = 4.5;        // px/frame; Static Marked gets +1
@@ -130,6 +131,9 @@ export class GameEngine {
 
     spawnLoot(x, y, rarityLimit = "Cursed") {
         import("./state.js").then(stateMod => {
+            // The Tower: gear reaches one rarity higher, and Relic or better turns up twice as often
+            const tower = tarotActive(this.player.profile, "The Tower");
+            if (tower) rarityLimit = stateMod.nextRarity(rarityLimit);
             const rand = Math.random();
             let lootType = "loot_satchel";
             let item = null;
@@ -144,7 +148,7 @@ export class GameEngine {
                 healPct = BLOOD_VIAL_HEAL_PCT;
             } else if (rand < BLOOD_VIAL_CHANCE + 0.20) {
                 lootType = "cursed_gear_drop";
-                item = stateMod.generateLootItem(rarityLimit);
+                item = stateMod.generateLootItem(rarityLimit, tower ? 2 : 1);
             } else if (rand < BLOOD_VIAL_CHANCE + 0.40) {
                 lootType = "sanity_shard";
                 sanityRestore = 15;
@@ -240,6 +244,9 @@ export class GameEngine {
             const scale = enemyScale(this.player.profile.level);
             e.health = e.maxHealth = Math.round(e.health * scale);
             e.damage = Math.round(e.damage * scale);
+            if (type === "Seal Mother" && tarotActive(this.player.profile, "The Tower")) {
+                e.damage = Math.round(e.damage * TUNING.towerBossDamage);
+            }
         }
 
         this.enemies.push(e);
@@ -301,6 +308,7 @@ export class GameEngine {
         let angle = Math.atan2(ty - y, tx - x);
         let p = {
             owner: owner, // "player" | "enemy"
+            source: owner === "enemy" ? (properties.source || this.currentActor || null) : null,
             type: type,
             x: x,
             y: y,
@@ -363,7 +371,7 @@ export class GameEngine {
 
         // Gear regeneration (healthRegen = HP per second)
         if (this.player.stats.healthRegen > 0 && this.player.health < this.player.maxHealth) {
-            this.player.health = Math.min(this.player.maxHealth, this.player.health + this.player.stats.healthRegen / 60);
+            this.player.health = Math.min(this.player.maxHealth, this.player.health + this.healingMult() * this.player.stats.healthRegen / 60);
         }
         if (this.player.attackCooldown > 0) this.player.attackCooldown--;
         if (this.player.dashCooldown > 0) this.player.dashCooldown--;
@@ -455,7 +463,8 @@ export class GameEngine {
         const obs = this.player.profile.observation;
 
         let type = "Cabinet Indexer";
-        if (obs > 70 && roll < 0.16) {
+        const judgement = tarotActive(this.player.profile, "Judgement");
+        if (obs > (judgement ? TUNING.judgementShapeObs : 70) && roll < (judgement ? 0.24 : 0.16)) {
             type = "The Shape";
         } else if (obs > 50 && roll < 0.32) {
             type = "Witness Chair";
@@ -719,7 +728,7 @@ export class GameEngine {
                 this.decals.push({ kind: "pool", x: e.x, y: e.y + 4, r: 16 + (e.radius || 18) * 0.6, liquid: remains });
                 this.createParticleExplosion(e.x, e.y, remains === "ink" ? "#000000" : "#3a0808", 14);
                 audioManager.play("enemy_death", { pan: this.panFor(e.x) });
-                const goldDrop = e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60;
+                const goldDrop = Math.round((e.lootRarity === "Worn" ? 12 : e.lootRarity === "Unsettling" ? 25 : 60) * this.goldMult());
                 this.player.profile.gold += goldDrop;
                 this.trackActiveGain(goldDrop, 15);
                 this.spawnFloatingText(`+${goldDrop} DG`, e.x, e.y - 34, "#d4af37", false);
@@ -764,6 +773,7 @@ export class GameEngine {
             e.attackCooldown = Math.max(0, e.attackCooldown - 1);
             e.behaviorTimer++;
             if (e.hitFlash > 0) e.hitFlash--;
+            this.currentActor = e.type;
 
             // Enemy AI movement and actions
             let dx = this.player.x - e.x;
@@ -930,10 +940,12 @@ export class GameEngine {
             // Steer round only when pressing into the furniture, not when brushing past it
             if (hit && !e.detour && e.vx * hit.nx + e.vy * hit.ny < 0 && Math.abs(e.vx * hit.ny - e.vy * hit.nx) < (e.speed || 1.5) * 0.7) this.startDetour(e, hit);
         }
+        this.currentActor = null;
     }
 
-    damagePlayer(amount, sanityAmount = 0, sourceX = null, sourceY = null) {
+    damagePlayer(amount, sanityAmount = 0, sourceX = null, sourceY = null, source = this.currentActor) {
         if (this.player.health <= 0 || this.player.invulnTimer > 0) return;
+        this.lastDamageSource = source || "the dark";
 
         // Apply armor formula
         const arm = this.player.stats.armor || 0;
@@ -998,7 +1010,7 @@ export class GameEngine {
                     if (e.health > 0 && this.distance(p.x, p.y, e.x, e.y) < p.radius + e.radius) {
                         // Is crit?
                         let isCrit = Math.random() < p.crit;
-                        let finalDmg = isCrit ? Math.round(p.damage * 1.7) : p.damage;
+                        let finalDmg = this.modifyPlayerHit(isCrit ? Math.round(p.damage * 1.7) : p.damage);
                         
                         e.health -= finalDmg;
                         this.createParticleExplosion(e.x, e.y, isCrit ? "#ffdd00" : "#aaaaaa", 6);
@@ -1028,7 +1040,7 @@ export class GameEngine {
             } else {
                 // Check player
                 if (this.player.health > 0 && this.distance(p.x, p.y, this.player.x, this.player.y) < p.radius + this.player.radius) {
-                    this.damagePlayer(p.damage, p.sanityDamage, p.x - p.vx * 3, p.y - p.vy * 3);
+                    this.damagePlayer(p.damage, p.sanityDamage, p.x - p.vx * 3, p.y - p.vy * 3, p.source);
                     p.life = 0;
                 }
             }
@@ -1110,12 +1122,13 @@ export class GameEngine {
         let color = "#d4af37";
 
         if (lootData.id === "loot_satchel") {
-            p.gold += lootData.gold;
-            this.trackActiveGain(lootData.gold, 0);
+            const gold = Math.round(lootData.gold * this.goldMult());
+            p.gold += gold;
+            this.trackActiveGain(gold, 0);
             color = "#ffd700";
-            p.signals.unshift(`Collected Satchel: Debt Gold reduced by ${lootData.gold}.`);
+            p.signals.unshift(`Collected Satchel: Debt Gold reduced by ${gold}.`);
         } else if (lootData.id === "blood_vial") {
-            const heal = Math.round(this.player.maxHealth * lootData.healPct);
+            const heal = Math.round(this.player.maxHealth * lootData.healPct * this.healingMult());
             this.player.health = Math.min(this.player.maxHealth, this.player.health + heal);
             color = "#d12a2a";
             this.spawnFloatingText(`+${heal}`, this.player.x, this.player.y - 30, "#ff5a5a", false);
@@ -1179,6 +1192,34 @@ export class GameEngine {
                 }
             }
         }
+    }
+
+    // What the Monolith will write on the corpse
+    deathCause() {
+        const src = this.lastDamageSource;
+        return src ? `Felled by ${src}` : "Collapsed in the Keeping House";
+    }
+
+    // Gold find from gear, plus Mirror Rot's bounty once the room is being studied
+    goldMult() {
+        const prof = this.player.profile;
+        return (1 + (this.player.stats.goldFind || 0)) * (traitActive(prof, "Mirror Rot") ? TUNING.mirrorRotGold : 1);
+    }
+
+    // Blood Rain thins every kind of healing
+    healingMult() {
+        return traitActive(this.player.profile, "Blood Rain") ? TUNING.bloodRainHealing : 1;
+    }
+
+    // Reality Traits reshape what a landed hit is worth
+    modifyPlayerHit(dmg) {
+        const prof = this.player.profile;
+        if (traitActive(prof, "Blood Rain")) dmg *= TUNING.bloodRainDamage;
+        if (traitActive(prof, "Mirror Rot")) {
+            const arm = this.player.stats.armor || 0;
+            dmg *= 1 - TUNING.mirrorRotArmorShare * (arm / (arm + 20));
+        }
+        return Math.max(1, Math.round(dmg));
     }
 
     // Lifetime active-play earnings, used to cap offline gains (see idle.js)

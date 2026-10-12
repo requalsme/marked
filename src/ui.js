@@ -1,17 +1,23 @@
 // UI Orchestrator, DOM Manager, and Tooltips
 
 import { getEquipmentStats, CLASSES } from "./state.js";
-import { corruptText, TAROT_DECK, REALITY_TRAITS } from "./systems.js";
+import { corruptText, TAROT_DECK, REALITY_TRAITS, TUNING, traitActive } from "./systems.js";
 import { audioManager } from "./audio.js";
 
 // Ritual terms worsen with each bargain signed in the current descent
 // (n = rituals already signed): longer cooldown, thinner rewards, higher costs.
-export function ritualTerms(n) {
+// The Devil (passed as profile) sharpens both edges: rewards ×1.5, sanity costs ×2.
+export function ritualTerms(n, profile = null) {
+    const devil = !!profile && profile.activeTarot === "The Devil";
+    const boon = devil ? TUNING.devilRitualBoon : 1;
+    const cost = devil ? TUNING.devilSanityCost : 1;
     return {
         cooldownMs: Math.round(120000 * (1 + 0.5 * n)),
-        titheDamage: Math.max(2, Math.round(8 / (1 + 0.35 * n))),
-        commSanity: 10 + 5 * n,
-        eraseGold: 80 * (n + 1)
+        titheDamage: Math.round(Math.max(2, Math.round(8 / (1 + 0.35 * n))) * boon),
+        titheSanity: 10 * cost,
+        commSanity: (10 + 5 * n) * cost,
+        eraseGold: 80 * (n + 1),
+        eraseObservation: Math.round(25 * boon)
     };
 }
 
@@ -533,14 +539,14 @@ export class GameUI {
     renderRituals(profile) {
         const panel = document.getElementById("panel-rituals");
         const n = profile.ritualsThisDescent || 0;
-        const r = ritualTerms(n);
+        const r = ritualTerms(n, profile);
         const cooldownLeft = Math.max(0, Math.ceil((r.cooldownMs - (Date.now() - (profile.lastRitualTime || 0))) / 1000));
         panel.innerHTML = `<h3>Rituals & Blood Bargains</h3>
             <p class="tab-desc">Step close to the Altar in the Keeping House to sign dark ledgers. Bargains grant supreme power with steep costs.</p>
             <div class="ritual-list">
                 <div class="ritual-card">
                     <div class="ritual-name">Blood Tithe</div>
-                    <div class="ritual-deal">Permanently lose 25 Max Health. Gain +${r.titheDamage} Base Attack Damage.</div>
+                    <div class="ritual-deal">Permanently lose 25 Max Health and ${r.titheSanity} Sanity. Gain +${r.titheDamage} Base Attack Damage.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="blood_tithe">Sign Contract</button>
                 </div>
                 <div class="ritual-card">
@@ -550,7 +556,7 @@ export class GameUI {
                 </div>
                 <div class="ritual-card">
                     <div class="ritual-name">Name Erasure</div>
-                    <div class="ritual-deal">Sacrifice 1 Character Level and ${r.eraseGold} Debt Gold. Mask your steps, reducing Observation by 25%.</div>
+                    <div class="ritual-deal">Sacrifice 1 Character Level and ${r.eraseGold} Debt Gold. Mask your steps, reducing Observation by ${r.eraseObservation}%.</div>
                     <button class="game-btn ritual-exec-btn" data-ritual="name_erase">Erase Registry</button>
                 </div>
             </div>
@@ -582,7 +588,7 @@ export class GameUI {
 
     executeRitual(profile, type) {
         const now = Date.now();
-        const terms = ritualTerms(profile.ritualsThisDescent || 0);
+        const terms = ritualTerms(profile.ritualsThisDescent || 0, profile);
         if (profile.lastRitualTime && now - profile.lastRitualTime < terms.cooldownMs) {
             const wait = Math.ceil((terms.cooldownMs - (now - profile.lastRitualTime)) / 1000);
             audioManager.play("ritual_fail");
@@ -605,7 +611,7 @@ export class GameUI {
                 this.orch.recalculateStats();
                 profile.signals.unshift("Blood Tithe Contract Signed. Max HP decreased, Attack Power amplified.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#9a1616", 20);
-                this.orch.engine.player.sanity = Math.max(0, this.orch.engine.player.sanity - 10);
+                this.orch.engine.player.sanity = Math.max(0, this.orch.engine.player.sanity - terms.titheSanity);
                 ritualSuccess = true;
             } else {
                 profile.signals.unshift("The Altar rejects your tithe. Your vital blood is too thin.");
@@ -630,7 +636,7 @@ export class GameUI {
             if (profile.level > 1 && profile.gold >= terms.eraseGold) {
                 profile.level -= 1;
                 profile.gold -= terms.eraseGold;
-                profile.observation = Math.max(0, profile.observation - 25);
+                profile.observation = Math.max(0, profile.observation - terms.eraseObservation);
                 profile.signals.unshift("Registry erased. Your presence slips into shadow. Observation reduced.");
                 this.orch.engine.createParticleExplosion(this.orch.engine.player.x, this.orch.engine.player.y, "#545454", 20);
                 ritualSuccess = true;
@@ -732,9 +738,11 @@ export class GameUI {
 
         let removeCorpse = false;
         audioManager.play("corpse_interact", { kind: action });
+        // Bone Bloom: the room feeds on the dead and pays out more for tending them
+        const bloom = traitActive(profile, "Bone Bloom") ? TUNING.boneBloomCorpse : 1;
 
         if (action === "recover") {
-            const gold = (corp.level || 1) * 20 * (profile.activeTarot === "Death" ? 2 : 1);
+            const gold = Math.round((corp.level || 1) * 20 * (profile.activeTarot === "Death" ? 2 : 1) * bloom);
             profile.gold += gold;
             profile.signals.unshift(`Corpse Recovered: +${gold} Debt Gold. A hostile memory echo manifests!`);
             if (this.orch.engine) {
@@ -742,24 +750,26 @@ export class GameUI {
             }
             removeCorpse = true;
         } else if (action === "burn") {
-            this.orch.engine.player.sanity = Math.min(100, this.orch.engine.player.sanity + 30);
+            const calmed = Math.round(30 * bloom), erased = Math.round(15 * bloom);
+            this.orch.engine.player.sanity = Math.min(100, this.orch.engine.player.sanity + calmed);
             audioManager.play("sanity_recover");
-            profile.observation = Math.max(0, profile.observation - 15);
-            profile.signals.unshift("Corpse Burned: evidence destroyed. Sanity restored, Observation reduced.");
+            profile.observation = Math.max(0, profile.observation - erased);
+            profile.signals.unshift(`Corpse Burned: evidence destroyed. Sanity +${calmed}, Observation -${erased}%.`);
             corp.state = "burned";
             
             if (intr) intr.type = "burned_corpse_remains";
         } else if (action === "broadcast") {
-            profile.waxSeals += 2;
-            profile.signals.unshift("Corpse Broadcasted: transmitted telemetry details. Earned +2 Wax Seals.");
+            const seals = Math.round(2 * bloom);
+            profile.waxSeals += seals;
+            profile.signals.unshift(`Corpse Broadcasted: transmitted telemetry details. Earned +${seals} Wax Seals.`);
             corp.state = "broadcasted";
 
             if (intr) intr.type = "broadcast_corpse";
         } else if (action === "devour") {
-            profile.devourMult = (profile.devourMult || 1) * 1.15;
+            profile.devourMult = (profile.devourMult || 1) * (1 + 0.15 * bloom);
             this.orch.recalculateStats();
             profile.observation = Math.min(100, profile.observation + 10);
-            profile.signals.unshift("Corpse Devoured: fed on tissue snapshots. Attuned +15% damage, but Monolith observed closely.");
+            profile.signals.unshift(`Corpse Devoured: fed on tissue snapshots. Attuned +${Math.round(15 * bloom)}% damage, but Monolith observed closely.`);
             removeCorpse = true;
         }
 

@@ -12,6 +12,7 @@ import { ROOM } from "./world.js";
 import { installUiTextures } from "./uitextures.js";
 
 const STEP_MS = 1000 / 60; // fixed simulation step
+const SIGNAL_LOG_LIMIT = 80;
 
 const CLASS_COLORS = {
     "Blood Marked": "#c4231b",
@@ -445,7 +446,9 @@ class GameOrchestrator {
             signalClarity: eqStats.signalClarity,
             crit: eqStats.crit,
             speed: eqStats.speed,
-            healthRegen: eqStats.healthRegen
+            healthRegen: eqStats.healthRegen,
+            obfuscation: eqStats.obfuscation,
+            goldFind: eqStats.goldFind
         };
         
         this.engine.setPlayer(this.activeProfile, combinedStats);
@@ -520,6 +523,9 @@ class GameOrchestrator {
         }
 
         this.ui.updateHUD(this.activeProfile, this.engine);
+
+        // The feed is a log, not an archive: keep the newest entries
+        if (this.activeProfile.signals.length > SIGNAL_LOG_LIMIT) this.activeProfile.signals.length = SIGNAL_LOG_LIMIT;
 
         // Monolith scale difficulty based on Observation thresholds
         if (this.activeProfile.observation >= 100 && this.activeProfile.monolithLevel === 1) {
@@ -665,7 +671,7 @@ class GameOrchestrator {
         this.engine.update((event, data) => {
             if (event === "player_died") {
                 this.canvasRenderer.triggerShake(30);
-                this.triggerGameOver("Collapsed in Keeping House battle.");
+                this.triggerGameOver(this.engine.deathCause());
             } else if (event === "boss_wax_trap") {
                 // Spawn wax trap
                 audioManager.play("wax_trap");
@@ -742,7 +748,7 @@ class GameOrchestrator {
                     audioManager.play("wax_trap_trigger");
                     let dist = this.engine.distance(p.x, p.y, trap.x, trap.y);
                     if (dist < trap.radius + p.radius) {
-                        this.engine.damagePlayer(25, 15, trap.x, trap.y);
+                        this.engine.damagePlayer(25, 15, trap.x, trap.y, "Seal Mother's wax trap");
                         this.canvasRenderer.triggerShake(15);
                         
                         // Stall player velocity/action (stun effect)

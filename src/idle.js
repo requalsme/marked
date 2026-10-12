@@ -62,7 +62,7 @@ export function calculateOfflineProgress(profile) {
     }
 
     // Sanity pressure offline
-    let sanityDrained = Math.round(survivedMin * 0.35 * (1.0 - mindUp * 0.10));
+    let sanityDrained = Math.round(survivedMin * 0.35 * Math.max(0.15, 1.0 - mindUp * 0.10));
     if (profile.activeTarot === "The Hermit") {
         sanityDrained = Math.round(sanityDrained * 1.5);
     }
@@ -71,7 +71,7 @@ export function calculateOfflineProgress(profile) {
     profile.sanity = finalSanity;
 
     // Observation increase offline
-    let obsGained = survivedMin * 0.08 * (1.0 - obfUp * 0.12);
+    let obsGained = survivedMin * 0.08 * Math.max(0.2, 1.0 - obfUp * 0.12);
     if (profile.activeTarot === "Judgement") obsGained *= 1.5;
     profile.observation = Math.min(100, profile.observation + obsGained);
 

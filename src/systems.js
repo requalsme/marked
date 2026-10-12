@@ -3,7 +3,7 @@
 export const TAROT_DECK = {
     "The Tower": {
         name: "The Tower",
-        desc: "Bosses deal 30% more damage. Relic and Abyssal gear drop rate is doubled.",
+        desc: "Bosses deal 30% more damage. Gear drops reach one rarity higher, and Relic or better turns up twice as often.",
         color: "#c27329"
     },
     "The Moon": {
@@ -51,9 +51,36 @@ export const REALITY_TRAITS = {
     },
     "Mirror Rot": {
         name: "Mirror Rot",
-        desc: "Enemies copy the player's elemental resistances. Gold drop yields are increased by 20%.",
+        desc: "Enemies copy a share of your armor and take less from every blow. Gold drops are increased by 20%.",
         effectColor: "rgba(140, 60, 180, 0.06)"
     }
+};
+
+// A Reality Trait only bites once the Monolith has Studied you (GDD 07/08); a Tarot card is live all descent.
+export const TRAIT_MIN_OBSERVATION = 50;
+
+export function traitActive(profile, name) {
+    return !!profile && profile.activeRealityTrait === name && (profile.observation || 0) >= TRAIT_MIN_OBSERVATION;
+}
+
+export function tarotActive(profile, name) {
+    return !!profile && profile.activeTarot === name;
+}
+
+// Tuning for the cards and traits above, named so the engine and UI read the same numbers
+export const TUNING = {
+    towerBossDamage: 1.3,          // The Tower: bosses hit harder, drops reach one rarity tier higher
+    devilRitualBoon: 1.5,          // The Devil: ritual rewards ×1.5 ...
+    devilSanityCost: 2,            // ... and their sanity costs ×2
+    bloodRainDamage: 1.25,         // Blood Rain: your physical damage up, all healing halved
+    bloodRainHealing: 0.5,
+    boneBloomCorpse: 1.3,          // Bone Bloom: corpse actions pay 30% more
+    mirrorRotArmorShare: 0.5,      // Mirror Rot: enemies mirror half your armor rating as damage reduction
+    mirrorRotGold: 1.2,
+    judgementShapeObs: 50,         // Judgement: The Shape starts appearing from 50% instead of 70%
+    // Floors for the percentage upgrades: even a maxed tree must never push a rate to zero or below
+    minObservationRate: 0.2,
+    minSanityDecayRate: 0.15
 };
 
 const WATCHER_QUOTES = [
@@ -110,7 +137,9 @@ export const SANITY_DECAY_PER_SEC = 0.12;        // before light / gear / upgrad
 export function updateObservation(profile, engine, dt = 1 / 60) {
     // Increment base observation based on survival time and upgrades (obfuscation slows it down)
     const obfLevel = profile.upgrades.obfuscation || 0;
-    const modifier = 1.0 - (obfLevel * 0.15); // 15% reduction per level
+    // 15% reduction per upgrade level, then any Observation Masking worn on the body
+    const gearMask = Math.min(0.5, (engine.player.stats && engine.player.stats.obfuscation) || 0);
+    const modifier = Math.max(TUNING.minObservationRate, 1.0 - (obfLevel * 0.15)) * (1 - gearMask);
     const tarotMod = profile.activeTarot === "Judgement" ? 1.5 : 1.0;
 
     let totalGain = OBSERVATION_PER_SEC * dt * modifier * tarotMod;
@@ -175,7 +204,7 @@ export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     
     // Reduced by mind upgrades and equipment sanity resistance
     const mindUp = profile.upgrades.mind || 0;
-    const mindMod = 1.0 - (mindUp * 0.12); // 12% decay reduction per level
+    const mindMod = Math.max(TUNING.minSanityDecayRate, 1.0 - (mindUp * 0.12)); // 12% decay reduction per level
     
     const eqStats = engine.player.stats;
     const equipMod = 1.0 - (equipModCalc(eqStats.sanityResist));
@@ -192,10 +221,10 @@ export function handleSanityDecay(profile, engine, dt = 1 / 60) {
     }
 
     let lightFactor = nearLight ? 0.3 : 1.3;
-    let realityMod = profile.activeRealityTrait === "Static Sky" ? 2.0 : 1.0;
-    let tarotMod = profile.activeTarot === "The Devil" ? 1.5 : 1.0;
+    // Static Sky doubles decay, but only once the Monolith has Studied the player
+    let realityMod = traitActive(profile, "Static Sky") ? 2.0 : 1.0;
 
-    let finalDecay = baseDecay * mindMod * equipMod * lightFactor * realityMod * tarotMod;
+    let finalDecay = baseDecay * mindMod * equipMod * lightFactor * realityMod;
     
     engine.player.sanity = Math.max(0, engine.player.sanity - finalDecay);
     profile.sanity = Math.round(engine.player.sanity);

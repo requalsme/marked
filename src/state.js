@@ -97,19 +97,29 @@ export const RARITY_MULTIPLIERS = {
     "Impossible": { mult: 6.5, color: "#16d8a4" }
 };
 
-export function generateLootItem(rarityLimit = "Cursed") {
+// The rarity one step above `rarity` (the top tier stays where it is)
+export function nextRarity(rarity) {
+    const keys = Object.keys(RARITY_MULTIPLIERS);
+    return keys[Math.min(keys.length - 1, Math.max(0, keys.indexOf(rarity)) + 1)];
+}
+
+// highBoost multiplies the weight of Relic or better (The Tower doubles it)
+export function generateLootItem(rarityLimit = "Cursed", highBoost = 1) {
     // Pick an item archetype
     const archetype = ITEMS_POOL[Math.floor(Math.random() * ITEMS_POOL.length)];
     
     // Choose rarity
+    const keys = Object.keys(RARITY_MULTIPLIERS);
     const availableRarities = archetype.rarities.filter(r => {
         // Simple rarity tier filtering
-        const keys = Object.keys(RARITY_MULTIPLIERS);
         return keys.indexOf(r) <= keys.indexOf(rarityLimit);
     });
-    const rarity = availableRarities.length > 0 
-        ? availableRarities[Math.floor(Math.random() * availableRarities.length)]
-        : archetype.rarities[0];
+    let rarity = archetype.rarities[0];
+    if (availableRarities.length > 0) {
+        const weight = r => (keys.indexOf(r) >= keys.indexOf("Relic") ? highBoost : 1);
+        let roll = Math.random() * availableRarities.reduce((sum, r) => sum + weight(r), 0);
+        rarity = availableRarities.find(r => (roll -= weight(r)) < 0) || availableRarities[availableRarities.length - 1];
+    }
 
     const rData = RARITY_MULTIPLIERS[rarity];
     const range = archetype.max - archetype.min;
