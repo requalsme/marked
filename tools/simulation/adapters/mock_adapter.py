@@ -83,6 +83,40 @@ REALITY_EFFECTS = {
     "Hollow Gravity":  {"idle_gain_mult": 1.30, "survival_stability": -0.15},
 }
 
+# Mirrors src/engine.js / src/ui.js / src/idle.js tuning
+OBSERVATION_PER_SEC = 0.06          # systems.js
+OBSERVATION_MOVING_PER_SEC = 0.024
+OBSERVATION_PER_ATTACK = 0.03
+SANITY_DECAY_PER_SEC = 0.12
+BOSS_OBSERVATION_THRESHOLD = 75
+CONFRONTATION_INTERVAL = 600      # seconds alive between Watcher Confrontations
+CONFRONTATION_OBSERVATION = 10
+BASE_MAX_ENEMIES = 4
+IDLE_TO_ACTIVE_MAX_RATIO = 0.5
+# Enemies in engine.js chase and strike whether or not the player attacks. Each
+# engaged enemy lands a hit with this chance per second (melee cooldown ~1.2s,
+# discounted for approach time and misses); retreating halves it for a few seconds.
+AMBIENT_HIT_CHANCE_PER_SEC = 0.09
+MAX_ENGAGED_ENEMIES = 3
+RETREAT_EVADE_SECONDS = 3
+# Auto-combat: 60/45 swings per second, ~55% of swings connect while enemies close in
+AUTO_COMBAT_HITS_PER_SEC = 0.6
+BLOOD_VIAL_CHANCE = 0.15          # engine.js spawnLoot
+ENEMY_SCALING_PER_LEVEL = 0.12    # engine.js enemyScale()
+BLOOD_VIAL_HEAL_PCT = 0.20
+RITUAL_SPAM_WINDOW = 600          # seconds
+RITUAL_SPAM_COUNT = 6
+DEFAULT_ACTIVE_GOLD_PER_SEC = 0.5
+# Actions that are gated by cost, cooldown, enemy supply or wall-clock time and so
+# cannot be looped for unbounded reward.
+NATURALLY_GATED_ACTIONS = {"attack_enemy", "decode_signal", "go_idle"}
+
+
+def ritual_cooldown(rituals_this_life: int) -> int:
+    """Seconds; mirrors ritualTerms() in ui.js."""
+    return round(120 * (1 + 0.5 * rituals_this_life))
+
+
 DEATH_CAUSES = [
     "Overwhelmed by Cabinet Indexers",
     "Paper Wraith sanity drain — Broken state collapse",
@@ -114,6 +148,12 @@ class MockGameAdapter(GameAdapter):
         self._tick_boss_timer = 0
         self._survival_seconds = 0.0  # seconds alive this life
         self._ritual_cooldown = 0
+        self._rituals_this_life = 0
+        self._confrontation_wave = 0
+        self._offline_remaining = 0   # seconds the player is away (idle session in progress)
+        self._evade_seconds = 0
+        self._active_seconds = 0
+        self._reward_history: List[bool] = []
 
     # ─── Interface Methods ────────────────────────────────────────────────────
 
@@ -126,6 +166,12 @@ class MockGameAdapter(GameAdapter):
         self._tick_boss_timer = 0
         self._survival_seconds = 0.0
         self._ritual_cooldown = 0
+        self._rituals_this_life = 0
+        self._confrontation_wave = 0
+        self._offline_remaining = 0
+        self._evade_seconds = 0
+        self._active_seconds = 0
+        self._reward_history = []
         return self._state
 
     def get_state(self) -> GameState:
@@ -134,6 +180,10 @@ class MockGameAdapter(GameAdapter):
     def get_available_actions(self) -> List[Dict[str, Any]]:
         s = self._state
         actions = []
+
+        # While offline, the player isn't at the keyboard: no decisions until they return
+        if self._offline_remaining > 0:
+            return actions
 
         # Combat actions — always available if alive
         if s.alive and len(self._enemy_pool) > 0:
@@ -185,11 +235,20 @@ class MockGameAdapter(GameAdapter):
         rng = s.rng
         action_id = action.get("id", "")
 
-        # Track action for exploit detection
+        # Track action for exploit detection (checked once the outcome is known)
         s.action_history.append(action_id)
         if len(s.action_history) > 200:
             s.action_history.pop(0)
+        result = self._apply_action(action_id, action)
+        self._reward_history.append(bool(result.get("success")) and result.get("event") != "nothing")
+        if len(self._reward_history) > 200:
+            self._reward_history.pop(0)
         self._check_exploit_patterns(action_id)
+        return result
+
+    def _apply_action(self, action_id: str, action: Dict[str, Any]) -> Dict[str, Any]:
+        s = self._state
+        rng = s.rng
 
         # Diminishing returns on spam
         if action_id in ["patrol_room", "collect_loot", "retreat"]:
@@ -208,6 +267,7 @@ class MockGameAdapter(GameAdapter):
 
         elif action_id == "retreat":
             s.retreat_count += 1
+            self._evade_seconds = RETREAT_EVADE_SECONDS
             # Retreating takes a sanity hit if enemies are close
             if len(self._enemy_pool) > 2:
                 s.sanity = max(0, s.sanity - 3)
@@ -278,10 +338,18 @@ class MockGameAdapter(GameAdapter):
 
         for _ in range(ticks):
             s.simulated_time += 1
+
+            # Offline: gains were already granted by the idle report; the world is paused
+            if self._offline_remaining > 0:
+                self._offline_remaining -= 1
+                continue
+
+            self._active_seconds += 1
             self._survival_seconds += 1
             s.current_life_seconds += 1
             if self._ritual_cooldown > 0:
                 self._ritual_cooldown -= 1
+            # Combat regen is not modeled tick by tick; the real game has no passive regen
 
             # Sanity decay (from systems.js: ~0.015/tick base, reduced by gear)
             self._apply_sanity_decay()
@@ -289,30 +357,28 @@ class MockGameAdapter(GameAdapter):
             # Observation gain
             self._apply_observation_gain()
 
-            # Enemy spawn timer (engine.js: every 4000ms = ~4 ticks)
+            # Enemy spawn timer (engine.js: every 4000ms = ~4 ticks, capped by Observation)
             self._tick_enemy_timer += 1
             if self._tick_enemy_timer >= 4:
                 self._tick_enemy_timer = 0
-                if not self._boss_active and rng_chance(s.rng, 0.3):
+                max_enemies = BASE_MAX_ENEMIES + int(s.observation // 25)
+                if not self._boss_active and len(self._enemy_pool) < max_enemies and rng_chance(s.rng, 0.3):
                     self._spawn_enemy()
 
-            # Boss timer: boss can appear after 10min per region
-            self._tick_boss_timer += 1
-            if not self._boss_active and self._tick_boss_timer >= 600:
-                if s.rng.random() < 0.05:
-                    self._spawn_boss()
-                    events.append({"event": "boss_spawned", "data": {}})
+            self._auto_combat()
+            self._apply_enemy_pressure()
 
-            # 3-hour pressure event
-            if self._survival_seconds == 10800:
-                if not getattr(s, 'pressure_event_triggered', False):
-                    s.pressure_event_triggered = True
-                    s.observation = min(100, s.observation + 25)
-                    template = {"name": "The Shape", "hp": s.max_health * 0.8,
-                                "damage": round(s.damage * 0.6), "sanity_damage": 5,
-                                "loot_rarity": "Relic"}
-                    self._enemy_pool.append(template)
-                    events.append({"event": "pressure_event", "data": {}})
+            # Boss: the Seal Mother wakes once Observation reaches the threshold (engine.js)
+            if not self._boss_active and s.observation >= BOSS_OBSERVATION_THRESHOLD:
+                self._spawn_boss()
+                events.append({"event": "boss_spawned", "data": {}})
+
+            # Recurring pressure: Watcher Confrontation every CONFRONTATION_INTERVAL alive
+            wave = int(self._survival_seconds // CONFRONTATION_INTERVAL)
+            if wave > self._confrontation_wave:
+                self._confrontation_wave = wave
+                self._trigger_confrontation(wave)
+                events.append({"event": "pressure_event", "data": {"wave": wave}})
 
             # Random signal intercept (background noise)
             if s.rng.random() < 0.0008:  # ~3 per hour
@@ -328,6 +394,9 @@ class MockGameAdapter(GameAdapter):
                 self._enemy_pool = []
                 self._boss_active = False
                 self._survival_seconds = 0.0
+                self._confrontation_wave = 0
+                self._rituals_this_life = 0
+                self._ritual_cooldown = 0
 
             # Observation threshold events
             obs = s.observation
@@ -384,63 +453,77 @@ class MockGameAdapter(GameAdapter):
         
         # Simulate time passing during combat to match real game attackDelay
         self.advance_time(1)
+        if target not in self._enemy_pool:
+            # The player died (pool cleared) or the target vanished during that second
+            return {"event": "nothing", "success": False, "data": {"reason": "target_gone"}}
 
-        # Player hits
-        crit = rng.random() < s.crit
+        dmg = self._player_hit(target)
+        if target["hp"] <= 0:
+            gold_gain = self._on_enemy_killed(target)
+            return {"event": "enemy_killed", "success": True,
+                    "data": {"enemy": target["name"], "gold": gold_gain}}
+
+        return {"event": "combat_tick", "success": True,
+                "data": {"damage_dealt": dmg, "damage_taken": 0}}
+
+    def _player_hit(self, target: dict) -> int:
+        s = self._state
+        crit = s.rng.random() < s.crit
         # Blood Rain reality trait boosts physical damage
         dmg_mult = REALITY_EFFECTS.get(s.active_reality_trait, {}).get("physical_damage_mult", 1.0)
         dmg = round(s.damage * dmg_mult * (1.7 if crit else 1.0))
         target["hp"] -= dmg
         s.total_damage_dealt += dmg
-        s.observation = min(100, s.observation + rng.uniform(0.01, 0.02))
+        s.observation = min(100, s.observation + OBSERVATION_PER_ATTACK)
+        return dmg
 
-        # Enemy hits back
-        armor = sum(
-            g.get("armor", 0) for g in s.gear_slots.values() if g
-        )
-        enemy_dmg = max(1, round(target["damage"] * (20 / (20 + armor))))
-        s.health -= enemy_dmg
-        s.total_damage_taken += enemy_dmg
+    def _auto_combat(self):
+        """engine.js auto-combat (on by default): ~1.33 swings/s at the nearest enemy."""
+        s = self._state
+        if not self._enemy_pool or not s.alive:
+            return
+        if s.rng.random() < AUTO_COMBAT_HITS_PER_SEC:
+            target = self._enemy_pool[0]
+            self._player_hit(target)
+            if target["hp"] <= 0:
+                self._on_enemy_killed(target)
 
-        # Ink Redactor sanity dmg
-        sanity_dmg = 0
-        if target.get("sanity_damage", 0) > 0:
-            resist = sum(g.get("sanityResist", 0) for g in s.gear_slots.values() if g)
-            sanity_dmg = max(0, round(target["sanity_damage"] * (1 - min(0.8, resist))))
-            s.sanity = max(0, s.sanity - sanity_dmg)
-            s.sanity_lost_total += sanity_dmg
+    def _on_enemy_killed(self, target: dict) -> int:
+        s = self._state
+        rng = s.rng
+        self._enemy_pool.remove(target)
+        s.enemies_defeated += 1
+        if target.get("is_boss"):
+            self._on_boss_defeated()
+        gold_gain = {"Worn": 12, "Unsettling": 25, "Cursed": 60}.get(target.get("loot_rarity", "Worn"), 12)
+        s.gold += gold_gain
+        s.gold_gained_active += gold_gain
+        s.total_gold_gained += gold_gain
+        s.exp += 15
+        s.exp_gained_active = getattr(s, "exp_gained_active", 0) + 15
+        s.pending_loot += 1
 
-        if target["hp"] <= 0:
-            self._enemy_pool.pop(0)
-            s.enemies_defeated += 1
-            gold_gain = {"Worn": 12, "Unsettling": 25, "Cursed": 60}.get(target.get("loot_rarity","Worn"), 12)
-            s.gold += gold_gain
-            s.gold_gained_active += gold_gain
-            s.total_gold_gained += gold_gain
-            s.exp += 15
-            s.pending_loot += 1
+        # Drop table (engine.js spawnLoot): blood vial, sanity shard, gear
+        if rng.random() < BLOOD_VIAL_CHANCE:
+            s.health = min(s.max_health, s.health + round(s.max_health * BLOOD_VIAL_HEAL_PCT))
+        if rng.random() < 0.25:
+            s.sanity = min(100, s.sanity + 15)
+        if rng.random() < 0.20:
+            item = self._generate_loot(target.get("loot_rarity", "Worn"))
+            if len(s.inventory) < 15:
+                s.inventory.append(item)
+                s.loot_collected += 1
+                # Auto-equip if better
+                self._maybe_equip(item)
 
-            # Loot drop
-            if rng.random() < 0.20:
-                item = self._generate_loot(target.get("loot_rarity", "Worn"))
-                if len(s.inventory) < 15:
-                    s.inventory.append(item)
-                    s.loot_collected += 1
-                    # Auto-equip if better
-                    self._maybe_equip(item)
-
-            # Level up check
-            exp_needed = s.level * 100
-            if s.exp >= exp_needed:
-                s.exp -= exp_needed
-                s.level += 1
-                s.max_health += 10
-
-            return {"event": "enemy_killed", "success": True,
-                    "data": {"enemy": target["name"], "gold": gold_gain}}
-
-        return {"event": "combat_tick", "success": True,
-                "data": {"damage_dealt": dmg, "damage_taken": enemy_dmg}}
+        # Level up check (main.js: level up heals to full)
+        exp_needed = s.level * 100
+        if s.exp >= exp_needed:
+            s.exp -= exp_needed
+            s.level += 1
+            s.max_health += 10
+            s.health = s.max_health
+        return gold_gain
 
     def _perform_ritual(self, ritual_name: str) -> Dict[str, Any]:
         s = self._state
@@ -460,7 +543,8 @@ class MockGameAdapter(GameAdapter):
         if not self._can_afford_ritual(cost):
             return {"event": "nothing", "success": False, "data": {"reason": "cannot_afford"}}
 
-        self._ritual_cooldown = 120
+        self._ritual_cooldown = ritual_cooldown(self._rituals_this_life)
+        self._rituals_this_life += 1
 
         s.health = max(1, s.health - health_cost)
         s.sanity = max(0, s.sanity - sanity_cost)
@@ -469,7 +553,8 @@ class MockGameAdapter(GameAdapter):
 
         # Power bonus
         power_mult = tarot_eff.get("ritual_power_mult", 1.0) if s.active_tarot == "The Devil" else 1.0
-        bonus_damage = round(rng.uniform(5, 20) * power_mult)
+        # Rewards thin with each bargain this life (ritualTerms in ui.js)
+        bonus_damage = round(rng.uniform(5, 20) * power_mult / (1 + 0.35 * (self._rituals_this_life - 1)))
         s.damage += round(bonus_damage * 0.1)  # small permanent buff
 
         s.rituals_used.append({
@@ -578,17 +663,20 @@ class MockGameAdapter(GameAdapter):
         survived_sec = int(offline_sec * survival_chance)
         survived_min = survived_sec / 60
 
-        # Gains
-        exp_gain   = round(survived_min * 8)
-        gold_gain  = min(round(survived_min * 0.1), 150)
+        # Gains (idle.js): base formula x Hermit bonus, capped at half the active rate
         idle_mult = TAROT_EFFECTS.get(s.active_tarot, {}).get("idle_gain_mult", 1.0)
-        idle_mult *= REALITY_EFFECTS.get(s.active_reality_trait, {}).get("idle_gain_mult", 1.0)
-        gold_gain  = round(gold_gain * idle_mult)
-        gold_gain  = min(gold_gain, 300)
+        if self._active_seconds >= 300:
+            active_gold_rate = s.gold_gained_active / self._active_seconds
+            active_exp_rate = getattr(s, "exp_gained_active", 0) / self._active_seconds
+        else:
+            active_gold_rate, active_exp_rate = DEFAULT_ACTIVE_GOLD_PER_SEC, 0.6
+        exp_gain   = round(min(survived_min * 8 * idle_mult, active_exp_rate * IDLE_TO_ACTIVE_MAX_RATIO * survived_sec))
+        gold_gain  = round(min(survived_min * 0.1 * idle_mult, 150,
+                               active_gold_rate * IDLE_TO_ACTIVE_MAX_RATIO * survived_sec))
 
-        parchment_gain = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.15)
-        ink_gain       = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.08)
-        wax_gain       = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.04)
+        parchment_gain = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.15 * idle_mult)
+        ink_gain       = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.08 * idle_mult)
+        wax_gain       = sum(1 for _ in range(int(survived_min)) if rng.random() < 0.04 * idle_mult)
 
         # Sanity drain
         sanity_drain_mult = TAROT_EFFECTS.get(s.active_tarot, {}).get("idle_sanity_drain_mult", 1.0)
@@ -611,7 +699,8 @@ class MockGameAdapter(GameAdapter):
         s.parchment += parchment_gain
         s.ink += ink_gain
         s.wax_seals += wax_gain
-        s.simulated_time += offline_sec
+        # Offline time passes on the clock; advance_time() consumes it
+        self._offline_remaining = offline_sec
 
         # Loot rolls during offline
         loot_rolls = int(survived_min / 15)
@@ -647,7 +736,7 @@ class MockGameAdapter(GameAdapter):
     def _apply_sanity_decay(self):
         """Mirror systems.js handleSanityDecay."""
         s = self._state
-        base_decay = 0.0084
+        base_decay = SANITY_DECAY_PER_SEC
         mind_up = s.upgrades["mind"]
         mind_mod = 1.0 - mind_up * 0.12
 
@@ -666,16 +755,14 @@ class MockGameAdapter(GameAdapter):
     def _apply_observation_gain(self):
         """Mirror systems.js updateObservation."""
         s = self._state
-        base_gain = 0.005
+        base_gain = OBSERVATION_PER_SEC
         obf_mod   = 1.0 - s.upgrades["obfuscation"] * 0.15
         tarot_mod = TAROT_EFFECTS.get(s.active_tarot, {}).get("observation_mult", 1.0) \
                     if s.active_tarot == "Judgement" else 1.0
 
         total_gain = base_gain * obf_mod * tarot_mod
         if s.move_count > 0:
-            total_gain += 0.002 * obf_mod
-        if s.attack_count > 0:
-            total_gain += 0.001 * obf_mod
+            total_gain += OBSERVATION_MOVING_PER_SEC * obf_mod
 
         s.observation = min(100, s.observation + total_gain)
 
@@ -722,7 +809,16 @@ class MockGameAdapter(GameAdapter):
             template = dict(ENEMIES[0])  # Cabinet Indexer
             template["hp"] = template["health"]
 
-        self._enemy_pool.append(template)
+        self._enemy_pool.append(self._scaled(template))
+
+    def _scaled(self, template: dict) -> dict:
+        """engine.js enemyScale(): non-Shape enemies grow with player level."""
+        if template.get("name") == "The Shape":
+            return template
+        scale = 1 + ENEMY_SCALING_PER_LEVEL * max(0, self._state.level - 1)
+        template["hp"] = round(template["hp"] * scale)
+        template["damage"] = round(template["damage"] * scale)
+        return template
 
     def _spawn_boss(self):
         s = self._state
@@ -730,6 +826,58 @@ class MockGameAdapter(GameAdapter):
         self._boss_hp = BOSS["health"]
         self._tick_boss_timer = 0
         s.bosses_attempted += 1
+        boss = {"name": BOSS["name"], "hp": BOSS["health"], "damage": 18,
+                "loot_rarity": "Cursed", "is_boss": True}
+        if s.active_tarot == "The Tower":
+            boss["damage"] = round(boss["damage"] * TAROT_EFFECTS["The Tower"]["boss_damage_mult"])
+        self._enemy_pool.insert(0, self._scaled(boss))
+
+    def _on_boss_defeated(self):
+        """Boss down → door opens → the player escapes (main.js triggerVictory)."""
+        s = self._state
+        self._boss_active = False
+        s.bosses_defeated = getattr(s, "bosses_defeated", 0) + 1
+        s.exp += 300
+        s.observation = 0
+        self._enemy_pool = []
+        self._survival_seconds = 0.0
+        self._confrontation_wave = 0
+        self._rituals_this_life = 0
+        s.sanity = 100
+
+    def _apply_enemy_pressure(self):
+        s = self._state
+        if not self._enemy_pool or not s.alive:
+            return
+        if self._evade_seconds > 0:
+            self._evade_seconds -= 1
+        chance = AMBIENT_HIT_CHANCE_PER_SEC * (0.5 if self._evade_seconds > 0 else 1.0)
+        armor = sum(g.get("armor", 0) for g in s.gear_slots.values() if g)
+        resist = min(0.8, sum(g.get("sanityResist", 0) for g in s.gear_slots.values() if g))
+        for enemy in self._enemy_pool[:MAX_ENGAGED_ENEMIES]:
+            if s.rng.random() < chance:
+                dmg = max(1, round(enemy["damage"] * (20 / (20 + armor))))
+                s.health -= dmg
+                s.total_damage_taken += dmg
+                if enemy.get("sanity_damage", 0) > 0:
+                    sd = round(enemy["sanity_damage"] * (1 - resist))
+                    s.sanity = max(0, s.sanity - sd)
+                    s.sanity_lost_total += sd
+
+    def _trigger_confrontation(self, wave: int):
+        """Mirror engine.js triggerConfrontation."""
+        s = self._state
+        s.observation = min(100, s.observation + CONFRONTATION_OBSERVATION)
+        shapes = 1 + wave // 3
+        chairs = wave // 2
+        for _ in range(shapes):
+            self._enemy_pool.append({"name": "The Shape", "hp": s.max_health * 0.8,
+                                     "damage": round(s.damage * 0.6), "sanity_damage": 5,
+                                     "loot_rarity": "Relic"})
+        for _ in range(chairs):
+            template = dict(ENEMIES[3])
+            template["hp"] = template["health"]
+            self._enemy_pool.append(self._scaled(template))
 
     def _determine_death_cause(self) -> str:
         s = self._state
@@ -811,17 +959,21 @@ class MockGameAdapter(GameAdapter):
     def _check_exploit_patterns(self, action_id: str):
         s = self._state
         # Same action repeated many times in a row
+        # A loop is only an exploit if it keeps paying out: every one of the last N
+        # identical actions must have produced a reward, and the action must not be
+        # gated by cost, cooldown, enemy supply or wall-clock time.
         streak = SIMULATION_CONFIG.get("exploit_same_action_streak", 50)
-        if len(s.action_history) >= streak:
+        if len(s.action_history) >= streak and action_id not in NATURALLY_GATED_ACTIONS:
             recent = s.action_history[-streak:]
-            if len(set(recent)) == 1:
+            if len(set(recent)) == 1 and all(self._reward_history[-streak:]):
                 flag = f"exploit_loop:{action_id}:streak_{streak}"
                 if flag not in s.exploit_flags:
                     s.exploit_flags.append(flag)
 
         # Rapid ritual spam
-        ritual_recent = [a for a in s.action_history[-20:] if a.startswith("ritual_")]
-        if len(ritual_recent) >= 8:
+        # Ritual spam: too many successful rituals inside a sim-time window
+        ritual_recent = [r for r in s.rituals_used if s.simulated_time - r["time"] <= RITUAL_SPAM_WINDOW]
+        if len(ritual_recent) >= RITUAL_SPAM_COUNT:
             flag = "exploit_ritual_spam"
             if flag not in s.exploit_flags:
                 s.exploit_flags.append(flag)

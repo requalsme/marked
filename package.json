@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "The Marked - Grim 2D Horror Idle ARPG",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "dev": "npx http-server -p 8080 -c-1",
     "start": "npx http-server -p 8080 -c-1",
-
     "sim": "uv run tools/simulation/run_sim.py",
     "sim:quick": "uv run tools/simulation/run_sim.py --preset quick",
     "sim:full": "uv run tools/simulation/run_sim.py --preset full_pass",
@@ -15,7 +15,9 @@
     "sim:idle": "uv run tools/simulation/run_sim.py --preset idle_focus",
     "sim:sanity": "uv run tools/simulation/run_sim.py --preset sanity_stress",
     "sim:lore": "uv run tools/simulation/run_sim.py --preset lore_coverage",
-    "sim:verbose": "uv run tools/simulation/run_sim.py --preset quick --verbose"
+    "sim:verbose": "uv run tools/simulation/run_sim.py --preset quick --verbose",
+    "test": "node --test \"tests/*.test.js\"",
+    "playtest": "node tools/playtest/run.js"
   },
   "keywords": [
     "horror",

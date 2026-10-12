@@ -1,0 +1,267 @@
+{
+ "character": "marked",
+ "direction": "E",
+ "source": "human.svg",
+ "view_units": [
+  256,
+  256
+ ],
+ "template_scale": 1.0,
+ "bones": [
+  {
+   "id": "root",
+   "pivot": [
+    127,
+    222
+   ],
+   "parts": []
+  },
+  {
+   "id": "pelvis",
+   "parent": "root",
+   "pivot": [
+    127,
+    132
+   ],
+   "parts": []
+  },
+  {
+   "id": "torso",
+   "parent": "pelvis",
+   "pivot": [
+    126,
+    126
+   ],
+   "parts": [
+    "torso",
+    "halo-torso",
+    "mantle",
+    "halo-mantle"
+   ]
+  },
+  {
+   "id": "head",
+   "parent": "torso",
+   "pivot": [
+    136,
+    74
+   ],
+   "parts": [
+    "head",
+    "halo-head"
+   ]
+  },
+  {
+   "id": "cloak-a",
+   "parent": "torso",
+   "pivot": [
+    126,
+    86
+   ],
+   "parts": [
+    "cloak-a",
+    "halo-cloak-a"
+   ]
+  },
+  {
+   "id": "cloak-b",
+   "parent": "cloak-a",
+   "pivot": [
+    123,
+    122
+   ],
+   "parts": [
+    "cloak-b",
+    "halo-cloak-b"
+   ]
+  },
+  {
+   "id": "cloak-c",
+   "parent": "cloak-b",
+   "pivot": [
+    122,
+    156
+   ],
+   "parts": [
+    "cloak-c",
+    "halo-cloak-c"
+   ]
+  },
+  {
+   "id": "tunic-back",
+   "parent": "pelvis",
+   "pivot": [
+    121,
+    121
+   ],
+   "parts": [
+    "tunic-back",
+    "halo-tunic-back"
+   ]
+  },
+  {
+   "id": "tunic-front",
+   "parent": "pelvis",
+   "pivot": [
+    137,
+    122
+   ],
+   "parts": [
+    "tunic-front",
+    "halo-tunic-front"
+   ]
+  },
+  {
+   "id": "upperarm-l",
+   "parent": "torso",
+   "pivot": [
+    133,
+    88
+   ],
+   "parts": [
+    "upperarm-l",
+    "halo-upperarm-l"
+   ]
+  },
+  {
+   "id": "forearm-l",
+   "parent": "upperarm-l",
+   "pivot": [
+    128,
+    124
+   ],
+   "parts": [
+    "forearm-l",
+    "halo-forearm-l"
+   ]
+  },
+  {
+   "id": "hand-l",
+   "parent": "forearm-l",
+   "pivot": [
+    124,
+    149
+   ],
+   "parts": [
+    "hand-l",
+    "halo-hand-l"
+   ]
+  },
+  {
+   "id": "upperarm-r",
+   "parent": "torso",
+   "pivot": [
+    133,
+    88
+   ],
+   "parts": [
+    "upperarm-r",
+    "halo-upperarm-r"
+   ]
+  },
+  {
+   "id": "forearm-r",
+   "parent": "upperarm-r",
+   "pivot": [
+    134,
+    125
+   ],
+   "parts": [
+    "forearm-r",
+    "halo-forearm-r"
+   ]
+  },
+  {
+   "id": "hand-r",
+   "parent": "forearm-r",
+   "pivot": [
+    143,
+    150
+   ],
+   "parts": [
+    "hand-r",
+    "halo-hand-r",
+    "pommel",
+    "halo-pommel",
+    "grip",
+    "halo-grip",
+    "blade",
+    "halo-blade",
+    "guard",
+    "halo-guard"
+   ]
+  },
+  {
+   "id": "thigh-l",
+   "parent": "pelvis",
+   "pivot": [
+    127,
+    132
+   ],
+   "parts": [
+    "thigh-l",
+    "halo-thigh-l"
+   ]
+  },
+  {
+   "id": "shin-l",
+   "parent": "thigh-l",
+   "pivot": [
+    127,
+    178
+   ],
+   "parts": [
+    "shin-l",
+    "halo-shin-l"
+   ]
+  },
+  {
+   "id": "foot-l",
+   "parent": "shin-l",
+   "pivot": [
+    127,
+    214
+   ],
+   "parts": [
+    "foot-l",
+    "halo-foot-l"
+   ]
+  },
+  {
+   "id": "thigh-r",
+   "parent": "pelvis",
+   "pivot": [
+    127,
+    132
+   ],
+   "parts": [
+    "thigh-r",
+    "halo-thigh-r"
+   ]
+  },
+  {
+   "id": "shin-r",
+   "parent": "thigh-r",
+   "pivot": [
+    127,
+    178
+   ],
+   "parts": [
+    "shin-r",
+    "halo-shin-r"
+   ]
+  },
+  {
+   "id": "foot-r",
+   "parent": "shin-r",
+   "pivot": [
+    127,
+    214
+   ],
+   "parts": [
+    "foot-r",
+    "halo-foot-r"
+   ]
+  }
+ ]
+}

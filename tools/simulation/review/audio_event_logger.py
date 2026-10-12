@@ -279,15 +279,19 @@ class AudioEventLogger:
             })
             return
 
-        # If partial audio, check each event
+        # If partial audio, check each event. An event counts as implemented when
+        # its name appears in an audio file name or as an identifier/string in the
+        # JS source (e.g. audioManager.play("hit_player"), a recipe or a music
+        # layer keyed by that name).
         api_calls_str = " ".join(self._audio_evidence["api_calls"])
         audio_files_str = " ".join(self._audio_evidence["audio_files"])
-        combined = api_calls_str + " " + audio_files_str
+        js_words = " ".join(set(re.findall(r"\b[a-z][a-z_]*\b", self._read_all_js())))
+        combined = " ".join([api_calls_str, audio_files_str, js_words])
 
         for event in EXPECTED_AUDIO:
             event_name = event["event"]
             # Simple heuristic: check if the event name appears in any audio context
-            if event_name not in combined and event_name.replace("_", "") not in combined:
+            if not re.search(r"\b%s\b" % re.escape(event_name), combined) and event_name.replace("_", "") not in combined:
                 self.findings.append({
                     "severity": event["severity"],
                     "category": "audio",

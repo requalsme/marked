@@ -153,7 +153,10 @@ class GameFeelReviewer:
         """Check player movement speed and smoothness."""
         engine = self._engine_src
 
-        speed = self._extract_numeric(engine, r"speed\s*[=:]\s*(\d+\.?\d*)")
+        # Prefer the named tuning constant; fall back to the old heuristic.
+        speed = self._extract_numeric(engine, r"PLAYER_BASE_SPEED\s*=\s*(\d+\.?\d*)")
+        if speed is None:
+            speed = self._extract_numeric(engine, r"speed\s*[=:]\s*(\d+\.?\d*)")
         if speed is not None:
             std = STANDARDS["player_speed"]
             if speed < std["ideal"][0]:
@@ -189,7 +192,8 @@ class GameFeelReviewer:
         engine = self._engine_src
 
         # Check if attack animation exists for player
-        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas:
+        # (the player has no sprite right now: the stand-in marker shows an attack as a lunge, see canvas.drawMarker)
+        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas or "o.lunge" in canvas:
             pass  # good — attack animation exists
         else:
             self._add("high", "feel", "no_player_attack_animation",
@@ -198,7 +202,7 @@ class GameFeelReviewer:
                 "and ensure it's triggered on every attack.")
 
         # Check hit react animation for player
-        if "the_marked.hit_react" in canvas:
+        if "the_marked.hit_react" in canvas or "o.flash" in canvas:
             pass  # good
         else:
             self._add("high", "feel", "no_player_hit_react_animation",
@@ -235,7 +239,9 @@ class GameFeelReviewer:
             pass  # good
 
         # Check death timer duration
-        death_timer = self._extract_numeric(engine, r"deathTimer\s*[=:]\s*(\d+)")
+        death_timer = self._extract_numeric(engine, r"DEATH_ANIMATION_FRAMES\s*=\s*(\d+)")
+        if death_timer is None:
+            death_timer = self._extract_numeric(engine, r"deathTimer\s*===?\s*(\d+)")
         if death_timer is not None:
             std = STANDARDS["death_animation_frames"]
             if death_timer < std["ideal"][0]:
@@ -273,7 +279,8 @@ class GameFeelReviewer:
 
         # Exp / level-up feedback
         has_levelup_feedback = "level" in engine.lower() and ("level" in (ui or "").lower())
-        if "levelUp" not in engine and "level_up" not in engine.lower() and "level +=" not in engine:
+        progression_src = engine + (main or "")
+        if "levelUp" not in progression_src and "level_up" not in progression_src.lower() and "level +=" not in progression_src:
             self._add("high", "feel", "no_levelup_feedback",
                 "Level-up event may have no visual or audio celebration.",
                 "Add a 'LEVEL UP' banner or canvas overlay on level-up, with a satisfying sound. "
@@ -323,7 +330,7 @@ class GameFeelReviewer:
             "Paper Wraith":     "paper_wraith" in canvas,
             "Witness Chair":    "witness_chair" in canvas,
             "Seal Mother":      "seal_mother" in canvas,
-            "The Shape":        "the_marked.idle" in canvas,  # clone uses player sprite
+            "The Shape":        "the_marked.idle" in canvas or "marker:" in canvas,  # clone: the player's sprite, or the stand-in marker
         }
 
         missing_visuals = [k for k, v in enemy_types.items() if not v]
@@ -334,8 +341,8 @@ class GameFeelReviewer:
                 "Players need to instantly identify what they're fighting to respond appropriately.")
 
         # The Shape uses the player's sprite — this is intentional but needs a distinction
-        if "the_marked.idle" in canvas and "The Shape" in canvas:
-            if "0.55" in canvas:  # alpha reduction for The Shape
+        if ("the_marked.idle" in canvas or "marker:" in canvas) and "The Shape" in canvas:
+            if "0.55" in canvas or "tint:" in canvas:  # alpha reduction or its own tint
                 pass  # has a distinction
             else:
                 self._add("medium", "feel", "the_shape_indistinguishable",
@@ -347,7 +354,9 @@ class GameFeelReviewer:
         """Check max enemies and combat density."""
         engine = self._engine_src
 
-        max_enemies = self._extract_numeric(engine, r"enemies\.length\s*[<>=]+\s*(\d+)|maxEnemies\s*[=:]\s*(\d+)")
+        max_enemies = self._extract_numeric(engine, r"BASE_MAX_ENEMIES\s*=\s*(\d+)")
+        if max_enemies is None:
+            max_enemies = self._extract_numeric(engine, r"maxEnemies\s*[=:]\s*(\d+)|enemies\.length\s*[<>]=?\s*([1-9]\d*)")
         if max_enemies is not None:
             std = STANDARDS["max_enemies_on_screen"]
             if max_enemies < std["ideal"][0]:

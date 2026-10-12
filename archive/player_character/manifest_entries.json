@@ -1,0 +1,654 @@
+{
+  "assets": [
+    {
+      "id": "the_marked",
+      "display_name": "The Marked",
+      "asset_type": "player",
+      "origin": [
+        128,
+        232
+      ],
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "mirror_x": true,
+      "depth_sort_offset": 0,
+      "animations": [
+        "the_marked.idle",
+        "the_marked.walk",
+        "the_marked.run",
+        "the_marked.basic_attack",
+        "the_marked.hit_react",
+        "the_marked.death_collapse",
+        "the_marked.interact_pickup",
+        "the_marked.ritual_channel",
+        "the_marked.low_sanity",
+        "the_marked.signal_decode",
+        "the_marked.dodge_step"
+      ],
+      "game_role": "controllable player character",
+      "progression_identity": "The Marked"
+    }
+  ],
+  "animations": [
+    {
+      "id": "the_marked.idle",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "idle",
+      "usage": "Default controllable idle; used when The Marked is standing in-world.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 8,
+      "fps": 9,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/idle/the_marked_idle_00.png",
+        "characters/player/the_marked/idle/the_marked_idle_01.png",
+        "characters/player/the_marked/idle/the_marked_idle_02.png",
+        "characters/player/the_marked/idle/the_marked_idle_03.png",
+        "characters/player/the_marked/idle/the_marked_idle_04.png",
+        "characters/player/the_marked/idle/the_marked_idle_05.png",
+        "characters/player/the_marked/idle/the_marked_idle_06.png",
+        "characters/player/the_marked/idle/the_marked_idle_07.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_idle_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_idle.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.walk",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "walk",
+      "usage": "2.5D floor-plane movement with left/right sprite flipping.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 12,
+      "fps": 12,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/walk/the_marked_walk_00.png",
+        "characters/player/the_marked/walk/the_marked_walk_01.png",
+        "characters/player/the_marked/walk/the_marked_walk_02.png",
+        "characters/player/the_marked/walk/the_marked_walk_03.png",
+        "characters/player/the_marked/walk/the_marked_walk_04.png",
+        "characters/player/the_marked/walk/the_marked_walk_05.png",
+        "characters/player/the_marked/walk/the_marked_walk_06.png",
+        "characters/player/the_marked/walk/the_marked_walk_07.png",
+        "characters/player/the_marked/walk/the_marked_walk_08.png",
+        "characters/player/the_marked/walk/the_marked_walk_09.png",
+        "characters/player/the_marked/walk/the_marked_walk_10.png",
+        "characters/player/the_marked/walk/the_marked_walk_11.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_walk_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_walk.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.run",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "run",
+      "usage": "Fast floor-plane movement (the engine's 4.5 px/frame is a sprint) with left/right sprite flipping.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 8,
+      "fps": 17,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/run/the_marked_run_00.png",
+        "characters/player/the_marked/run/the_marked_run_01.png",
+        "characters/player/the_marked/run/the_marked_run_02.png",
+        "characters/player/the_marked/run/the_marked_run_03.png",
+        "characters/player/the_marked/run/the_marked_run_04.png",
+        "characters/player/the_marked/run/the_marked_run_05.png",
+        "characters/player/the_marked/run/the_marked_run_06.png",
+        "characters/player/the_marked/run/the_marked_run_07.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_run_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_run.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.basic_attack",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "basic_attack",
+      "usage": "Primary blade attack / auto-attack in physical combat.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 10,
+      "fps": 30,
+      "loop": false,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [
+        {
+          "frame": 3,
+          "bounds": [
+            144,
+            96,
+            88,
+            96
+          ],
+          "tags": [
+            "blade",
+            "melee"
+          ],
+          "damage_window": true
+        },
+        {
+          "frame": 4,
+          "bounds": [
+            144,
+            96,
+            88,
+            96
+          ],
+          "tags": [
+            "blade",
+            "melee"
+          ],
+          "damage_window": true
+        },
+        {
+          "frame": 5,
+          "bounds": [
+            144,
+            96,
+            88,
+            96
+          ],
+          "tags": [
+            "blade",
+            "melee"
+          ],
+          "damage_window": true
+        },
+        {
+          "frame": 6,
+          "bounds": [
+            144,
+            96,
+            88,
+            96
+          ],
+          "tags": [
+            "blade",
+            "melee"
+          ],
+          "damage_window": true
+        },
+        {
+          "frame": 7,
+          "bounds": [
+            144,
+            96,
+            88,
+            96
+          ],
+          "tags": [
+            "blade",
+            "melee"
+          ],
+          "damage_window": true
+        }
+      ],
+      "frames": [
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_00.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_01.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_02.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_03.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_04.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_05.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_06.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_07.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_08.png",
+        "characters/player/the_marked/basic_attack/the_marked_basic_attack_09.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_basic_attack_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_basic_attack.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.hit_react",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "hit_react",
+      "usage": "Damage recoil while preserving bottom-center anchor.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 14,
+      "loop": false,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/hit_react/the_marked_hit_react_00.png",
+        "characters/player/the_marked/hit_react/the_marked_hit_react_01.png",
+        "characters/player/the_marked/hit_react/the_marked_hit_react_02.png",
+        "characters/player/the_marked/hit_react/the_marked_hit_react_03.png",
+        "characters/player/the_marked/hit_react/the_marked_hit_react_04.png",
+        "characters/player/the_marked/hit_react/the_marked_hit_react_05.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_hit_react_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_hit_react.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.death_collapse",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "death_collapse",
+      "usage": "Collapse into a corpse record when The Marked dies.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 10,
+      "fps": 9,
+      "loop": false,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_00.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_01.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_02.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_03.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_04.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_05.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_06.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_07.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_08.png",
+        "characters/player/the_marked/death_collapse/the_marked_death_collapse_09.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_death_collapse_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_death_collapse.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.interact_pickup",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "interact_pickup",
+      "usage": "World pickup/interact animation for loot and records.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 8,
+      "fps": 11,
+      "loop": false,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_00.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_01.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_02.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_03.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_04.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_05.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_06.png",
+        "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_07.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_interact_pickup_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_interact_pickup.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.ritual_channel",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "ritual_channel",
+      "usage": "Physical ritual bargain interaction: altars, basins, ledgers.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 10,
+      "fps": 10,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_00.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_01.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_02.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_03.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_04.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_05.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_06.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_07.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_08.png",
+        "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_09.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_ritual_channel_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_ritual_channel.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.low_sanity",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "low_sanity",
+      "usage": "Fractured sanity movement/idling variant with controlled visual noise.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 8,
+      "fps": 13,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_00.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_01.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_02.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_03.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_04.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_05.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_06.png",
+        "characters/player/the_marked/low_sanity/the_marked_low_sanity_07.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_low_sanity_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_low_sanity.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.signal_decode",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "signal_decode",
+      "usage": "Signal decoding interaction; used by pylons and broadcast objects.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 8,
+      "fps": 10,
+      "loop": true,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_00.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_01.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_02.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_03.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_04.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_05.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_06.png",
+        "characters/player/the_marked/signal_decode/the_marked_signal_decode_07.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_signal_decode_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_signal_decode.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    },
+    {
+      "id": "the_marked.dodge_step",
+      "asset_id": "the_marked",
+      "asset_type": "player",
+      "animation": "dodge_step",
+      "usage": "Short evasive step for active ARPG control.",
+      "frame_size": [
+        256,
+        256
+      ],
+      "origin": [
+        128,
+        232
+      ],
+      "frame_count": 6,
+      "fps": 30,
+      "loop": false,
+      "mirror_x": true,
+      "facing": "right",
+      "scale": 1.0,
+      "depth_sort_offset": 0,
+      "collision_bounds": [
+        76,
+        102,
+        80,
+        130
+      ],
+      "interaction_bounds": [
+        86,
+        160,
+        84,
+        80
+      ],
+      "attack_hitboxes": [],
+      "frames": [
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_00.png",
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_01.png",
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_02.png",
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_03.png",
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_04.png",
+        "characters/player/the_marked/dodge_step/the_marked_dodge_step_05.png"
+      ],
+      "sheet": "characters/player/the_marked/the_marked_dodge_step_sheet.png",
+      "gif": "characters/player/the_marked/the_marked_dodge_step.gif",
+      "source_style": "grim_illustrated_dark_fantasy",
+      "quality_target": "MVP_AA"
+    }
+  ]
+}

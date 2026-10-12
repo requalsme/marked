@@ -1,0 +1,1081 @@
+diff --git a/assets/pack_manifest.json b/assets/pack_manifest.json
+index cf34a69..a7ce1d1 100644
+--- a/assets/pack_manifest.json
++++ b/assets/pack_manifest.json
+@@ -14,38 +14,6 @@
+   "mvp_region": "The Keeping House",
+   "content": {
+     "assets": [
+-      {
+-        "id": "the_marked",
+-        "display_name": "The Marked",
+-        "asset_type": "player",
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "mirror_x": true,
+-        "depth_sort_offset": 0,
+-        "animations": [
+-          "the_marked.idle",
+-          "the_marked.walk",
+-          "the_marked.run",
+-          "the_marked.basic_attack",
+-          "the_marked.hit_react",
+-          "the_marked.death_collapse",
+-          "the_marked.interact_pickup",
+-          "the_marked.ritual_channel",
+-          "the_marked.low_sanity",
+-          "the_marked.signal_decode",
+-          "the_marked.dodge_step"
+-        ],
+-        "game_role": "controllable player character",
+-        "progression_identity": "The Marked"
+-      },
+       {
+         "id": "ink_redactor",
+         "display_name": "Ink Redactor",
+@@ -1562,622 +1530,6 @@
+       }
+     ],
+     "animations": [
+-      {
+-        "id": "the_marked.idle",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "idle",
+-        "usage": "Default controllable idle; used when The Marked is standing in-world.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 8,
+-        "fps": 9,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/idle/the_marked_idle_00.png",
+-          "characters/player/the_marked/idle/the_marked_idle_01.png",
+-          "characters/player/the_marked/idle/the_marked_idle_02.png",
+-          "characters/player/the_marked/idle/the_marked_idle_03.png",
+-          "characters/player/the_marked/idle/the_marked_idle_04.png",
+-          "characters/player/the_marked/idle/the_marked_idle_05.png",
+-          "characters/player/the_marked/idle/the_marked_idle_06.png",
+-          "characters/player/the_marked/idle/the_marked_idle_07.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_idle_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_idle.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.walk",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "walk",
+-        "usage": "2.5D floor-plane movement with left/right sprite flipping.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 12,
+-        "fps": 12,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/walk/the_marked_walk_00.png",
+-          "characters/player/the_marked/walk/the_marked_walk_01.png",
+-          "characters/player/the_marked/walk/the_marked_walk_02.png",
+-          "characters/player/the_marked/walk/the_marked_walk_03.png",
+-          "characters/player/the_marked/walk/the_marked_walk_04.png",
+-          "characters/player/the_marked/walk/the_marked_walk_05.png",
+-          "characters/player/the_marked/walk/the_marked_walk_06.png",
+-          "characters/player/the_marked/walk/the_marked_walk_07.png",
+-          "characters/player/the_marked/walk/the_marked_walk_08.png",
+-          "characters/player/the_marked/walk/the_marked_walk_09.png",
+-          "characters/player/the_marked/walk/the_marked_walk_10.png",
+-          "characters/player/the_marked/walk/the_marked_walk_11.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_walk_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_walk.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.run",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "run",
+-        "usage": "Fast floor-plane movement (the engine's 4.5 px/frame is a sprint) with left/right sprite flipping.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 8,
+-        "fps": 17,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/run/the_marked_run_00.png",
+-          "characters/player/the_marked/run/the_marked_run_01.png",
+-          "characters/player/the_marked/run/the_marked_run_02.png",
+-          "characters/player/the_marked/run/the_marked_run_03.png",
+-          "characters/player/the_marked/run/the_marked_run_04.png",
+-          "characters/player/the_marked/run/the_marked_run_05.png",
+-          "characters/player/the_marked/run/the_marked_run_06.png",
+-          "characters/player/the_marked/run/the_marked_run_07.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_run_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_run.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.basic_attack",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "basic_attack",
+-        "usage": "Primary blade attack / auto-attack in physical combat.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 10,
+-        "fps": 30,
+-        "loop": false,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [
+-          {
+-            "frame": 3,
+-            "bounds": [
+-              144,
+-              96,
+-              88,
+-              96
+-            ],
+-            "tags": [
+-              "blade",
+-              "melee"
+-            ],
+-            "damage_window": true
+-          },
+-          {
+-            "frame": 4,
+-            "bounds": [
+-              144,
+-              96,
+-              88,
+-              96
+-            ],
+-            "tags": [
+-              "blade",
+-              "melee"
+-            ],
+-            "damage_window": true
+-          },
+-          {
+-            "frame": 5,
+-            "bounds": [
+-              144,
+-              96,
+-              88,
+-              96
+-            ],
+-            "tags": [
+-              "blade",
+-              "melee"
+-            ],
+-            "damage_window": true
+-          },
+-          {
+-            "frame": 6,
+-            "bounds": [
+-              144,
+-              96,
+-              88,
+-              96
+-            ],
+-            "tags": [
+-              "blade",
+-              "melee"
+-            ],
+-            "damage_window": true
+-          },
+-          {
+-            "frame": 7,
+-            "bounds": [
+-              144,
+-              96,
+-              88,
+-              96
+-            ],
+-            "tags": [
+-              "blade",
+-              "melee"
+-            ],
+-            "damage_window": true
+-          }
+-        ],
+-        "frames": [
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_00.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_01.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_02.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_03.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_04.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_05.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_06.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_07.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_08.png",
+-          "characters/player/the_marked/basic_attack/the_marked_basic_attack_09.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_basic_attack_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_basic_attack.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.hit_react",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "hit_react",
+-        "usage": "Damage recoil while preserving bottom-center anchor.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 6,
+-        "fps": 14,
+-        "loop": false,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_00.png",
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_01.png",
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_02.png",
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_03.png",
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_04.png",
+-          "characters/player/the_marked/hit_react/the_marked_hit_react_05.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_hit_react_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_hit_react.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.death_collapse",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "death_collapse",
+-        "usage": "Collapse into a corpse record when The Marked dies.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 10,
+-        "fps": 9,
+-        "loop": false,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_00.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_01.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_02.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_03.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_04.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_05.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_06.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_07.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_08.png",
+-          "characters/player/the_marked/death_collapse/the_marked_death_collapse_09.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_death_collapse_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_death_collapse.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.interact_pickup",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "interact_pickup",
+-        "usage": "World pickup/interact animation for loot and records.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 8,
+-        "fps": 11,
+-        "loop": false,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_00.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_01.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_02.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_03.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_04.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_05.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_06.png",
+-          "characters/player/the_marked/interact_pickup/the_marked_interact_pickup_07.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_interact_pickup_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_interact_pickup.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.ritual_channel",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "ritual_channel",
+-        "usage": "Physical ritual bargain interaction: altars, basins, ledgers.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 10,
+-        "fps": 10,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_00.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_01.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_02.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_03.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_04.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_05.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_06.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_07.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_08.png",
+-          "characters/player/the_marked/ritual_channel/the_marked_ritual_channel_09.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_ritual_channel_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_ritual_channel.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.low_sanity",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "low_sanity",
+-        "usage": "Fractured sanity movement/idling variant with controlled visual noise.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 8,
+-        "fps": 13,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_00.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_01.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_02.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_03.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_04.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_05.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_06.png",
+-          "characters/player/the_marked/low_sanity/the_marked_low_sanity_07.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_low_sanity_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_low_sanity.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.signal_decode",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "signal_decode",
+-        "usage": "Signal decoding interaction; used by pylons and broadcast objects.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 8,
+-        "fps": 10,
+-        "loop": true,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_00.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_01.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_02.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_03.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_04.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_05.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_06.png",
+-          "characters/player/the_marked/signal_decode/the_marked_signal_decode_07.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_signal_decode_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_signal_decode.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+-      {
+-        "id": "the_marked.dodge_step",
+-        "asset_id": "the_marked",
+-        "asset_type": "player",
+-        "animation": "dodge_step",
+-        "usage": "Short evasive step for active ARPG control.",
+-        "frame_size": [
+-          256,
+-          256
+-        ],
+-        "origin": [
+-          128,
+-          232
+-        ],
+-        "frame_count": 6,
+-        "fps": 30,
+-        "loop": false,
+-        "mirror_x": true,
+-        "facing": "right",
+-        "scale": 1.0,
+-        "depth_sort_offset": 0,
+-        "collision_bounds": [
+-          76,
+-          102,
+-          80,
+-          130
+-        ],
+-        "interaction_bounds": [
+-          86,
+-          160,
+-          84,
+-          80
+-        ],
+-        "attack_hitboxes": [],
+-        "frames": [
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_00.png",
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_01.png",
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_02.png",
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_03.png",
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_04.png",
+-          "characters/player/the_marked/dodge_step/the_marked_dodge_step_05.png"
+-        ],
+-        "sheet": "characters/player/the_marked/the_marked_dodge_step_sheet.png",
+-        "gif": "characters/player/the_marked/the_marked_dodge_step.gif",
+-        "source_style": "grim_illustrated_dark_fantasy",
+-        "quality_target": "MVP_AA"
+-      },
+       {
+         "id": "ink_redactor.combat_idle",
+         "asset_id": "ink_redactor",
+diff --git a/index.html b/index.html
+index 450122f..9964106 100644
+--- a/index.html
++++ b/index.html
+@@ -131,7 +131,7 @@
+         <!-- Top-left: identity plate, tarot and reality trait -->
+         <div id="game-hud" class="hud-top-left">
+             <div class="plate identity-plate">
+-                <div class="portrait-frame"><img src="assets/avatar.png" alt="" class="avatar-img"></div>
++                <div class="portrait-frame"><div class="sigil-glyph"></div></div>
+                 <div class="identity-text">
+                     <div id="hud-name" class="hud-name">The Marked</div>
+                     <div id="hud-obs-diag" class="obs-diag">Diagnosis: Unread / Fresh</div>
+diff --git a/src/canvas.js b/src/canvas.js
+index 607adee..82a2590 100644
+--- a/src/canvas.js
++++ b/src/canvas.js
+@@ -75,15 +75,13 @@ const ENEMY_ART = {
+             : e.hitFlash > 0 ? { key: "seal_mother.hit_react", elapsed: 6 - e.hitFlash }
+             : { key: "seal_mother.combat_idle" }
+     },
++    // The Shape and Corpse Echoes were the player's own animations tinted; with no character art installed they are drawn
++    // as the stand-in marker (see drawMarker). `swing` is the attack cooldown the swing starts from.
+     "The Shape": {
+-        scale: 0.36, alpha: 0.6, glow: "#5b2a70", death: "the_marked.death_collapse",
+-        pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 50 - e.attackCooldown }
+-            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
++        alpha: 0.6, glow: "#5b2a70", swing: 50, marker: { tint: "#9a4ab8", core: "#9a4ab8" }
+     },
+     "Corpse Echo": {
+-        scale: 0.36, alpha: 0.8, glow: "#7a1010", death: "the_marked.death_collapse",
+-        pick: (e) => e.attackCooldown > 30 ? { key: "the_marked.basic_attack", elapsed: 45 - e.attackCooldown }
+-            : { key: moving(e) ? "the_marked.run" : "the_marked.idle" }
++        alpha: 0.8, glow: "#7a1010", swing: 45, marker: { tint: "#b3402f", core: "#b81d14" }
+     }
+ };
+ 
+@@ -994,11 +992,77 @@ export class CanvasRenderer {
+         ctx.restore();
+     }
+ 
++    // ─── The Marked has no sprite ───────────────────────────────────────────────────────────────────────
++    // The character's art (sprites, portrait, art pipeline) is archived under archive/player_character. Until new art is
++    // installed, the Marked, The Shape and Corpse Echoes are drawn as this plain marker: a lozenge with a bar for the
++    // direction it faces. Every state the sprite had still reads: lunge (attack), flash (hit), trail (dash), sink (death).
++    // To install new art, replace drawPlayer and the `marker` specs in ENEMY_ART with sprite drawing.
++    drawMarker(ctx, x, y, facing, o = {}) {
++        const k = depthScale(y);
++        const dir = facing === "left" ? -1 : 1;
++        const t = this.frame;
++        const sink = o.sink ?? 0;
++        const h = 36 * k * (1 - 0.8 * sink) * (o.stretchY ?? 1);
++        const w = 11 * k * (1 + 0.6 * sink) * (o.stretchX ?? 1);
++        const bob = o.moving ? Math.sin(t * 0.4) * 1.6 * k : 0;
++        const cx = x + (o.jitter ? Math.sin(t * 0.9) * 2.2 * k : 0);
++        const cy = y - 4 * k - h / 2 - bob;
++        const tint = o.tint || "#d8cdb2";
++        const base = (o.alpha ?? 1) * (1 - sink * 0.85);
++
++        const lozenge = (px, alpha) => {
++            ctx.globalAlpha = alpha;
++            ctx.beginPath();
++            ctx.moveTo(px, cy - h / 2);
++            ctx.lineTo(px + w, cy);
++            ctx.lineTo(px, cy + h / 2);
++            ctx.lineTo(px - w, cy);
++            ctx.closePath();
++            ctx.fillStyle = o.flash ? "rgba(150, 24, 18, 0.9)" : "rgba(12, 11, 14, 0.86)";
++            ctx.fill();
++            ctx.lineWidth = Math.max(1.2, 1.6 * k);
++            ctx.strokeStyle = o.flash ? "#ff6a5a" : tint;
++            ctx.stroke();
++        };
++
++        ctx.save();
++        if (o.glow) { ctx.shadowColor = o.glow; ctx.shadowBlur = 14; }
++        if (o.trail) for (let i = 3; i >= 1; i--) lozenge(cx - dir * i * 14 * k, base * 0.16 * (4 - i) / 3);
++        lozenge(cx, base);
++
++        // the bar it faces along; a lunge throws it forward and rings the air
++        ctx.globalAlpha = base;
++        ctx.strokeStyle = tint;
++        ctx.lineCap = "round";
++        ctx.lineWidth = Math.max(1.6, 2.4 * k);
++        const reach = (7 + (o.lunge ? 20 * Math.sin(Math.PI * o.lunge) : 0)) * k;
++        ctx.beginPath();
++        ctx.moveTo(cx + dir * w, cy);
++        ctx.lineTo(cx + dir * (w + reach), cy);
++        ctx.stroke();
++        if (o.lunge > 0) {
++            ctx.globalAlpha = base * (1 - o.lunge) * 0.7;
++            ctx.lineWidth = Math.max(1, 1.4 * k);
++            ctx.beginPath();
++            ctx.arc(cx + dir * w, cy, (14 + 26 * o.lunge) * k, 0, Math.PI * 2);
++            ctx.stroke();
++        }
++        // a core that glows when the Monolith is watching
++        ctx.shadowBlur = 0;
++        ctx.globalAlpha = base * (0.55 + (o.core_glow ?? 0.25) + Math.sin(t * 0.08) * 0.12);
++        ctx.fillStyle = o.core || "#b81d14";
++        ctx.beginPath();
++        ctx.arc(cx, cy - h * 0.08, 2.6 * k, 0, Math.PI * 2);
++        ctx.fill();
++        ctx.restore();
++    }
++
+     drawPlayer(ctx, p) {
+         ctx.save();
+         const k = depthScale(p.y);
+         this.drawGroundShadow(ctx, p.x, p.y + 4, 22 * k, 7 * k, 0.6);
+ 
++        // the Monolith's brand: a red glow at the feet that deepens as Observation rises
+         const obsMult = p.profile.observation / 100;
+         const brandGrad = ctx.createRadialGradient(p.x, p.y - 10, 2, p.x, p.y - 10, 30);
+         brandGrad.addColorStop(0, `rgba(180, 20, 20, ${0.16 + obsMult * 0.3})`);
+@@ -1008,66 +1072,33 @@ export class CanvasRenderer {
+         ctx.arc(p.x, p.y - 10, 30, 0, Math.PI * 2);
+         ctx.fill();
+ 
+-        let key = "the_marked.idle";
+-        let elapsed = this.frame;
+-        if (p.health <= 0) {
+-            key = "the_marked.death_collapse";
+-            elapsed = p.deathTimer;
++        const alive = p.health > 0;
++        const o = { moving: p.state === "moving", jitter: alive && p.sanity < 40, core_glow: obsMult * 0.2 };
++        if (!alive) {
++            o.sink = Math.min(1, p.deathTimer / 60);
+         } else if (p.dashTimer > 0) {
+-            // The dash's 12 ticks play the whole dodge step (the dash grants i-frames, so test it before the hit reaction)
+-            key = "the_marked.dodge_step";
+-            elapsed = 12 - p.dashTimer;
++            o.trail = true; o.stretchX = 1.5; o.stretchY = 0.8;          // the dash (it also grants i-frames, so test it before the hit)
+         } else if (p.invulnTimer > 0) {
+-            key = "the_marked.hit_react";
+-            elapsed = 25 - p.invulnTimer;
+-        } else if (p.attackCooldown > p.attackDelay - 20) {
+-            key = "the_marked.basic_attack";
+-            elapsed = p.attackDelay - p.attackCooldown;
+-        } else if (p.sanity < 40) {
+-            key = "the_marked.low_sanity";
+-        } else if (p.state === "moving") {
+-            // 4.5 px/frame is about four body-heights a second: a sprint, so the run cycle is the one that matches
+-            key = "the_marked.run";
++            o.flash = true;                                              // hit
++            if (Math.floor(this.frame / 4) % 2 === 0) o.alpha = 0.48;
+         }
+-
+-        const config = assetLoader.animationsMap[key];
+-        let idx = 0;
+-        if (config) {
+-            const oneShot = key === "the_marked.death_collapse" || key === "the_marked.hit_react" || key === "the_marked.basic_attack" || key === "the_marked.dodge_step";
+-            idx = oneShot ? Math.max(0, Math.min(config.frames - 1, Math.floor(elapsed * (config.fps / 60)))) : Math.floor(this.frame * (config.fps / 60)) % config.frames;
+-        }
+-
+-        // The Shape: a dark double half a step behind, a few frames out of phase (and further out at low sanity)
+-        if (config && p.health > 0) this.drawShapeEcho(ctx, p, key, config, idx);
+-
+-        const alpha = p.invulnTimer > 0 && Math.floor(this.frame / 4) % 2 === 0 ? 0.48 : 1;
+-        assetLoader.drawFrame(ctx, key, idx, p.x, p.y, p.facing, 0.36 * depthScale(p.y), alpha);
+-        ctx.restore();
+-    }
+-
+-    drawShapeEcho(ctx, p, key, config, idx) {
+-        const k = depthScale(p.y);
+-        const lowSanity = p.sanity < 40;
+-        const lag = lowSanity ? 7 : 4;
+-        let echoIdx = idx;
+-        if (config.loop) {
+-            const n = config.frames;
+-            echoIdx = (((Math.floor((this.frame - lag * 2) * (config.fps / 60))) % n) + n) % n;
+-        } else {
+-            echoIdx = Math.max(0, idx - 1);
+-        }
+-        const dir = p.facing === "left" ? 1 : -1;
+-        const jitter = lowSanity ? Math.sin(this.frame * 0.9) * 2.4 : 0;
+-        const obs = p.profile.observation / 100;
+-        ctx.save();
+-        ctx.filter = "brightness(0.32) sepia(1) hue-rotate(225deg) saturate(2.2)";
+-        assetLoader.drawFrame(ctx, key, echoIdx, p.x + (dir * 26 + jitter) * k, p.y - 3 * k, p.facing, 0.36 * k, 0.24 + obs * 0.26);
++        if (alive && p.attackCooldown > p.attackDelay - 20) o.lunge = (p.attackDelay - p.attackCooldown) / 20;
++        this.drawMarker(ctx, p.x, p.y, p.facing, o);
+         ctx.restore();
+     }
+ 
+     // Enemy death: play the art's death animation, then let the remains fade
+     drawDeathFx(ctx, fx) {
+         const spec = ENEMY_ART[fx.type] || ENEMY_ART["Cabinet Indexer"];
++        if (spec.marker) {
++            // a marker has no death animation: it sinks and fades
++            const f = Math.min(1, fx.t / 50);
++            ctx.save();
++            this.drawGroundShadow(ctx, fx.x, fx.y + 2, 20, 7, 0.4 * (1 - f));
++            this.drawMarker(ctx, fx.x, fx.y + 6, fx.facing, { ...spec.marker, alpha: spec.alpha ?? 1, glow: spec.glow, sink: f });
++            ctx.restore();
++            return;
++        }
+         const config = assetLoader.animationsMap[spec.death];
+         if (!config) return;
+         const playFrames = config.frames * (60 / config.fps);
+@@ -1087,6 +1118,15 @@ export class CanvasRenderer {
+ 
+         // Face the player rather than the velocity, so knockback doesn't flip the sprite
+         const facing = this.playerX < e.x ? "left" : "right";
++        if (spec.marker) {
++            const swinging = e.attackCooldown > 30;
++            this.drawMarker(ctx, e.x, e.y + 6, facing, {
++                ...spec.marker, alpha: spec.alpha ?? 1, glow: spec.glow, moving: moving(e), flash: e.hitFlash > 0,
++                lunge: swinging ? Math.min(1, (spec.swing - e.attackCooldown) / (spec.swing - 30)) : 0
++            });
++            ctx.restore();
++            return;
++        }
+         const pick = spec.pick(e);
+         const key = pick.key;
+         const config = assetLoader.animationsMap[key];
+diff --git a/src/main.js b/src/main.js
+index 091eb68..64e0149 100644
+--- a/src/main.js
++++ b/src/main.js
+@@ -291,7 +291,7 @@ class GameOrchestrator {
+             card.className = "profile-card";
+             card.style.setProperty("--sigil", CLASS_COLORS[prof.classType] || "#c79a42");
+             card.innerHTML = `
+-                <div class="profile-sigil"><div class="sprite-idle"></div></div>
++                <div class="profile-sigil"><div class="sigil-glyph"></div></div>
+                 <div class="profile-info">
+                     <div class="profile-name"></div>
+                     <div class="profile-meta"></div>
+@@ -368,7 +368,7 @@ class GameOrchestrator {
+             card.dataset.cls = sheet.name;
+             card.setAttribute("role", "radio");
+             card.style.setProperty("--sigil", CLASS_COLORS[sheet.name]);
+-            card.innerHTML = `<div class="sprite-idle"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
++            card.innerHTML = `<div class="sigil-glyph"></div><div class="class-card-name font-cinzel">${sheet.name.replace(" Marked", "")}</div>`;
+             card.addEventListener("click", () => choose(sheet));
+             picker.appendChild(card);
+         }
+@@ -467,6 +467,9 @@ class GameOrchestrator {
+         };
+         
+         this.engine.setPlayer(this.activeProfile, combinedStats);
++        // The HUD plate carries the class's sigil (there is no portrait art installed; see archive/player_character)
++        const plate = document.querySelector(".portrait-frame");
++        if (plate) plate.style.setProperty("--sigil", CLASS_COLORS[this.activeProfile.classType] || "#c79a42");
+         ensureDossier(this.activeProfile);
+         this.lifeFlags = {};
+         this.knownCounters = new Set();
+diff --git a/style.css b/style.css
+index 9ef109d..0b32c33 100644
+--- a/style.css
++++ b/style.css
+@@ -459,12 +459,6 @@ body.sanity-broken::after {
+     padding: 6px 12px 6px 6px;
+ }
+ 
+-.avatar-img {
+-    height: 100%;
+-    object-fit: cover;
+-    width: 100%;
+-}
+-
+ .hud-profile-info {
+     min-width: 0;
+ }
+@@ -1440,16 +1434,16 @@ body.sanity-broken::after {
+     text-transform: uppercase;
+ }
+ 
+-/* Sprite: The Marked idle loop (8 frames) */
+-.sprite-idle {
+-    animation: idle-frames 0.9s steps(8) infinite;
+-    background: url("assets/characters/player/the_marked/the_marked_idle_sheet.png") 0 0 / 800% 100% no-repeat;
+-    filter: drop-shadow(0 0 8px var(--sigil, #c79a42)) drop-shadow(0 4px 4px #000);
+-}
+-
+-/* 8 frames: stepping 0 → 8/7 of the scroll range lands exactly on each frame */
+-@keyframes idle-frames {
+-    to { background-position: calc(100% * 8 / 7) 0; }
++/* The class's sigil: a lozenge in its colour. It stands in for the character's figure, which has no art installed
++   (the sprites and portrait are archived under archive/player_character). */
++.sigil-glyph {
++    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--sigil, #c79a42) 75%, #fff), color-mix(in srgb, var(--sigil, #c79a42) 55%, #000) 70%);
++    border: 2px solid var(--sigil, #c79a42);
++    box-shadow: 0 0 10px color-mix(in srgb, var(--sigil, #c79a42) 55%, transparent), inset 0 0 6px rgba(0, 0, 0, 0.6);
++    flex: none;
++    height: 26px;
++    transform: rotate(45deg);
++    width: 26px;
+ }
+ 
+ .profile-list {
+@@ -1496,12 +1490,10 @@ body.sanity-broken::after {
+     right: 6px;
+ }
+ 
+-.profile-sigil .sprite-idle {
+-    bottom: -4px;
+-    height: 76px;
+-    left: 0;
++.profile-sigil .sigil-glyph {
++    left: calc(50% - 13px);
+     position: absolute;
+-    width: 76px;
++    top: calc(50% - 13px);
+ }
+ 
+ .profile-info {
+@@ -1540,10 +1532,11 @@ body.sanity-broken::after {
+     transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+ }
+ 
+-.class-card .sprite-idle {
+-    height: 92px;
+-    width: 92px;
+-    filter: grayscale(0.6) brightness(0.75) drop-shadow(0 4px 4px #000);
++.class-card .sigil-glyph {
++    filter: grayscale(0.6) brightness(0.75);
++    height: 38px;
++    margin: 26px 0 24px;
++    width: 38px;
+ }
+ 
+ .class-card:hover {
+@@ -1557,9 +1550,9 @@ body.sanity-broken::after {
+     transform: translateY(-3px);
+ }
+ 
+-.class-card.selected .sprite-idle,
+-.class-card:hover .sprite-idle {
+-    filter: drop-shadow(0 0 8px var(--sigil)) drop-shadow(0 4px 4px #000);
++.class-card.selected .sigil-glyph,
++.class-card:hover .sigil-glyph {
++    filter: none;
+ }
+ 
+ .class-card-name {
+@@ -1710,9 +1703,10 @@ body.sanity-broken::after {
+         overflow-x: auto;
+     }
+ 
+-    .class-card .sprite-idle {
+-        height: 60px;
+-        width: 60px;
++    .class-card .sigil-glyph {
++        height: 28px;
++        margin: 14px 0;
++        width: 28px;
+     }
+ }
+ 
+@@ -1767,11 +1761,15 @@ body.sanity-broken::after {
+     width: 50px;
+ }
+ 
+-.portrait-frame .avatar-img {
+-    filter: grayscale(0.35) contrast(1.15) brightness(0.85) sepia(0.2);
+-    height: 100%;
+-    object-fit: cover;
+-    width: 100%;
++.portrait-frame {
++    align-items: center;
++    display: flex;
++    justify-content: center;
++}
++
++.portrait-frame .sigil-glyph {
++    height: 22px;
++    width: 22px;
+ }
+ 
+ .hud-name {
+diff --git a/tools/simulation/review/game_feel_reviewer.py b/tools/simulation/review/game_feel_reviewer.py
+index 9400fbb..6533c4b 100644
+--- a/tools/simulation/review/game_feel_reviewer.py
++++ b/tools/simulation/review/game_feel_reviewer.py
+@@ -192,7 +192,8 @@ class GameFeelReviewer:
+         engine = self._engine_src
+ 
+         # Check if attack animation exists for player
+-        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas:
++        # (the player has no sprite right now: the stand-in marker shows an attack as a lunge, see canvas.drawMarker)
++        if "the_marked.basic_attack" in canvas or "basic_attack" in canvas or "o.lunge" in canvas:
+             pass  # good — attack animation exists
+         else:
+             self._add("high", "feel", "no_player_attack_animation",
+@@ -201,7 +202,7 @@ class GameFeelReviewer:
+                 "and ensure it's triggered on every attack.")
+ 
+         # Check hit react animation for player
+-        if "the_marked.hit_react" in canvas:
++        if "the_marked.hit_react" in canvas or "o.flash" in canvas:
+             pass  # good
+         else:
+             self._add("high", "feel", "no_player_hit_react_animation",
+@@ -329,7 +330,7 @@ class GameFeelReviewer:
+             "Paper Wraith":     "paper_wraith" in canvas,
+             "Witness Chair":    "witness_chair" in canvas,
+             "Seal Mother":      "seal_mother" in canvas,
+-            "The Shape":        "the_marked.idle" in canvas,  # clone uses player sprite
++            "The Shape":        "the_marked.idle" in canvas or "marker:" in canvas,  # clone: the player's sprite, or the stand-in marker
+         }
+ 
+         missing_visuals = [k for k, v in enemy_types.items() if not v]
+@@ -340,8 +341,8 @@ class GameFeelReviewer:
+                 "Players need to instantly identify what they're fighting to respond appropriately.")
+ 
+         # The Shape uses the player's sprite — this is intentional but needs a distinction
+-        if "the_marked.idle" in canvas and "The Shape" in canvas:
+-            if "0.55" in canvas:  # alpha reduction for The Shape
++        if ("the_marked.idle" in canvas or "marker:" in canvas) and "The Shape" in canvas:
++            if "0.55" in canvas or "tint:" in canvas:  # alpha reduction or its own tint
+                 pass  # has a distinction
+             else:
+                 self._add("medium", "feel", "the_shape_indistinguishable",

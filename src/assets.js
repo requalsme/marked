@@ -20,13 +20,16 @@ export class AssetPreloader {
             this.animationsMap = {};
             this.imagesCache = {};
 
+            // The grim illustrated pack is the art bible (GDD 03/18) and loads last so it
+            // wins wherever both packs define the same animation id. The keeping-house
+            // pack still supplies room props and pickups the grim pack doesn't have.
             const manifestsToLoad = [
-                { url: "assets/pack_manifest.json", basePath: "assets/", required: true },
                 {
                     url: "assets/keeping_house_final_cartoon_animated_pack/pack_manifest.json",
                     basePath: "assets/keeping_house_final_cartoon_animated_pack/",
                     required: false
-                }
+                },
+                { url: "assets/pack_manifest.json", basePath: "assets/", required: true }
             ];
 
             for (const source of manifestsToLoad) {
@@ -149,7 +152,7 @@ export class AssetPreloader {
             ctx.fillStyle = "#a61515";
             ctx.fillRect(x - 12, y - 24, 24, 24);
             ctx.fillStyle = "#fff";
-            ctx.font = "9px monospace";
+            ctx.font = "11px monospace";
             ctx.fillText("?", x - 3, y - 10);
             return;
         }
